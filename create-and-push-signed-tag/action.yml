@@ -1,0 +1,54 @@
+name: "Create Signed Tag"
+description: "Create a signed tag from GitHub Actions"
+author: "DCx7C5"
+
+
+inputs:
+  version:
+    description: "The new version to use"
+    required: true
+
+  gpg_home:
+    description: "Path to GNUPGHOME directory."
+    required: false
+    default: "${{ github.workspace }}/.gnupg"
+
+  commit_msg:
+    description: "Commit Message attached to tag"
+    required: false
+
+
+outputs:
+  new_tag:
+    description: "Name of the new tag"
+    value: ${{ steps.tag.outputs.new_tag }}
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create and Push Signed Tag
+      id: tag
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home }}
+      run: |
+        set -euo pipefail
+        TAG="v${{ inputs.version }}"
+        COMMIT_MSG="${{ inputs.commit_msg }}"
+        COMMIT_MSG="${COMMIT_MSG:-"Release $TAG"}"
+        echo "Creating signed tag $TAG ..."
+        
+        git tag -a "$TAG" -m "$COMMIT_MSG" -s
+        
+        echo "Verifying tag $TAG ..."
+        if ! git verify-tag "$TAG"; then
+          echo "Couldn't verify tag $TAG"
+          exit 0
+        fi
+        
+        echo "Pushing tag $TAG ..."
+        git push origin "$TAG"
+        echo "NEW_TAG=$TAG" >> $GITHUB_ENV
+        echo "new_tag=$TAG" >> $GITHUB_OUTPUT
+        echo "Pushed signed tag $TAG successfully"
