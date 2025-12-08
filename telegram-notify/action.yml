@@ -1,0 +1,35 @@
+name: "Telegram Notify Action"
+description: "Send Telegram messages from GitHub Actions"
+author: "DCx7C5"
+
+inputs:
+  token:
+    description: "Telegram Bot Token"
+    required: true
+  to:
+    description: "Chat ID (user, group or channel)"
+    required: true
+  message:
+    description: "Message text (MarkdownV2 supported)"
+    required: true
+  parse_mode:
+    description: "Parse mode: MarkdownV2 (default), Markdown, or HTML"
+    required: false
+    default: "MarkdownV2"
+  silent:
+    description: "Disable notification sound (true/false)"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Send Telegram Message
+      shell: bash
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ inputs.token }}
+        TELEGRAM_TO: ${{ inputs.to }}
+        TELEGRAM_MESSAGE: ${{ inputs.message }}
+        TELEGRAM_PARSE_MODE: ${{ inputs.parse_mode }}
+        TELEGRAM_SILENT: ${{ inputs.silent }}
+      run: ${{ github.action_path }}/entrypoint.sh
