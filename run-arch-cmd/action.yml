@@ -1,0 +1,25 @@
+name: Run Command In Archlinux Docker Container
+description: Run any command inside a clean Arch Linux base-devel container with GPG support
+
+inputs:
+  gpg_home:
+    description: Path to GNUPGHOME (passed from import-gpg action)
+    required: true
+  dir:
+    description: Directory to run from
+    required: false
+    default: /github/workspace
+  run:
+    description: Script/command to execute
+    required: true
+
+runs:
+  using: docker
+  image: Dockerfile
+  env:
+    USE_CCACHE: 1
+    CCACHE_DIR: /github/workspace/.ccache
+    GNUPGHOME: /github/workspace/.gnupg
+  args:
+    - ${{ inputs.dir }}
+    - ${{ inputs.run }}

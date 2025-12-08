@@ -1,0 +1,62 @@
+name: "Create assets & asset signatures"
+description: "Create assets & signatures from GitHub Actions"
+author: "DCx7C5"
+
+
+inputs:
+  gpg_home:
+    description: "Path to GNUPGHOME"
+    required: true
+  tag:
+    description: "Tag to create assets for"
+    required: true
+  checksums:
+    description: "Set to false to avoid creating checksums"
+    required: false
+    default: 'true'
+  sign:
+    description: "Set to false to avoid signing files"
+    required: false
+    default: 'true'
+
+outputs:
+  files:
+    description: "Files to upload"
+    value: ${{ steps.sign.outputs.files }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create tar gz archive
+      shell: bash
+      id: compress
+      run: |
+        set -euo pipefail
+        TAG=${{ inputs.tag }}
+        local _file_name="$(basename $(pwd))-${TAG}"
+        git archive --format=tar.gz --prefix=${_file_name}/ ${TAG} > ${_file_name}.tar.gz
+        
+
+    - name: Create sha512 checksums
+      id: checksums
+      if: inputs.checksums == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        for file in *.tar.gz; do
+          shasum -a 512 "$file" | cut -d" " -f1 > "$file.sha512"
+        done
+
+    - name: Create signatures
+      id: sign
+      if: inputs.sign == 'true'
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home }}
+      run: |
+        set -euo pipefail
+        while read -r file; do
+          git --detach-sign "$file"
+        done < <$(find . -type f -name "*.tar.gz" -o -name "*.sha512")
+        files=$(find . -type f -name "*.tar.gz" -o -name "*.sha512" -o -name "*.sig")
+        echo "files=$files" >> $GITHUB_OUTPUT

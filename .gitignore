@@ -1,0 +1,13 @@
+.idea/
+.venv/
+*.pyc
+*.pyo
+
+*.egg-info/
+build/
+dist/
+
+.gnupg/
+*.tar.gz
+*.sha512
+*.sig
