@@ -20,8 +20,8 @@ inputs:
     default: 'true'
 
 outputs:
-  files:
-    description: "Files to upload"
+  assets:
+    description: "Assets to upload"
     value: ${{ steps.sign.outputs.files }}
 
 runs:
@@ -35,7 +35,6 @@ runs:
         TAG=${{ inputs.tag }}
         local _file_name="$(basename $(pwd))-${TAG}"
         git archive --format=tar.gz --prefix=${_file_name}/ ${TAG} > ${_file_name}.tar.gz
-        
 
     - name: Create sha512 checksums
       id: checksums
@@ -59,4 +58,5 @@ runs:
           git --detach-sign "$file"
         done < <$(find . -type f -name "*.tar.gz" -o -name "*.sha512")
         files=$(find . -type f -name "*.tar.gz" -o -name "*.sha512" -o -name "*.sig")
-        echo "files=$files" >> $GITHUB_OUTPUT
+        echo "assets=$files" >> $GITHUB_OUTPUT
+        echo "ASSETS=$files" >> $GITHUB_ENV
