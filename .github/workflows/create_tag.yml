@@ -1,0 +1,44 @@
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Import GPG Key
+        uses: DCx7C5/actions/import-gpg-keys@v1
+        id: gpg
+        with:
+          enc_gpg: "${{ secrets.GPG_PRIVATE_KEY }}"
+          pass: "${{ secrets.GPG_PASSPHRASE }}"
+
+      - name: Delete Tag
+        shell: bash
+        env:
+          GH_TOKEN: "${{ secrets.ACTIONS_TAG_PAT }}"
+        run: |
+          set -euo pipefail
+          echo "Deleting old Tag"
+          git tag --delete "v1" || true
+          git push --delete origin "v1" || true
+          echo "Tag successfully deleted everywhere"
+
+      - name: Create and Push new Tag
+        uses: DCx7C5/actions/create-and-push-signed-tag@v1
+        env:
+          GH_TOKEN: "${{ secrets.ACTIONS_TAG_PAT }}"
+        with:
+          version: "1"
+          gpg_home: "${{ steps.gpg.outputs.gpg_home }}"
