@@ -1,0 +1,82 @@
+name: "Create Signed Release"
+description: "Create a signed release from GitHub Actions"
+author: "DCx7C5"
+
+
+inputs:
+  tag:
+    description: "The new version to use"
+    required: true
+
+  files:
+    description: "Files to attach to release"
+    required: false
+
+  prerelease:
+    description: "Is a pre release true/false"
+    required: false
+    default: 'false'
+
+  gpg_home:
+    description: "Path to GNUPGHOME directory."
+    required: false
+    default: "${{ github.workspace }}/.gnupg"
+
+  commit_msg:
+    description: "Commit Message attached to tag/release"
+    required: false
+
+
+outputs:
+  new_tag:
+    description: "Name of the new tag"
+    value: ${{ steps.create_tag.outputs.new_tag }}
+
+
+runs:
+  name: Create and Push Signed Release
+  using: "composite"
+  steps:
+    - name: Create Signed Tag
+      if: inputs.type == 'tag'
+      id: create_tag
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home }}
+      run: |
+        set -euo pipefail
+        TAG="v${{ inputs.version }}"
+        COMMIT_MSG="${{ inputs.commit_msg }}"
+        COMMIT_MSG="${COMMIT_MSG:-"Release"}"
+        echo "Creating signed tag $TAG ..."
+        
+        git tag -a "$TAG" -m "$COMMIT_MSG $TAG" -s
+        if ! git verify-tag "$TAG"; then
+          echo "Couldn't verify tag!"
+          exit 0
+        fi
+        
+        
+
+    - name: Create Signed Release
+      if: inputs.type == 'release'
+      shell: bash
+      env:
+        GNUPGHOME: "${{ inputs.gpg_home }}"
+      run: |
+        set -euo pipefail
+
+
+    - name: Push
+      shell: bash
+      run: |
+        set -euo pipefail
+        TYPE="${{ inputs.type }}"
+        if [[ "$TYPE" == "tag" ]]; then
+          git push origin "$TAG"
+          echo "NEW_TAG=$TAG" >> $GITHUB_ENV
+          echo "new_tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Signed tag $TAG created and pushed."
+        elif [[ "$TYPE == "release" ]]; then
+          
+        fi

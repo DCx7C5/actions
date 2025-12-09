@@ -1,0 +1,44 @@
+name: "Initialize GPG Environment"
+description: "Initialize GPG Environment from GitHub Actions"
+author: "DCx7C5"
+
+
+inputs:
+  gpg_home:
+    required: false
+    description: "Path to GPG home directory"
+
+
+outputs:
+  gpg_home:
+    description: "Path to GPG home directory"
+    value: "${{ steps.create_dir.outputs.gpg_home }}"
+
+
+
+runs:
+  using: composite
+  steps:
+    - name: Create directory
+      shell: bash
+      id: create_dir
+      run: |
+        set -euo pipefail
+        if [[ -z "${{ inputs.gpg_home }}" ]]; then
+          export GNUPGHOME=$(mktemp -d /tmp/XXXXXXX)
+        else
+          export GNUPGHOME="${{ inputs.gpg_home }}"
+        fi
+        chmod 700 "$GNUPGHOME"
+        echo "GNUPGHOME=$GNUPGHOME" >> $GITHUB_ENV
+        echo "gpg_home=$GNUPGHOME" >> $GITHUB_OUTPUT
+        
+    - name: Setup GPG environment
+      shell: bash
+      id: gpg_setup
+      run: |
+        set -euo pipefail
+        echo "trust-model always" >"$GNUPGHOME/gpg.conf.d/trust.conf"
+        
+        gpg --list-secret-keys >/dev/null 2>&1 || true
+        echo "Successfully setup the environment"

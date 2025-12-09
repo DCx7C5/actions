@@ -1,0 +1,25 @@
+name: "Configure Git for GPG signing"
+description: "Configure Git for GPG signing from GitHub Actions"
+author: "DCx7C5"
+
+
+runs:
+  using: composite
+  steps:
+
+    - name: Configure Git for GPG signing
+      id: gitconfig
+      shell: bash
+      run: |
+        set -euo pipefail
+        GPG_PRIVATE_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
+        GPG_MAIL=$(gpg --list-secret-keys "$GPG_PRIVATE_KEY_ID" | grep uid | head -1 | awk -F '<' '{print $2}' | awk -F '>' '{print $1}')
+        GPG_NAME=$(gpg --list-secret-keys "$GPG_PRIVATE_KEY_ID" | grep uid | head -1 | awk -F '\\] ' '{print $2}' | awk '{print $1}')
+        git config --global user.name "$GPG_NAME"
+        git config --global user.email "$GPG_MAIL"
+        git config --global user.signingkey "$GPG_PRIVATE_KEY_ID"
+        git config --global commit.gpgsign true
+        git config --global tag.gpgsign true
+        git config --global tag.forceSignAnnotated true
+        git config --global gpg.program gpg
+        echo "key_id=$GPG_PRIVATE_KEY_ID" >> $GITHUB_OUTPUT

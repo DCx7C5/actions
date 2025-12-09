@@ -1,0 +1,45 @@
+name: "Create GPG Signing Subkey"
+description: "Create GPG Signing Key from GitHub Actions"
+author: "DCx7C5"
+
+inputs:
+  time:
+    description: "How long is key valid"
+    required: true
+  pass:
+    description: "Passphrase for encrypted GPG key"
+    required: true
+
+
+runs:
+  using: composite
+  steps:
+    - name: Generate SubKey
+      shell: bash
+      id: subkey_create
+      run: |
+        set -euo pipefail
+        
+        FPR=$(gpg --list-keys | head -2 | tail -1 | tr -d ' ')
+        
+        printf "${{ inputs.pass }}\n" | \
+        gpg --batch \
+            --pinentry-mode loopback \
+            --passphrase-fd 0 \
+            --homedir "$GNUPGHOME" \
+            --quick-add-key "$FPR" \
+            ed25519 sign ${{ inputs.time }}
+
+    - name: Subkey export
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        FPR=$(gpg --homedir "$GNUPGHOME" --with-subkey-fingerprints --list-keys | tail -n2 | tr -d ' \n')        
+        printf "${{ inputs.pass }}\n" | \
+        gpg --batch \
+            --pinentry-mode loopback \
+            --passphrase-fd 0 \
+            --homedir "$GNUPGHOME" \
+            --export-secret-subkey "${FPR}!" > subkey.gpg
+        echo "Subkey successfully exported"
