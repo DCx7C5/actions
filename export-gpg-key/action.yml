@@ -1,0 +1,36 @@
+name: "Export GPG Key"
+description: "Export GPG Signing Key from GitHub Actions"
+author: "DCx7C5"
+
+inputs:
+  pass:
+    description: "Passphrase for encrypted GPG key"
+    required: true
+  export_sub:
+    description: "Exports only Subkey true/false"
+    required: false
+    default: 'true'
+
+  export_path:
+    description: "Path to exported GPG key"
+    required: false
+    default: "subkey.gpg"
+
+runs:
+  using: composite
+  steps:
+    - name: GPG Key export
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        SUB=$([[ "${{ inputs.export_sub }}" == "true" ]] && echo "!")
+        FPR=$(gpg --homedir "$GNUPGHOME" --with-subkey-fingerprints --list-keys | tail -n2 | tr -d ' \n')        
+        
+        printf "${{ inputs.pass }}\n" | \
+        gpg --batch \
+            --pinentry-mode loopback \
+            --passphrase-fd 0 \
+            --homedir "$GNUPGHOME" \
+            --export-secret-subkey "${FPR}${SUB}" > ${{ inputs.export_path }}
+        echo "Subkey successfully exported"

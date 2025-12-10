@@ -30,6 +30,26 @@ runs:
             --quick-add-key "$FPR" \
             ed25519 sign ${{ inputs.time }}
 
+    - name: Change Passphrase
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        NEW_PASS=""
+        echo "::add-mask::$NEW_PASS"
+        NEW_PASS=$(tr -dc 'A-Za-z0-9!@.#$,\-\+%^&*' < /dev/urandom | head -c 32; echo)
+        FPR=$(gpg --list-keys | head -2 | tail -1 | tr -d ' ')
+        echo "new_pass=$NEW_PASS" 
+
+        printf "${{ inputs.pass }}\n$NEW_PASS\n$NEW_PASS\n" | \
+        gpg --batch \
+            --yes \
+            --pinentry-mode loopback \
+            --passphrase-fd 0 \
+            --homedir "$GNUPGHOME" \
+            --command-fd 0 \
+            --edit-key "$FPR" 'key 1' passwd save
+
     - name: Subkey export
       shell: bash
       run: |
@@ -43,3 +63,9 @@ runs:
             --homedir "$GNUPGHOME" \
             --export-secret-subkey "${FPR}!" > subkey.gpg
         echo "Subkey successfully exported"
+
+    - name: Upload secrets
+      shell: bash
+      run: |
+        set -euo pipefail
+        gh 

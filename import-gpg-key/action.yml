@@ -6,12 +6,17 @@ inputs:
   gpg_priv:
     description: "GPG private key"
     required: true
+  pass:
+    description: "GPG key passphrase"
+    required: true
   from_file:
     description: "To import from file"
     required: false
+    default: 'false'
   from_secrets:
     description: "To import from secrets"
     required: false
+    default: 'false'
 
 
 outputs:
@@ -24,29 +29,47 @@ runs:
   steps:
 
     - name: Import GPG Key from secret
-      id: import-secret
+      id: import_secret
       if: inputs.from_secrets == 'true'
       shell: bash
-      env:
-        GPG_PRIVATE_KEY: ${{ inputs.enc_gpg }}
       run: |
         set -euo pipefail
         
-        gpg --no-tty --batch --homedir "$GNUPGHOME" --import <(echo ${{ inputs.enc_gpg }})
-        GPG_PRIVATE_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
-        echo "$GPG_PRIVATE_KEY_ID:6:" | gpg --import-ownertrust --homedir "$GNUPGHOME"
-        echo "Key $GPG_PRIVATE_KEY_ID imported and trusted."
-        unset GPG_PRIVATE_KEY 
+        printf '${{ inputs.pass }}\n' | \
+        gpg \
+          --no-tty \
+          --batch \
+          --homedir "$GNUPGHOME" \
+          --pinentry-mode loopback \
+          --passphrase-fd 0 \
+          --import <(echo ${{ inputs.gpg_priv }})
+        
+        echo "Key imported"
+
 
     - name: Import GPG from file
-      id: import-file
+      id: import_file
       if: inputs.from_file == 'true'
       shell: bash
       run: |
         set -euo pipefail
         
-        gpg --no-tty --batch --homedir "$GNUPGHOME" --import ${{ inputs.enc_gpg }}
+        printf '${{ inputs.pass }}\n' | \
+        gpg \
+          --no-tty \
+          --batch \
+          --homedir "$GNUPGHOME" \
+          --pinentry-mode loopback \
+          --passphrase-fd 0 \
+          --import ${{ inputs.gpg_priv }}
+    
+        echo "Key imported"
+
+    - name: Set Trust
+      id: trust
+      shell: bash
+      run: |
+        set -euo pipefail
         GPG_PRIVATE_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
         echo "$GPG_PRIVATE_KEY_ID:6:" | gpg --import-ownertrust --homedir "$GNUPGHOME"
-        echo "Key $GPG_PRIVATE_KEY_ID imported and trusted."
-        unset GPG_PRIVATE_KEY 
+        echo "Key $GPG_PRIVATE_KEY_ID trusted."
