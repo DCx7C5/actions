@@ -16,17 +16,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
 
       - name: Setup GPG Home directory
         uses: DCx7C5/actions/init-gpg-env@v1
 
       - name: Import GPG Key
-        uses: DCx7C5/actions/import-gpg-keys@v1
+        uses: DCx7C5/actions/import-gpg-key@v1
         id: gpg
         with:
-          enc_gpg: "${{ secrets.GPG_INTERMEDIATE_KEY }}"
-          pass: "${{ secrets.GPG_INTERMEDIATE_PASS }}"
+
 
       - name: Delete Tag
         shell: bash
