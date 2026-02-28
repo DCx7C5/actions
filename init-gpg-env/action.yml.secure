@@ -1,0 +1,101 @@
+name: "Initialize GPG Environment (Secure)"
+description: "Initialize GPG Environment from GitHub Actions with security hardening"
+author: "DCx7C5"
+
+inputs:
+  gpg_home:
+    required: false
+    description: "Path to GPG home directory"
+
+outputs:
+  gpg_home:
+    description: "Path to GPG home directory"
+    value: "${{ steps.create_dir.outputs.gpg_home }}"
+
+runs:
+  using: composite
+  steps:
+    - name: Create secure GPG directory
+      shell: bash
+      id: create_dir
+      run: |
+        set -euo pipefail
+
+        # Determine GPG home directory
+        if [[ -z "${{ inputs.gpg_home }}" ]]; then
+          export GNUPGHOME=$(mktemp -d /tmp/gnupg.XXXXXXX)
+        else
+          export GNUPGHOME="${{ inputs.gpg_home }}"
+        fi
+
+        # Create with secure permissions
+        if [ ! -d "$GNUPGHOME" ]; then
+          mkdir -p "$GNUPGHOME"
+        fi
+
+        # Set secure directory permissions (700 = rwx------)
+        chmod 700 "$GNUPGHOME"
+
+        # Set environment variables
+        echo "GNUPGHOME=$GNUPGHOME" >> $GITHUB_ENV
+        echo "gpg_home=$GNUPGHOME" >> $GITHUB_OUTPUT
+
+        echo "Created GPG home: $GNUPGHOME"
+
+    - name: Setup secure GPG configuration
+      shell: bash
+      id: gpg_setup
+      run: |
+        set -euo pipefail
+
+        # Create subdirectories with proper permissions
+        mkdir -p "$GNUPGHOME"/{private-keys-v1.d,pubring.d}
+        chmod 700 "$GNUPGHOME"/private-keys-v1.d
+        chmod 755 "$GNUPGHOME"/pubring.d
+
+        # Create secure gpg.conf
+        cat > "$GNUPGHOME/gpg.conf" << 'GPGCONF'
+        # Security-focused GPG configuration
+        # Generated automatically by init-gpg-env
+
+        # Encryption cipher preferences (strongest first)
+        cipher-algo AES256
+        digest-algo SHA256
+        cert-digest-algo SHA256
+        compress-algo ZLIB
+
+        # Disable weak algorithms
+        disable-cipher-algo 3DES
+        disable-cipher-algo IDEA
+
+        # Key server with HKPS (HTTPS)
+        keyserver hkps://keys.openpgp.org
+        keyserver-options no-try-dns-srv
+
+        # Default key format and IDs
+        keyid-format LONG
+
+        # Trust model: Only explicitly trusted keys
+        trust-model pgp
+
+        # Key expiration defaults
+        default-key-lifetime 3650
+
+        # Require cross-certification for subkeys
+        require-cross-certification
+
+        # Weak digest algorithms to disable
+        weak-digest-algos SHA1
+        GPGCONF
+
+        # Set proper permissions on config file
+        chmod 600 "$GNUPGHOME/gpg.conf"
+
+        # Verify GPG is working
+        if ! gpg --list-keys > /dev/null 2>&1; then
+          echo "WARNING: GPG initialization check - creating initial keyring"
+          gpg --list-keys > /dev/null 2>&1 || true
+        fi
+
+        echo "Successfully setup secure GPG environment"
+

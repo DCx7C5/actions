@@ -9,7 +9,9 @@ inputs:
   pass:
     description: "Passphrase for encrypted GPG key"
     required: true
-
+  new_pass_name:
+    description: "Name of the secrets variable the new pass gets saved to"
+    required: true
 
 runs:
   using: composite
@@ -26,7 +28,6 @@ runs:
         gpg --batch \
             --pinentry-mode loopback \
             --passphrase-fd 0 \
-            --homedir "$GNUPGHOME" \
             --quick-add-key "$FPR" \
             ed25519 sign ${{ inputs.time }}
 
@@ -39,33 +40,15 @@ runs:
         echo "::add-mask::$NEW_PASS"
         NEW_PASS=$(tr -dc 'A-Za-z0-9!@.#$,\-\+%^&*' < /dev/urandom | head -c 32; echo)
         FPR=$(gpg --list-keys | head -2 | tail -1 | tr -d ' ')
-        echo "new_pass=$NEW_PASS" 
-
+        
+        echo "$NEW_PASS" | gh secret set "${{ inputs.new_pass_name }}" --body-stdin
+        
         printf "${{ inputs.pass }}\n$NEW_PASS\n$NEW_PASS\n" | \
         gpg --batch \
             --yes \
             --pinentry-mode loopback \
             --passphrase-fd 0 \
-            --homedir "$GNUPGHOME" \
             --command-fd 0 \
             --edit-key "$FPR" 'key 1' passwd save
-
-    - name: Subkey export
-      shell: bash
-      run: |
-        set -euo pipefail
         
-        FPR=$(gpg --homedir "$GNUPGHOME" --with-subkey-fingerprints --list-keys | tail -n2 | tr -d ' \n')        
-        printf "${{ inputs.pass }}\n" | \
-        gpg --batch \
-            --pinentry-mode loopback \
-            --passphrase-fd 0 \
-            --homedir "$GNUPGHOME" \
-            --export-secret-subkey "${FPR}!" > subkey.gpg
-        echo "Subkey successfully exported"
-
-    - name: Upload secrets
-      shell: bash
-      run: |
-        set -euo pipefail
-        gh 
+        unset NEW_PASS

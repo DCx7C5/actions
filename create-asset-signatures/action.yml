@@ -4,9 +4,6 @@ author: "DCx7C5"
 
 
 inputs:
-  gpg_home:
-    description: "Path to GNUPGHOME"
-    required: true
   tag:
     description: "Tag to create assets for"
     required: true
@@ -19,6 +16,7 @@ inputs:
     required: false
     default: 'true'
 
+
 outputs:
   assets:
     description: "Assets to upload"
@@ -28,8 +26,8 @@ runs:
   using: "composite"
   steps:
     - name: Create tar gz archive
-      shell: bash
       id: compress
+      shell: bash
       run: |
         set -euo pipefail
         TAG=${{ inputs.tag }}
@@ -50,8 +48,6 @@ runs:
       id: sign
       if: inputs.sign == 'true'
       shell: bash
-      env:
-        GNUPGHOME: ${{ inputs.gpg_home }}
       run: |
         set -euo pipefail
         while read -r file; do

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -eu
 
 # Escape special characters for MarkdownV2 (Telegram's strictest format)
 escape_markdown_v2() {

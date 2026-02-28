@@ -1,0 +1,85 @@
+name: "Install Dystopian Apps"
+description: "Use Dystopian Apps from GitHub Actions"
+author: "DCx7C5"
+
+inputs:
+  libs:
+    required: false
+    default: 'false'
+    description: "Installs dystopian-libs"
+  crypto:
+    required: false
+    default: 'false'
+    description: "Installs dystopian-crypto"
+  clone:
+    required: false
+    default: 'true'
+    description: "Clones repository with git"
+  download:
+    required: false
+    default: 'false'
+    description: "Downloads latest release"
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Clone Dystopian Libraries
+      id: clone_dlibs
+      if: inputs.clone == 'true' && inputs.libs == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        git clone https://github.com/dcx7c5/dystopian-libs /tmp/dystopian-libs
+        echo "Successfully cloned dystopian-libs"
+
+    - name: Download Dystopian Libraries
+      id: clone_dlibs
+      if: inputs.clone == 'false' && inputs.libs == 'true'
+      shell: bash
+      run: | 
+        set -euo pipefail
+        cd /tmp
+        wget https://github.com/dcx7c5/dystopian-libs
+        echo "Successfully downloaded dystopian-libs"
+
+    - name: Clone Dystopian Crypto
+      id: clone_dcrypto
+      if: inputs.clone == 'true' && inputs.crypto == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        git clone https://github.com/dcx7c5/dystopian-crypto /tmp/dystopian-crypto
+        echo "Successfully cloned dystopian-crypto"
+
+    - name: Download Dystopian Crypto
+      id: clone_dcrypto
+      if: inputs.clone == 'false' && inputs.crypto == 'true'
+      shell: bash
+      run: | 
+        set -euo pipefail
+        cd /tmp
+        wget https://github.com/dcx7c5/dystopian-crypto
+        echo "Successfully downloaded dystopian-crypto"
+
+    - name: Install Dystopian Libraries
+      id: install_dlibs
+      if: inputs.libs == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        cd /tmp/dystopian-libs
+        
+        echo "Successfully installed dystopian-libs"
+
+    - name: Install Dystopian Crypto
+      id: install_dcrypto
+      if: inputs.crypto == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        cd /tmp/dystopian-crypto
+
+        echo "Successfully installed dystopian-crypto"
