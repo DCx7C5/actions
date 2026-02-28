@@ -1,5 +1,5 @@
-name: "Create Signed Release"
-description: "Create a signed release from GitHub Actions"
+name: "Create & Push Signed Release"
+description: "Create & push a signed release from GitHub Actions"
 author: "DCx7C5"
 
 

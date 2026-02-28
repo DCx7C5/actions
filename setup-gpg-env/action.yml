@@ -2,11 +2,6 @@ name: "Setup GPG Environment"
 description: "Setup GPG Environment from GitHub Actions with security hardening"
 author: "DCx7C5"
 
-inputs:
-  gpg_home:
-    required: false
-    description: "Path to GPG home directory"
-
 outputs:
   gpg_home:
     description: "Path to GPG home directory"
@@ -30,7 +25,7 @@ runs:
 
         # Create with secure permissions
         if [ ! -d "$GNUPGHOME" ]; then
-          mkdir -p "$GNUPGHOME"
+          mkdir -p -- "$GNUPGHOME"
         fi
 
         # Set secure directory permissions (700 = rwx------)
@@ -38,7 +33,6 @@ runs:
 
         # Set environment variables
         echo "GNUPGHOME=$GNUPGHOME" >> $GITHUB_ENV
-        echo "gpg_home=$GNUPGHOME" >> $GITHUB_OUTPUT
 
         echo "Created GPG home: $GNUPGHOME"
 

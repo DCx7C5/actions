@@ -1,5 +1,5 @@
-name: "Create Signed Tag"
-description: "Create a signed tag from GitHub Actions"
+name: "Create & Push Signed Tag"
+description: "Create & push a signed tag from GitHub Actions"
 author: "DCx7C5"
 
 

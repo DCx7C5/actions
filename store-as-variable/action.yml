@@ -9,33 +9,54 @@ inputs:
   variable_name:
     required: true
     description: "Name of GitHub Variable to create or update"
-
-  github_token:
+  token:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
     default: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
-
+  var_type:
+    required: false
+    description: "Type of GitHub Variable (env or repo or org)"
+    default: 'org'
 
 
 runs:
   using: composite
-
   steps:
     - name: Checkout repository
       id: checkout
       uses: actions/checkout@v4
       with:
-        token: '${{ inputs.github_token }}'
+        token: '${{ inputs.token }}'
 
     - name: Setup GitHub CLI
       id: setup_gh
       uses: actions4gh/setup-gh@v1
       with:
-        token: ${{ inputs.github_token }}
+        token: ${{ inputs.token }}
 
-    - name: Store as GitHub Variable
-      id: store_as_variable
+    - name: Store as GitHub Repo Variable
+      if: inputs.var_type == 'repo'
+      id: store_as_repo_variable
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Store as GitHub Variable using gh CLI
+        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --repo "${{ github.repository }}" --visibility all || { echo "ERROR: Failed to store variable ${{ inputs.variable_name }}" >&2; exit 1; }
+        
+    - name: Store as GitHub Organisation Variable
+      if: inputs.var_type == 'org'
+      id: store_as_org_variable
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Store as GitHub Variable using gh CLI
+        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --org "${{ github.repository_owner }}" --visibility all || { echo "ERROR: Failed to store variable ${{ inputs.variable_name }}" >&2; exit 1; }
 
-
-      env:
-        GH_TOKEN: ${{ inputs.github_token }}
+    - name: Store as GitHub Environment Variable
+      if: inputs.var_type == 'env'
+      id: store_as_env_variable
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Store as GitHub Variable using gh CLI
+        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --env "${{ github.environment }}" --visibility all || { echo "ERROR: Failed to store variable ${{ inputs.variable_name }}" >&2; exit 1; }
