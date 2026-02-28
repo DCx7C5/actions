@@ -6,10 +6,18 @@ author: "DCx7C5"
 runs:
   using: composite
   steps:
+    - name: Checkout repository
+      id: checkout
+      uses: actions/checkout@v4
+
+    -
 
     - name: Configure Git for GPG signing
       id: gitconfig
       shell: bash
+      env:
+        GPG_TTY: ${{ env.GPG_TTY || '$(tty)' }}
+
       run: |
         set -euo pipefail
         GPG_PRIVATE_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
@@ -23,3 +31,31 @@ runs:
         git config --global tag.forceSignAnnotated true
         git config --global gpg.program gpg
         echo "key_id=$GPG_PRIVATE_KEY_ID" >> $GITHUB_OUTPUT
+
+    - name: Configure GitHub CLI for GPG signing
+      id: ghconfig
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        # Ensure gh CLI is installed
+        if ! command -v gh &> /dev/null; then
+          echo "GitHub CLI (gh) is not installed. Please install it first." >&2
+          exit 1
+        fi
+        
+        # Get GPG key information
+        GPG_PRIVATE_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
+        GPG_MAIL=$(gpg --list-secret-keys "$GPG_PRIVATE_KEY_ID" | grep uid | head -1 | awk -F '<' '{print $2}' | awk -F '>' '{print $1}')
+        GPG_NAME=$(gpg --list-secret-keys "$GPG_PRIVATE_KEY_ID" | grep uid | head -1 | awk -F '\\] ' '{print $2}' | awk '{print $1}')
+        
+        # Configure gh CLI with GPG key for commit signing
+        gh config set -h github.com gpg_key_id "$GPG_PRIVATE_KEY_ID"
+        
+        # Enable GPG signing for gh commands
+        gh config set -h github.com git_protocol https
+        
+        echo "key_id=$GPG_PRIVATE_KEY_ID" >> $GITHUB_OUTPUT
+        echo "gh_user=$GPG_NAME" >> $GITHUB_OUTPUT
+        echo "gh_email=$GPG_MAIL" >> $GITHUB_OUTPUT
+

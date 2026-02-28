@@ -1,0 +1,47 @@
+name: "Store As GitHub Secret"
+description: "Store as GitHub Secret from GitHub Actions with security hardening"
+author: "DCx7C5"
+
+inputs:
+  value:
+    required: true
+    description: "Value to store as GitHub Secret (can be multiline, e.g. for GPG keys)"
+  secret_name:
+    required: true
+    description: "Name of GitHub Secret to create or update"
+
+  github_token:
+    required: false
+    description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
+    default: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
+
+
+
+runs:
+  using: composite
+
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup GitHub CLI
+      uses: actions4gh/setup-gh@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Validate GPG key exists
+      id: validate_key
+
+      shell: bash
+      run: |
+        set -euo pipefail
+
+    - name: Store as GitHub Secret
+      id: store_public_as_secret
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        gpg --list-keys "${{ inputs.fingerprint }}" || { echo "ERROR: No GPG public key found with fingerprint ${{ inputs.fingerprint }}" >&2; exit 1; } | 

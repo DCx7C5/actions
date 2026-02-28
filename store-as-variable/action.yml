@@ -1,0 +1,41 @@
+name: "Store As GitHub Variable"
+description: "Store as GitHub Variable from GitHub Actions"
+author: "DCx7C5"
+
+inputs:
+  value:
+    required: true
+    description: "Value to store as GitHub Secret (can be multiline, e.g. for GPG keys)"
+  variable_name:
+    required: true
+    description: "Name of GitHub Variable to create or update"
+
+  github_token:
+    required: false
+    description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
+    default: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
+
+
+
+runs:
+  using: composite
+
+  steps:
+    - name: Checkout repository
+      id: checkout
+      uses: actions/checkout@v4
+      with:
+        token: '${{ inputs.github_token }}'
+
+    - name: Setup GitHub CLI
+      id: setup_gh
+      uses: actions4gh/setup-gh@v1
+      with:
+        token: ${{ inputs.github_token }}
+
+    - name: Store as GitHub Variable
+      id: store_as_variable
+
+
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}

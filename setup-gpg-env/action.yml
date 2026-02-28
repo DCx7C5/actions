@@ -1,5 +1,5 @@
-name: "Initialize GPG Environment (Secure)"
-description: "Initialize GPG Environment from GitHub Actions with security hardening"
+name: "Setup GPG Environment"
+description: "Setup GPG Environment from GitHub Actions with security hardening"
 author: "DCx7C5"
 
 inputs:
