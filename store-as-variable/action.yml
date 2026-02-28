@@ -13,7 +13,7 @@ inputs:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
     default: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
-  var_type:
+  variable_type:
     required: false
     description: "Type of GitHub Variable (env or repo or org)"
     default: 'org'
@@ -35,7 +35,7 @@ runs:
         token: ${{ inputs.token }}
 
     - name: Store as GitHub Repo Variable
-      if: inputs.var_type == 'repo'
+      if: inputs.variable_type == 'repo'
       id: store_as_repo_variable
       shell: bash
       run: |
@@ -44,7 +44,7 @@ runs:
         gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --repo "${{ github.repository }}" --visibility all || { echo "ERROR: Failed to store variable ${{ inputs.variable_name }}" >&2; exit 1; }
         
     - name: Store as GitHub Organisation Variable
-      if: inputs.var_type == 'org'
+      if: inputs.variable_type == 'org'
       id: store_as_org_variable
       shell: bash
       run: |
@@ -53,7 +53,7 @@ runs:
         gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --org "${{ github.repository_owner }}" --visibility all || { echo "ERROR: Failed to store variable ${{ inputs.variable_name }}" >&2; exit 1; }
 
     - name: Store as GitHub Environment Variable
-      if: inputs.var_type == 'env'
+      if: inputs.variable_type == 'env'
       id: store_as_env_variable
       shell: bash
       run: |

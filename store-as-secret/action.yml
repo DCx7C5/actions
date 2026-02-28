@@ -16,7 +16,7 @@ inputs:
   secret_type:
     required: false
     description: "Type of GitHub Secret (repo or org or env)"
-    default: 'repo'
+    default: 'org'
 
 runs:
   using: composite
