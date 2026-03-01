@@ -103,7 +103,9 @@ runs:
           echo "::notice::Public key imported successfully"
         fi
 
-        KEY_COUNT=$(gpg --list-keys --with-colons 2>/dev/null | grep -c "^pub:" || true)
+        KEY_COUNT_PUB=$(gpg --list-keys --with-colons 2>/dev/null | grep -c "^pub:" || true)
+        KEY_COUNT_SEC=$(gpg --list-secret-keys --with-colons 2>/dev/null | grep -c "^sec:" || true)
+        KEY_COUNT=$((KEY_COUNT_PUB + KEY_COUNT_SEC))
         echo "::notice::Total GPG keys available: $KEY_COUNT"
 
     - name: Import GPG Key from file
@@ -151,6 +153,7 @@ runs:
 
         gpg --list-keys | head -5
         
-        # Verify imported keys
-        KEY_COUNT=$(gpg --list-keys --with-colons 2>/dev/null | grep -c "^pub:" || true)
+        KEY_COUNT_PUB=$(gpg --list-keys --with-colons 2>/dev/null | grep -c "^pub:" || true)
+        KEY_COUNT_SEC=$(gpg --list-secret-keys --with-colons 2>/dev/null | grep -c "^sec:" || true)
+        KEY_COUNT=$((KEY_COUNT_PUB + KEY_COUNT_SEC))
         echo "::notice::Total GPG keys available: $KEY_COUNT"

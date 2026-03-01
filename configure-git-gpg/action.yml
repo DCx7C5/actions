@@ -59,6 +59,7 @@ runs:
         GPG_NAME="GitHub Actions"
         GPG_MAIL="actions@github.com"
         GPG_EMPTY=$(gpg --with-colons --list-secret-keys 2>/dev/null | wc -l)
+        UID_LINE=""
         
         if [[ -n "$INPUT_FINGERPRINT" && "$GPG_EMPTY" -eq 0 ]]; then
           echo "::error::Provided fingerprint not found in GNUPGHOME: $GNUPGHOME" >&2
@@ -80,7 +81,7 @@ runs:
           UID_LINE=$(gpg --with-colons --list-secret-keys "$FINGERPRINT" 2>/dev/null | awk -F: '/^uid:/ {print $0; exit}')
         fi
         
-        if [ -n "$UID_LINE" ]; then
+        if [[ -n "$FINGERPRINT" && -n "$UID_LINE" ]]; then
           UID_DECODED=$(echo "$UID_LINE" | cut -d: -f10 | sed 's/%20/ /g; s/%3C/</g; s/%3E/>/g; s/%40/@/g')
           if [[ "$UID_DECODED" =~ ^([^<]+)[[:space:]]+\<(.*)\>$ ]]; then
             GPG_NAME="${BASH_REMATCH[1]//^[[:space:]]+|[[:space:]]+$/}"
