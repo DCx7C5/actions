@@ -1,0 +1,79 @@
+name: "Create detached file signatures"
+description: "Create detached OpenPGP signatures for files (using gpg)"
+author: "DCx7C5"
+
+inputs:
+  files:
+    required: false
+    description: "List of files to sign"
+    default: "*.tar.gz"
+  sig_ext:
+    required: false
+    description: "File extension to use for detached signatures (default: sig)"
+    default: "sig"
+  workspace_dir:
+    required: false
+    description: "Workspace directory (default: ${{ github.workspace }})"
+    default: ${{ github.workspace }}
+
+runs:
+  using: composite
+  steps:
+    - name: "Create file signatures"
+      id: sign_files
+      shell: bash
+      working-directory: ${{ inputs.workspace_dir }}
+      run: |
+        set -euo pipefail
+        
+        if [[ "$FILES_PATTERN" == *" "* ]]; then
+          mapfile -t files < <(echo "$FILES_PATTERN" | tr ' ' '\n' | xargs -n1)
+        else
+          mapfile -t files < <(find . -maxdepth 1 -type f -name "$FILES_PATTERN" | sort)
+        fi
+
+        if [ ${#files[@]} -eq 0 ]; then
+          echo "::warning::No files matched pattern '$FILES_PATTERN'"
+          echo "signed_files=" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        echo "Found ${#files[@]} files to sign: ${files[*]}"
+        signed_list=()
+        
+        for file in "${files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "::warning::File not found: $file"
+            continue
+          fi
+        
+          sigfile="${file}.${{ inputs.sig_ext }}"
+          gpg_cmd=(gpg --batch --yes --armor --detach-sign --output "$sigfile")
+
+          if [ -n "$KEY_ID" ]; then
+            gpg_cmd+=(--default-key "$KEY_ID")
+          fi
+
+          if [ -n "$PASSPHRASE" ]; then
+            gpg_cmd+=(--passphrase-fd 0 --pinentry-mode=loopback)
+            echo "$PASSPHRASE" | "${gpg_cmd[@]}" "$file"
+          else
+            "${gpg_cmd[@]}" "$file"
+          fi
+
+          if [ -f "$sigfile" ]; then
+            echo "Created detached signature: $sigfile"
+            signed_list+=("$sigfile")
+          else
+            echo "::error::Failed to create signature for $file"
+            exit 1
+          fi
+        done
+        
+        echo "signed_files=$(IFS=, ; echo "${signed_list[*]}")" >> $GITHUB_OUTPUT
+
+    - name: Show created signatures
+      shell: bash
+      run: |
+        echo "Created signatures:"
+        ls -l "*.{{ inputs.sig_ext }}" || echo "No .${{ inputs.sig_ext }} files found"

@@ -4,7 +4,8 @@ description: Run any command inside a clean Arch Linux base-devel container with
 inputs:
   gpg_home:
     description: Path to GNUPGHOME (passed from import-gpg action)
-    required: true
+    required: false
+    default: "${{ github.workspace }}/.gnupg"
   dir:
     description: Directory to run from
     required: false
@@ -15,12 +16,11 @@ inputs:
 
 runs:
   using: docker
-  image: Dockerfile.secure
+  image: Dockerfile
   env:
     USE_CCACHE: 1
-    CCACHE_DIR: /github/workspace/.ccache
-    GNUPGHOME: /github/workspace/.gnupg
+    CCACHE_DIR: "${{ github.workspace }}/.ccache"
+    GNUPGHOME: "${{ github.workspace }}/.gnupg"
   args:
     - ${{ inputs.dir }}
     - ${{ inputs.run }}
-

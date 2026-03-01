@@ -1,6 +1,5 @@
-FROM archlinux:base-devel@sha256:abc123def456
+FROM archlinux:base-devel-latest
 
-# Set locale
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
 # Security: Update system packages
@@ -30,21 +29,12 @@ RUN set -euo pipefail && \
     chmod 700 /home/builder/.gnupg && \
     chown -R builder:builder /home/builder/.gnupg
 
-# Switch to non-root user
 USER builder
 WORKDIR /github/workspace
 
-# Copy secure entrypoint
-COPY --chown=builder:builder entrypoint.sh.secure /entrypoint.sh
+COPY --chown=builder:builder entrypoint.sh /entrypoint.sh
 RUN chmod 755 /entrypoint.sh
 
-# Security: Run as non-root
 ENTRYPOINT ["/entrypoint.sh"]
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD [ -d /home/builder/.gnupg ] || exit 1
-
-LABEL org.dystopian.description="Secure Arch Linux builder container" \
-      org.dystopian.security="hardened"
-
+LABEL org.dystopian.description="Secure Arch Linux builder container"

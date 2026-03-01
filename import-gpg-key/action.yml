@@ -2,6 +2,7 @@ name: "Import GPG Key (Secure)"
 description: "Import GPG Keys from GitHub Actions with security hardening"
 author: "DCx7C5"
 
+
 inputs:
   gpg_priv:
     required: false
@@ -23,10 +24,6 @@ inputs:
     required: false
     default: 'false'
     description: "To import from secrets"
-  dcrypto:
-    required: false
-    default: 'false'
-    description: "Uses dystopian-crypto management tool"
 
 runs:
   using: composite
@@ -60,7 +57,7 @@ runs:
         fi
 
     - name: Import GPG Key from secret
-      if: inputs.from_secrets == 'true' && inputs.dcrypto == 'false'
+      if: inputs.from_secrets == 'true'
       shell: bash
       run: |
         set -euo pipefail
@@ -104,7 +101,7 @@ runs:
         echo "Total GPG keys available: $KEY_COUNT"
 
     - name: Import GPG Key from file
-      if: inputs.from_file == 'true' && inputs.dcrypto == 'false'
+      if: inputs.from_file == 'true'
       shell: bash
       run: |
         set -euo pipefail

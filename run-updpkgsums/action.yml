@@ -1,0 +1,52 @@
+name: "Run updpkgsums"
+description: "Updates checksums in PKGBUILD using updpkgsums (Arch Linux tool)"
+author: "DCx7C5"
+
+inputs:
+  path:
+    description: "Directory containing PKGBUILD (default: current directory)"
+    required: false
+    default: "."
+  pkgname:
+    description: "Optional: name of the package (if multiple PKGBUILDs exist)"
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Install Arch build dependencies
+      shell: bash
+      run: |
+        sudo pacman-key --init
+        sudo pacman-key --populate archlinux
+        sudo pacman -Syu --noconfirm
+        sudo pacman -S --noconfirm --needed base-devel git pacman-contrib
+
+    - name: Run updpkgsums
+      shell: bash
+      working-directory: ${{ inputs.path }}
+      run: |
+        set -euo pipefail
+
+        if [[ -n "${{ inputs.pkgname }}" ]]; then
+          TARGET="${{ inputs.pkgname }}/PKGBUILD"
+        else
+          TARGET="PKGBUILD"
+        fi
+
+        if [[ ! -f "$TARGET" ]]; then
+          echo "::error::PKGBUILD not found at $TARGET"
+          exit 1
+        fi
+
+        echo "Running updpkgsums on $TARGET ..."
+        updpkgsums "$TARGET"
+
+        # Optional: show diff for debugging / PRs
+        git diff "$TARGET" || true
+
+        echo "Checksums updated."
+        echo "Changed lines:"
+        git diff --color=always "$TARGET" | cat || echo "No changes detected."
+

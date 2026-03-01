@@ -1,0 +1,76 @@
+name: "Generate .SRCINFO"
+description: "Creates/updates .SRCINFO from PKGBUILD using makepkg --printsrcinfo"
+author: "DCx7C5"
+
+inputs:
+  path:
+    description: "Directory containing PKGBUILD (default: current directory)"
+    required: false
+    default: "."
+  pkgname:
+    description: "Optional: name of the package (if multiple PKGBUILDs exist)"
+    required: false
+    default: ""
+  force-overwrite:
+    description: "Overwrite existing .SRCINFO even if it exists"
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Arch build dependencies
+      shell: bash
+      run: |
+        sudo pacman-key --init
+        sudo pacman-key --populate archlinux
+        sudo pacman -Syu --noconfirm
+        sudo pacman -S --noconfirm --needed base-devel git pacman-contrib
+
+    - name: Generate .SRCINFO
+      shell: bash
+      working-directory: ${{ inputs.path }}
+      run: |
+        set -euo pipefail
+
+        if [[ -n "${{ inputs.pkgname }}" ]]; then
+          PKGDIR="${{ inputs.pkgname }}"
+          TARGET="$PKGDIR/PKGBUILD"
+          SRCINFO="$PKGDIR/.SRCINFO"
+        else
+          PKGDIR="."
+          TARGET="PKGBUILD"
+          SRCINFO=".SRCINFO"
+        fi
+
+        if [[ ! -f "$TARGET" ]]; then
+          echo "::error::PKGBUILD not found at $TARGET"
+          exit 1
+        fi
+
+        if [[ -f "$SRCINFO" && "${{ inputs.force-overwrite }}" != "true" ]]; then
+          echo "::notice::.SRCINFO already exists → skipping (set force-overwrite=true to override)"
+          exit 0
+        fi
+
+        echo "Generating .SRCINFO from $TARGET ..."
+        makepkg --printsrcinfo > "$SRCINFO"
+
+        # Show preview
+        echo "Generated .SRCINFO preview:"
+        head -n 30 "$SRCINFO" | cat
+
+        # Optional: validate basic format
+        if grep -q "^pkgname = " "$SRCINFO"; then
+          echo ".SRCINFO looks valid."
+        else
+          echo "::warning::Generated .SRCINFO seems empty or malformed"
+        fi
+
+    - name: Upload .SRCINFO (artifact)
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: srcinfo
+        path: ${{ inputs.path }}/.SRCINFO
+        if-no-files-found: warn

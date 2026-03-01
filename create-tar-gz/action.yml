@@ -1,0 +1,47 @@
+name: "Create Tar.gz Archive"
+description: "Create a tar.gz archive of the repository or specified files"
+author: "DCx7C5"
+
+inputs:
+  suffix:
+    description: "Suffix to append to the file name (default: tag name)"
+    required: false
+    default: ''
+  files:
+    description: "Files to include in the tar.gz archive (default: all files in the repository)"
+    required: false
+    default: '*'
+  compress_algorithm:
+    description: "Compression algorithm to use (default: gz)"
+    required: false
+    default: 'gz'
+
+outputs:
+  path:
+    description: "Path to the created tar.gz file"
+    value: ${{ steps.compress.outputs.file_path }}
+
+
+runs:
+  using: composite
+  steps:
+    - id: compress
+      shell: bash
+      run: |
+        set -euo pipefail
+        local TAG _file_name _ext
+        
+        if [[ -n "${{ inputs.suffix }}" ]]; then
+          TAG="-${{ inputs.suffix }}"
+        fi
+
+        _file_name="$(basename $(pwd))${TAG}"
+        _ext="${{ inputs.compress_algorithm }}"
+        
+        if [[ -z "${{ inputs.files }}" ]]; then
+          find . -name "*.tar.*" | xargs tar -czf "${_file_name}.tar.${_ext}" --
+        elif [[ "${{ inputs.files }}" == "*" ]]; then
+          tar -cvf "${_file_name}.tar.${_ext}" -T <(echo "${{ inputs.files }})
+        fi
+        
+        echo "file_path=${_file_name}.tar.gz" >> $GITHUB_OUTPUT

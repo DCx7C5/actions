@@ -1,10 +1,4 @@
 #!/bin/bash
-# Secure entrypoint script for run-arch-cmd action
-# Improvements:
-# - Proper error handling with trap
-# - Input validation
-# - Secure file descriptor usage
-# - Logging
 
 set -euo pipefail
 
@@ -31,7 +25,6 @@ fi
 cd "$WORK_DIR" || exit 1
 
 # Setup GPG environment with security
-export GNUPGHOME=/github/workspace/.gnupg
 if ! mkdir -p "$GNUPGHOME" 2>/dev/null; then
   echo "WARNING: Could not create GNUPGHOME, may already exist"
 fi
@@ -59,4 +52,3 @@ fi
 
 echo "Command completed successfully"
 exit 0
-
