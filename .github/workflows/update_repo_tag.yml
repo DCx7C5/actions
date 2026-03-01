@@ -16,18 +16,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
 
-      - name: Delete old Tag
+      - name: Delete old tag (if exists)
         shell: bash
         run: |
           set -euo pipefail
-          echo "Deleting old Tag"
-          git tag --delete "v1" || true
-          git push --delete origin "v1" || true
-          echo "Tag successfully deleted everywhere"
+          OLD_TAG="v1"
+            
+          if git rev-parse "$OLD_TAG" >/dev/null 2>&1; then
+            echo "Deleting local tag $OLD_TAG"
+            git tag --delete "$OLD_TAG"
+          fi
+            
+          git push origin --delete "$OLD_TAG" 2>/dev/null || true
+          echo "Old tag $OLD_TAG removed (or didn't exist)"
 
       - name: Create new Tag and Release
         uses: DCx7C5/actions/create-tag-and-release@v1
         with:
-          version: "1"
+          version: "v1"
