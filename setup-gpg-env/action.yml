@@ -46,34 +46,30 @@ runs:
 
         cat > "$GNUPGHOME/gpg.conf" << 'GPGCONF'
 
-        # Encryption cipher preferences (strongest first)
-        cipher-algo AES256
-        digest-algo SHA256
+        # Strong defaults
+        personal-cipher-preferences AES256 AES192 AES
+        personal-digest-preferences SHA256 SHA384 SHA512 SHA224
         cert-digest-algo SHA256
-        compress-algo ZLIB
-
-        # Disable weak algorithms
-        disable-cipher-algo 3DES
-        disable-cipher-algo IDEA
-
-        # Key server with HKPS (HTTPS)
+        default-preference-list SHA512 SHA384 SHA256 AES256 AES192 AES ZLIB
+        
+        # Disable weak legacy algorithms
+        disable-cipher-algo 3DES IDEA CAST5 BLOWFISH TWOFISH
+        weak-digest-algos MD5 SHA1 RIPEMD160
+        
+        # Keyserver (HKPS = secure)
         keyserver hkps://keys.openpgp.org
-        keyserver-options no-try-dns-srv
-
-        # Default key format and IDs
+        keyserver-options auto-key-retrieve
+        
+        # Output formatting
         keyid-format LONG
-
-        # Trust model: Only explicitly trusted keys
+        with-fingerprint
+        
+        # Trust & security
         trust-model pgp
-
-        # Key expiration defaults
-        default-key-lifetime 3650
-
-        # Require cross-certification for subkeys
         require-cross-certification
-
-        # Weak digest algorithms to disable
-        weak-digest-algos SHA1
+        
+        # No comments in output (cleaner)
+        no-comments
         GPGCONF
 
         # Set proper permissions on config file
