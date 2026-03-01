@@ -17,7 +17,8 @@ runs:
         set -euo pipefail
 
         if [[ -z "${{ inputs.gpg_home }}" ]]; then
-          export GNUPGHOME=$(mktemp -d ./.gnupg.XXXXXXX)
+          GNUPGHOME=$(mktemp -d .gnupg.XXXXXXX)
+          export GNUPGHOME="$(pwd)/${GNUPGHOME}"
         else
           export GNUPGHOME="${{ inputs.gpg_home }}"
         fi
