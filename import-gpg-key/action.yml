@@ -92,7 +92,7 @@ runs:
                  --batch \
                  --pinentry-mode loopback \
                  --passphrase-fd 3 \
-                 --import <(printf '%s\n' "${{ inputs.gpg_priv }}") 2>/dev/null; then
+                 --import <(echo "${{ inputs.gpg_priv }}"); then
             echo "::error::Failed to import private key" >&2
             exec 3>&-
             exit 1
@@ -103,7 +103,7 @@ runs:
         fi
 
         if [ -n "${{ inputs.gpg_pub }}" ]; then
-          if ! gpg --no-tty --batch --import <(printf '%s\n' "${{ inputs.gpg_pub }}") 2>/dev/null; then
+          if ! gpg --no-tty --batch --import <(echo "${{ inputs.gpg_pub }}") 2>/dev/null; then
             echo "::error::Failed to import public key" >&2
             exit 1
           fi
