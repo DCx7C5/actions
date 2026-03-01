@@ -17,21 +17,50 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup GPG Environment
+        id: gpg_setup
+        uses: DCx7C5/actions/setup-gpg-env@v1
+
+      - name: Import GPG key
+        id: gpg_import
+        uses: DCx7C5/actions/import-gpg-key@v1
+        env:
+          GNUPGHOME: ${{ steps.setup_gpg.outputs.gpg_home }}
+        with:
+          from_secrets: 'true'
+          gpg_priv: ${{ secrets.GPG_PRIVATE_KEY }}
+          pass: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Configure Git clients to sign with GPG
+        id: git_config
+        uses: DCx7C5/actions/configure-git-gpg@v1
+        env:
+          GNUPGHOME: ${{ steps.setup_gpg.outputs.gpg_home }}
+
       - name: Delete old tag (if exists)
+        id: tag_delete
         shell: bash
+        env:
+          GNUPGHOME: ${{ steps.setup_gpg.outputs.gpg_home }}
         run: |
           set -euo pipefail
           OLD_TAG="v1"
-            
           if git rev-parse "$OLD_TAG" >/dev/null 2>&1; then
             echo "Deleting local tag $OLD_TAG"
             git tag --delete "$OLD_TAG"
           fi
-            
+          
           git push origin --delete "$OLD_TAG" 2>/dev/null || true
           echo "Old tag $OLD_TAG removed (or didn't exist)"
 
       - name: Create new Tag and Release
+        id: create_release
         uses: DCx7C5/actions/create-tag-and-release@v1
+        env:
+          GNUPGHOME: ${{ steps.setup_gpg.outputs.gpg_home }}
         with:
+          fingerprint: "${{ steps.gpg_import.outputs.fingerprint }}"
           version: "v1"
+          gpg_home: "${{ steps.setup_gpg.outputs.gpg_home }}"
+          commit_msg: "Release v1"
+          release_notes: "Release v1 - Updated tag to point to latest commit on main branch
