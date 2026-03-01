@@ -35,13 +35,13 @@ jobs:
         id: git_config
         uses: DCx7C5/actions/configure-git-gpg@v1
         env:
-          GNUPGHOME: ${{ steps.setup_gpg.outputs.gpg_home }}
+          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
 
       - name: Delete old tag (if exists)
         id: tag_delete
         shell: bash
         env:
-          GNUPGHOME: ${{ steps.setup_gpg.outputs.gpg_home }}
+          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         run: |
           set -euo pipefail
           OLD_TAG="v1"
@@ -57,10 +57,10 @@ jobs:
         id: create_release
         uses: DCx7C5/actions/create-tag-and-release@v1
         env:
-          GNUPGHOME: ${{ steps.setup_gpg.outputs.gpg_home }}
+          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
           fingerprint: "${{ steps.gpg_import.outputs.fingerprint }}"
           version: "v1"
-          gpg_home: "${{ steps.setup_gpg.outputs.gpg_home }}"
+          gpg_home: "${{ steps.gpg_setup.outputs.gpg_home }}"
           commit_msg: "Release v1"
           release_notes: "Release v1 - Updated tag to point to latest commit on main branch"
