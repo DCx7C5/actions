@@ -6,11 +6,7 @@ author: "DCx7C5"
 runs:
   using: composite
   steps:
-    - name: Checkout repository
-      id: checkout
-      uses: actions/checkout@v4
-
-    -
+    - uses: actions/checkout@v4
 
     - name: Configure Git for GPG signing
       id: gitconfig
@@ -58,4 +54,3 @@ runs:
         echo "key_id=$GPG_PRIVATE_KEY_ID" >> $GITHUB_OUTPUT
         echo "gh_user=$GPG_NAME" >> $GITHUB_OUTPUT
         echo "gh_email=$GPG_MAIL" >> $GITHUB_OUTPUT
-
