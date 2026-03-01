@@ -16,22 +16,18 @@ runs:
       run: |
         set -euo pipefail
 
-        # Determine GPG home directory
         if [[ -z "${{ inputs.gpg_home }}" ]]; then
-          export GNUPGHOME=$(mktemp -d /tmp/gnupg.XXXXXXX)
+          export GNUPGHOME=$(mktemp -d ./.gnupg.XXXXXXX)
         else
           export GNUPGHOME="${{ inputs.gpg_home }}"
         fi
 
-        # Create with secure permissions
         if [ ! -d "$GNUPGHOME" ]; then
           mkdir -p -- "$GNUPGHOME"
         fi
 
-        # Set secure directory permissions (700 = rwx------)
         chmod 700 "$GNUPGHOME"
 
-        # Set environment variables
         echo "GNUPGHOME=$GNUPGHOME" >> $GITHUB_ENV
 
         echo "Created GPG home: $GNUPGHOME"
@@ -42,15 +38,11 @@ runs:
       run: |
         set -euo pipefail
 
-        # Create subdirectories with proper permissions
         mkdir -p "$GNUPGHOME"/{private-keys-v1.d,pubring.d}
         chmod 700 "$GNUPGHOME"/private-keys-v1.d
         chmod 755 "$GNUPGHOME"/pubring.d
 
-        # Create secure gpg.conf
         cat > "$GNUPGHOME/gpg.conf" << 'GPGCONF'
-        # Security-focused GPG configuration
-        # Generated automatically by init-gpg-env
 
         # Encryption cipher preferences (strongest first)
         cipher-algo AES256
@@ -87,9 +79,8 @@ runs:
 
         # Verify GPG is working
         if ! gpg --list-keys > /dev/null 2>&1; then
-          echo "WARNING: GPG initialization check - creating initial keyring"
+          echo "::warning::WARNING: GPG initialization check - creating initial keyring"
           gpg --list-keys > /dev/null 2>&1 || true
         fi
 
         echo "Successfully setup secure GPG environment"
-
