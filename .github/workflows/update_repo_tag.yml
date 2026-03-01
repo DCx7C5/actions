@@ -18,19 +18,8 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
 
-      - name: Setup GPG Home directory
-        uses: DCx7C5/actions/init-gpg-env@v1
-
-      - name: Import GPG Key
-        uses: DCx7C5/actions/import-gpg-key@v1
-        id: gpg
-        with:
-
-
-      - name: Delete Tag
+      - name: Delete old Tag
         shell: bash
-        env:
-          GH_TOKEN: "${{ secrets.ACTIONS_TAG_PAT }}"
         run: |
           set -euo pipefail
           echo "Deleting old Tag"
@@ -38,10 +27,7 @@ jobs:
           git push --delete origin "v1" || true
           echo "Tag successfully deleted everywhere"
 
-      - name: Create and Push new Tag
-        uses: DCx7C5/actions/create-and-push-signed-tag@v1
-        env:
-          GH_TOKEN: "${{ secrets.ACTIONS_TAG_PAT }}"
+      - name: Create new Tag and Release
+        uses: DCx7C5/actions/create-tag-and-release@v1
         with:
           version: "1"
-          gpg_home: "${{ steps.gpg.outputs.gpg_home }}"
