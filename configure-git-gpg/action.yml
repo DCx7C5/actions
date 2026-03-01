@@ -76,7 +76,9 @@ runs:
           FINGERPRINT=""
         fi
         
-        UID_LINE=$(gpg --with-colons --list-keys "$FINGERPRINT" 2>/dev/null | awk -F: '/^uid:/ {print $0; exit}')
+        if [[ -n "$FINGERPRINT" ]]; then
+          UID_LINE=$(gpg --with-colons --list-secret-keys "$FINGERPRINT" 2>/dev/null | awk -F: '/^uid:/ {print $0; exit}')
+        fi
         
         if [ -n "$UID_LINE" ]; then
           UID_DECODED=$(echo "$UID_LINE" | cut -d: -f10 | sed 's/%20/ /g; s/%3C/</g; s/%3E/>/g; s/%40/@/g')

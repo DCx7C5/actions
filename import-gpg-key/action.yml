@@ -77,7 +77,7 @@ runs:
         # Import private key if provided
         if [ -n "${{ inputs.gpg_priv }}" ]; then
           if [ -z "${{ inputs.gpg_pass }}" ]; then
-            echo "ERROR: Passphrase required for private key import" >&2
+            echo "::error::ERROR: Passphrase required for private key import" >&2
             exit 1
           fi
 
@@ -85,27 +85,26 @@ runs:
              gpg --no-tty --batch --pinentry-mode loopback \
                  --passphrase-fd 3 \
                  --import <(echo "${{ inputs.gpg_priv }}") 2>/dev/null; then
-            echo "ERROR: Failed to import private key" >&2
+            echo "::error::ERROR: Failed to import private key" >&2
             exec 3>&-
             exit 1
           fi
 
           exec 3>&-
-          echo "✓ Private key imported successfully"
+          echo "::notice::Private key imported successfully"
         fi
 
         if [ -n "${{ inputs.gpg_pub }}" ]; then
           if ! gpg --no-tty --batch --import <(echo "${{ inputs.gpg_pub }}") 2>/dev/null; then
-            echo "ERROR: Failed to import public key" >&2
+            echo "::error::ERROR: Failed to import public key" >&2
             exit 1
           fi
 
-          echo "✓ Public key imported successfully"
+          echo "::notice::Public key imported successfully"
         fi
 
-        # Verify imported keys
         KEY_COUNT=$(gpg --list-keys --with-colons 2>/dev/null | grep -c "^pub:" || true)
-        echo "Total GPG keys available: $KEY_COUNT"
+        echo "::notice::Total GPG keys available: $KEY_COUNT"
 
     - name: Import GPG Key from file
       if: inputs.from_file == 'true'
@@ -116,13 +115,13 @@ runs:
         trap 'unset GPG_PASSPHRASE' EXIT
 
         if [ ! -f "${{ inputs.gpg_priv }}" ] && [ ! -f "${{ inputs.gpg_pub }}" ]; then
-          echo "ERROR: No key files found" >&2
+          echo "::error::ERROR: No key files found" >&2
           exit 1
         fi
 
         if [ -f "${{ inputs.gpg_priv }}" ]; then
           if [ -z "${{ inputs.gpg_pass }}" ]; then
-            echo "ERROR: Passphrase required for private key import from file" >&2
+            echo "::error::ERROR: Passphrase required for private key import from file" >&2
             exit 1
           fi
 
@@ -130,7 +129,7 @@ runs:
              gpg --no-tty --batch --pinentry-mode loopback \
                  --passphrase-fd 3 \
                  --import "${{ inputs.gpg_priv }}" 2>/dev/null; then
-            echo "ERROR: Failed to import private key from file" >&2
+            echo "::error::ERROR: Failed to import private key from file" >&2
             exec 3>&-
             exit 1
           fi
@@ -138,16 +137,20 @@ runs:
           exec 3>&-
 
           shred -vfz -n 3 "${{ inputs.gpg_priv }}" || rm -f "${{ inputs.gpg_priv }}"
-          echo "✓ Private key imported and secure file removed"
+          echo "::notice::Private key imported and secure file removed"
         fi
 
         if [ -f "${{ inputs.gpg_pub }}" ]; then
           if ! gpg --no-tty --batch --import "${{ inputs.gpg_pub }}" 2>/dev/null; then
-            echo "ERROR: Failed to import public key from file" >&2
+            echo "::error::ERROR: Failed to import public key from file" >&2
             exit 1
           fi
 
-          echo "✓ Public key imported successfully"
+          echo "::notice::Public key imported successfully"
         fi
 
         gpg --list-keys | head -5
+        
+        # Verify imported keys
+        KEY_COUNT=$(gpg --list-keys --with-colons 2>/dev/null | grep -c "^pub:" || true)
+        echo "::notice::Total GPG keys available: $KEY_COUNT"
