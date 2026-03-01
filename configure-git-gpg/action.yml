@@ -32,12 +32,27 @@ runs:
       run: |
         echo "::add-mask::${{ inputs.fingerprint }}"
 
+    - name: Get GNUPGHOME with fallback
+      shell: bash
+      id: get_gpg_home
+      run: |
+        if [[ -n "${{ inputs.gpg_home }}" ]]; then
+          echo "gpg_home=${{ inputs.gpg_home }}" >> $GITHUB_OUTPUT
+        elif [[ -n "$GNUPGHOME" ]]; then
+          echo "gpg_home=$GNUPGHOME" >> $GITHUB_OUTPUT
+        elif [[ -z "$GNUPGHOME" ]]; then
+          echo "gpg_home=${{ inputs.gpg_home }}" >> $GITHUB_OUTPUT
+        else
+          echo "::error::Could not determine GNUPGHOME directory" >&2
+          exit 1
+        fi
+
     - name: Parse Key Credentials
       id: parse_gpg
       shell: bash
       env:
         FINGERPRINT: ${{ inputs.fingerprint }}
-        GNUPGHOME: ${{ inputs.gpg_home }}
+        GNUPGHOME: ${{ steps.get_gpg_home.outputs.gpg_home }}
       run: |
         set -euo pipefail
         
@@ -79,7 +94,7 @@ runs:
       id: gitconfig
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home }}
+        GNUPGHOME: ${{ steps.get_gpg_home.outputs.gpg_home }}
         GPG_NAME: ${{ steps.parse_gpg.outputs.gpg_name }}
         GPG_MAIL: ${{ steps.parse_gpg.outputs.gpg_mail }}
         FINGERPRINT: ${{ steps.parse_gpg.outputs.fingerprint }}
@@ -101,7 +116,7 @@ runs:
       id: ghconfig
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home }}
+        GNUPGHOME: ${{ steps.get_gpg_home.outputs.gpg_home }}
         GPG_NAME: ${{ steps.parse_gpg.outputs.gpg_name }}
         GPG_MAIL: ${{ steps.parse_gpg.outputs.gpg_mail }}
         FINGERPRINT: ${{ steps.parse_gpg.outputs.fingerprint }}
