@@ -29,6 +29,7 @@ runs:
         chmod 700 "$GNUPGHOME"
 
         echo "GNUPGHOME=$GNUPGHOME" >> $GITHUB_ENV
+        echo "gpg_home=$GNUPGHOME" >> $GITHUB_OUTPUT
 
         echo "Created GPG home: $GNUPGHOME"
 
@@ -79,7 +80,7 @@ runs:
 
         # Verify GPG is working
         if ! gpg --list-keys > /dev/null 2>&1; then
-          echo "::warning::WARNING: GPG initialization check - creating initial keyring"
+          echo "::warning::GPG initialization check - creating initial keyring"
           gpg --list-keys > /dev/null 2>&1 || true
         fi
 
