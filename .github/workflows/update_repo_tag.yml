@@ -25,7 +25,7 @@ jobs:
         id: gpg_import
         uses: DCx7C5/actions/import-gpg-key@v1
         env:
-          GNUPGHOME: ${{ steps.setup_gpg.outputs.gpg_home }}
+          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
           from_secrets: 'true'
           gpg_priv: ${{ secrets.GPG_PRIVATE_KEY }}
