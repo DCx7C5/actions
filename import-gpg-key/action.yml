@@ -51,8 +51,8 @@ runs:
           exit 1
         fi
 
-        if [ "${{ inputs.from_secrets }}" = "true" ] && [ -z "${{ inputs.gpg_priv }}${{ inputs.gpg_pub }}" ]; then
-          echo "ERROR: gpg_priv or gpg_pub required when from_secrets=true" >&2
+        if [[ -z "${{ inputs.gpg_priv }} && -z ${{ inputs.gpg_pub }}" ]]; then
+          echo "ERROR: gpg_priv or gpg_pub required" >&2
           exit 1
         fi
 
@@ -62,7 +62,6 @@ runs:
       run: |
         set -euo pipefail
 
-        # Trap to ensure passphrase is unset
         trap 'unset GPG_PASSPHRASE' EXIT
 
         # Import private key if provided
@@ -72,7 +71,6 @@ runs:
             exit 1
           fi
 
-          # Use file descriptor instead of command line for passphrase
           if ! exec 3<<< "${{ inputs.pass }}" && \
              gpg --no-tty --batch --pinentry-mode loopback \
                  --passphrase-fd 3 \
@@ -86,7 +84,6 @@ runs:
           echo "✓ Private key imported successfully"
         fi
 
-        # Import public key if provided
         if [ -n "${{ inputs.gpg_pub }}" ]; then
           if ! gpg --no-tty --batch --import <(echo "${{ inputs.gpg_pub }}") 2>/dev/null; then
             echo "ERROR: Failed to import public key" >&2
@@ -108,13 +105,11 @@ runs:
 
         trap 'unset GPG_PASSPHRASE' EXIT
 
-        # Check if import files exist
         if [ ! -f "${{ inputs.gpg_priv }}" ] && [ ! -f "${{ inputs.gpg_pub }}" ]; then
           echo "ERROR: No key files found" >&2
           exit 1
         fi
 
-        # Import private key from file
         if [ -f "${{ inputs.gpg_priv }}" ]; then
           if [ -z "${{ inputs.pass }}" ]; then
             echo "ERROR: Passphrase required for private key import from file" >&2
@@ -132,12 +127,10 @@ runs:
 
           exec 3>&-
 
-          # Securely remove temporary key file after import
           shred -vfz -n 3 "${{ inputs.gpg_priv }}" || rm -f "${{ inputs.gpg_priv }}"
           echo "✓ Private key imported and secure file removed"
         fi
 
-        # Import public key from file
         if [ -f "${{ inputs.gpg_pub }}" ]; then
           if ! gpg --no-tty --batch --import "${{ inputs.gpg_pub }}" 2>/dev/null; then
             echo "ERROR: Failed to import public key from file" >&2
@@ -147,6 +140,4 @@ runs:
           echo "✓ Public key imported successfully"
         fi
 
-        # Verify imported keys
         gpg --list-keys | head -5
-
