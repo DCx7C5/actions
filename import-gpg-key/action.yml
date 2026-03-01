@@ -12,7 +12,7 @@ inputs:
     required: false
     default: ''
     description: "GPG public key"
-  pass:
+  gpg_pass:
     required: false
     default: ''
     description: "GPG key passphrase (will be masked in logs)"
@@ -39,8 +39,8 @@ runs:
         if [ -n "${{ inputs.gpg_priv }}" ]; then
           echo "::add-mask::${{ inputs.gpg_priv }}"
         fi
-        if [ -n "${{ inputs.pass }}" ]; then
-          echo "::add-mask::${{ inputs.pass }}"
+        if [ -n "${{ inputs.gpg_pass }}" ]; then
+          echo "::add-mask::${{ inputs.gpg_pass }}"
         fi
         if [ -n "${{ inputs.gpg_pub }}" ]; then
           echo "::add-mask::${{ inputs.gpg_pub }}"
@@ -71,12 +71,12 @@ runs:
 
         # Import private key if provided
         if [ -n "${{ inputs.gpg_priv }}" ]; then
-          if [ -z "${{ inputs.pass }}" ]; then
+          if [ -z "${{ inputs.gpg_pass }}" ]; then
             echo "ERROR: Passphrase required for private key import" >&2
             exit 1
           fi
 
-          if ! exec 3<<< "${{ inputs.pass }}" && \
+          if ! exec 3<<< "${{ inputs.gpg_pass }}" && \
              gpg --no-tty --batch --pinentry-mode loopback \
                  --passphrase-fd 3 \
                  --import <(echo "${{ inputs.gpg_priv }}") 2>/dev/null; then
@@ -116,12 +116,12 @@ runs:
         fi
 
         if [ -f "${{ inputs.gpg_priv }}" ]; then
-          if [ -z "${{ inputs.pass }}" ]; then
+          if [ -z "${{ inputs.gpg_pass }}" ]; then
             echo "ERROR: Passphrase required for private key import from file" >&2
             exit 1
           fi
 
-          if ! exec 3<<< "${{ inputs.pass }}" && \
+          if ! exec 3<<< "${{ inputs.gpg_pass }}" && \
              gpg --no-tty --batch --pinentry-mode loopback \
                  --passphrase-fd 3 \
                  --import "${{ inputs.gpg_priv }}" 2>/dev/null; then
