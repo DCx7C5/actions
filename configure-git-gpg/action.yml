@@ -67,45 +67,39 @@ runs:
             HAS_KEY=true
             echo "Using provided fingerprint: $FINGERPRINT"
           else
-            echo "::warning::Provided fingerprint $INPUT_FINGERPRINT not found in secret keys"
+            echo "::warning::Provided fingerprint not found"
           fi
         fi
-
+        
         if [ "$HAS_KEY" = false ]; then
-          FINGERPRINT=$(gpg --with-colons --list-secret-keys | grep '^fpr:' | head -1 | cut -d: -f10)
+          FINGERPRINT=$(gpg --with-colons --list-secret-keys | awk -F: '/^fpr:/ {print $10; exit}')
           if [ -n "$FINGERPRINT" ]; then
             HAS_KEY=true
-            echo "Found default secret key fingerprint: $FINGERPRINT"
+            echo "Using default fingerprint: $FINGERPRINT"
           else
-            echo "::notice::No secret GPG keys found in $GNUPGHOME → using default identity"
+            echo "::notice::No secret keys found → using fallback identity"
           fi
         fi
-
+        
         if [ "$HAS_KEY" = true ]; then
-          UID_LINE=$(gpg --with-colons --list-keys "$FINGERPRINT" | grep '^uid:' | head -1)
+          UID_LINE=$(gpg --with-colons --list-keys "$FINGERPRINT" | awk -F: '/^uid:/ {print $0; exit}')
           if [ -n "$UID_LINE" ]; then
             UID_DECODED=$(echo "$UID_LINE" | cut -d: -f10 | sed 's/%20/ /g; s/%3C/</g; s/%3E/>/g; s/%40/@/g')
             if [[ "$UID_DECODED" =~ ^([^<]+)[[:space:]]+\<(.*)\>$ ]]; then
               GPG_NAME="${BASH_REMATCH[1]//^[[:space:]]+|[[:space:]]+$/}"
               GPG_MAIL="${BASH_REMATCH[2]}"
-              echo "Extracted identity: $GPG_NAME <$GPG_MAIL>"
-            else
-              echo "::warning::Could not parse uid: $UID_DECODED"
             fi
           fi
         fi
-
-        if command -v gh >/dev/null 2>&1; then
-          GH_CLI=true
-        else
-          GH_CLI=false
-        fi
+        
+        GH_CLI=false
+        command -v gh >/dev/null 2>&1 && GH_CLI=true
         
         echo "fingerprint=$FINGERPRINT" >> $GITHUB_OUTPUT
-        echo "gpg_name=$GPG_NAME"     >> $GITHUB_OUTPUT
-        echo "gpg_mail=$GPG_MAIL"     >> $GITHUB_OUTPUT
-        echo "gh_cli=$GH_CLI"         >> $GITHUB_OUTPUT
-        echo "has_key=$HAS_KEY"       >> $GITHUB_OUTPUT
+        echo "gpg_name=$GPG_NAME" >> $GITHUB_OUTPUT
+        echo "gpg_mail=$GPG_MAIL" >> $GITHUB_OUTPUT
+        echo "gh_cli=$GH_CLI" >> $GITHUB_OUTPUT
+        echo "has_key=$HAS_KEY" >> $GITHUB_OUTPUT
 
     - name: Configure git for GPG signing
       id: gitconfig
