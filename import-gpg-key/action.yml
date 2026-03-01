@@ -51,13 +51,18 @@ runs:
       run: |
         set -euo pipefail
 
+        if [[ -z "${{ inputs.gpg_priv }} && -z ${{ inputs.gpg_pub }}" ]]; then
+          echo "ERROR: gpg_priv or gpg_pub required" >&2
+          exit 1
+        fi
+        
         if [ "${{ inputs.from_secrets }}" != "true" ] && [ "${{ inputs.from_file }}" != "true" ]; then
           echo "ERROR: Either from_secrets or from_file must be true" >&2
           exit 1
         fi
-
-        if [[ -z "${{ inputs.gpg_priv }} && -z ${{ inputs.gpg_pub }}" ]]; then
-          echo "ERROR: gpg_priv or gpg_pub required" >&2
+        
+        if [[ -n "${{ inputs.gpg_priv }}" && -z "${{ inputs.gpg_pass }}" ]]; then
+          echo "ERROR: Passphrase required for private key import" >&2
           exit 1
         fi
 
