@@ -1,0 +1,140 @@
+name: "Create & Push Signed Release"
+description: "Create & push a signed git tag + GitHub Release with optional file signing"
+author: "DCx7C5"
+
+
+inputs:
+  version:
+    description: "The new version to use (e.g. v1.2.3 or 1.2.3)"
+    required: true
+  files:
+    description: "Space-separated list of files/globs to attach to the release"
+    required: false
+    default: ""
+  pre_release:
+    description: "Mark this as a pre-release"
+    required: false
+    default: 'false'
+  gpg_home:
+    description: "Path to GNUPGHOME directory (where keys are stored)"
+    required: false
+    default: "${{ github.workspace }}/.gnupg"
+  fingerprint:
+    description: "GPG key fingerprint or email to use for signing the tag (optional)"
+    required: false
+    default: ""
+  commit_msg:
+    description: "Commit message for the annotated tag"
+    required: false
+    default: "Release ${{ inputs.version }}"
+  release_notes:
+    description: "Release body/notes (markdown supported)"
+    required: false
+    default: "Release ${{ inputs.version }}"
+
+
+outputs:
+  new_rel:
+    description: "Name of the new release (tag name)"
+    value: ${{ steps.create_release.outputs.tag_name }}
+  release_url:
+    description: "URL of the created GitHub Release"
+    value: ${{ steps.create_release.outputs.url }}
+
+
+runs:
+  name: Create and Push Signed Release
+  using: composite
+  steps:
+    - name: Mask sensitive values
+      shell: bash
+      if: inputs.fingerprint != ''
+      run: |
+        echo "::add-mask::${{ inputs.fingerprint }}"
+
+    - name: Create & sign annotated tag
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home }}
+        TAG: ${{ inputs.version }}
+        FINGERPRINT: ${{ inputs.fingerprint }}
+      run: |
+        set -euo pipefail
+
+        git config user.name  "GitHub Actions"
+        git config user.email "actions@github.com"
+
+        echo "Attempting to create signed tag: $TAG"
+
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "::error::Tag $TAG already exists."
+          exit 1
+        fi
+
+        if [ -n "$FINGERPRINT" ]; then
+          echo "Fingerprint provided → extracting identity from key..."
+
+          uid_line=$(gpg --with-colons --list-secret-keys --keyid-format LONG "$FINGERPRINT" 2>/dev/null | grep '^uid:')
+
+          if [ -z "$uid_line" ]; then
+            echo "::warning::Could not find uid for fingerprint $FINGERPRINT"
+            echo "::warning::Falling back to default git config"
+          else
+            uid_decoded=$(echo "$uid_line" | cut -d: -f10 | sed 's/%20/ /g; s/%3C/</g; s/%3E/>/g; s/%40/@/g')
+
+            if [[ "$uid_decoded" =~ ^([^<]+)\ \<(.+)\>$ ]]; then
+              real_name="${BASH_REMATCH[1]//^[[:space:]]+|[[:space:]]+$/}"   # trim
+              real_email="${BASH_REMATCH[2]}"
+
+              echo "Extracted: name='$real_name' email='$real_email'"
+
+              git config user.name "$real_name"
+              git config user.email "$real_email"
+
+              echo "::notice::Using real identity from GPG key: $real_name <$real_email>"
+            else
+              echo "::warning::Could not parse name/email from uid: $uid_decoded"
+            fi
+          fi
+
+          SIGN_ARGS=(--local-user "$FINGERPRINT")
+        else
+          SIGN_ARGS=()
+          echo "No fingerprint provided → using default key and git config"
+        fi
+
+        # Create signed tag
+        if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" "${SIGN_ARGS[@]}" --sign; then
+          gpg --list-secret-keys --keyid-format LONG || true
+          echo "::error::Failed to create signed tag. Check key availability / trust / passphrase."
+          exit 1
+        fi
+
+        echo "Created signed tag: $TAG"
+        git show --pretty=fuller "$TAG" || true
+        
+    - name: Push signed tag
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        git push origin "${{ inputs.version }}"
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ inputs.version }}
+        name: ${{ inputs.version }}
+        body: ${{ inputs.release_notes }}
+        draft: false
+        prerelease: ${{ inputs.pre_release == 'true' }}
+        generate_release_notes: ${{ inputs.release_notes == '' }}
+        fail_on_unmatched_files: true
+        files: ${{ inputs.files }}
+
+    - name: Output release info
+      shell: bash
+      run: |
+        echo "new_release_url=${{ steps.create_release.outputs.url }}" >> $GITHUB_OUTPUT
+        echo "new_release_tag=${{ inputs.version }}" >> $GITHUB_OUTPUT

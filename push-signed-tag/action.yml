@@ -7,12 +7,13 @@ inputs:
   version:
     description: "The new version to use"
     required: true
-
+  fingerprint:
+    description: "Fingerprint of the GPG key to use for signing the tag (optional, will use default key if not provided)"
+    required: false
   gpg_home:
     description: "Path to GNUPGHOME directory."
     required: false
     default: "${{ github.workspace }}/.gnupg"
-
   commit_msg:
     description: "Commit Message attached to tag"
     required: false
@@ -27,8 +28,7 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Create and Push Signed Tag
-      id: tag
+    - id: ctag
       shell: bash
       env:
         GNUPGHOME: ${{ inputs.gpg_home }}
@@ -49,6 +49,5 @@ runs:
         
         echo "Pushing tag $TAG ..."
         git push origin "$TAG"
-        echo "NEW_TAG=$TAG" >> $GITHUB_ENV
         echo "new_tag=$TAG" >> $GITHUB_OUTPUT
         echo "Pushed signed tag $TAG successfully"
