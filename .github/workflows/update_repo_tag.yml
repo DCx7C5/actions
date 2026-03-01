@@ -63,4 +63,4 @@ jobs:
           version: "v1"
           gpg_home: "${{ steps.setup_gpg.outputs.gpg_home }}"
           commit_msg: "Release v1"
-          release_notes: "Release v1 - Updated tag to point to latest commit on main branch
+          release_notes: "Release v1 - Updated tag to point to latest commit on main branch"
