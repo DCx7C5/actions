@@ -43,7 +43,6 @@ outputs:
 
 
 runs:
-  name: Create and Push Signed Release
   using: composite
   steps:
     - name: Mask sensitive values
