@@ -86,13 +86,13 @@ runs:
             exit 1
           fi
         
-          exec 3<<< "${{ inputs.gpg_pass }}"
+          printf '%s\n' "${{ inputs.gpg_pass }}" | exec 3<&0 
           
           if ! gpg --no-tty \
                  --batch \
                  --pinentry-mode loopback \
                  --passphrase-fd 3 \
-                 --import <(echo "${{ inputs.gpg_priv }}") 2>/dev/null; then
+                 --import <(printf '%s\n' "${{ inputs.gpg_priv }}"); then
             echo "::error::Failed to import private key" >&2
             exec 3>&-
             exit 1
@@ -103,7 +103,7 @@ runs:
         fi
 
         if [ -n "${{ inputs.gpg_pub }}" ]; then
-          if ! gpg --no-tty --batch --import <(echo "${{ inputs.gpg_pub }}") 2>/dev/null; then
+          if ! gpg --no-tty --batch --import <(printf '%s\n' "${{ inputs.gpg_pub }}") 2>/dev/null; then
             echo "::error::Failed to import public key" >&2
             exit 1
           fi
@@ -134,9 +134,10 @@ runs:
             echo "::error::Passphrase required for private key import from file" >&2
             exit 1
           fi
+          
+          printf '%s\n' "${{ inputs.gpg_pass }}" | exec 3<&0 
 
-          if ! exec 3<<< "${{ inputs.gpg_pass }}" && \
-             gpg --no-tty --batch --pinentry-mode loopback \
+          if ! gpg --no-tty --batch --pinentry-mode loopback \
                  --passphrase-fd 3 \
                  --import "${{ inputs.gpg_priv }}" 2>/dev/null; then
             echo "::error::Failed to import private key from file" >&2
