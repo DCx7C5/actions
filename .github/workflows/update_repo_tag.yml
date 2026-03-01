@@ -29,7 +29,7 @@ jobs:
         with:
           from_secrets: 'true'
           gpg_priv: ${{ secrets.GPG_PRIVATE_KEY }}
-          pass: ${{ secrets.GPG_PASSPHRASE }}
+          gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Configure Git clients to sign with GPG
         id: git_config
