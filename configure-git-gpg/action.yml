@@ -36,10 +36,10 @@ runs:
       shell: bash
       id: get_gpg_home
       run: |
-        if [[ -n "${{ inputs.gpg_home }}" ]]; then
-          echo "gpg_home=${{ inputs.gpg_home }}" >> $GITHUB_OUTPUT
-        elif [[ -n "$GNUPGHOME" ]]; then
+        if [[ -n "$GNUPGHOME" ]]; then
           echo "gpg_home=$GNUPGHOME" >> $GITHUB_OUTPUT
+        elif [[ -n "${{ inputs.gpg_home }}" ]]; then
+          echo "gpg_home=${{ inputs.gpg_home }}" >> $GITHUB_OUTPUT
         elif [[ -z "$GNUPGHOME" ]]; then
           echo "gpg_home=${{ inputs.gpg_home }}" >> $GITHUB_OUTPUT
         else
