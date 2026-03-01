@@ -8,14 +8,14 @@ inputs:
     required: false
     default: ''
     description: "GPG private key (will be masked in logs)"
-  gpg_pub:
-    required: false
-    default: ''
-    description: "GPG public key"
   gpg_pass:
     required: false
     default: ''
     description: "GPG key passphrase (will be masked in logs)"
+  gpg_pub:
+    required: false
+    default: ''
+    description: "GPG public key"
   from_file:
     required: false
     default: 'false'
@@ -85,9 +85,12 @@ runs:
             echo "::error::Passphrase required for private key import" >&2
             exit 1
           fi
-
-          if ! exec 3<<< "${{ inputs.gpg_pass }}" && \
-             gpg --no-tty --batch --pinentry-mode loopback \
+        
+          exec 3<<< "${{ inputs.gpg_pass }}"
+          
+          if ! gpg --no-tty \
+                 --batch \
+                 --pinentry-mode loopback \
                  --passphrase-fd 3 \
                  --import <(echo "${{ inputs.gpg_priv }}") 2>/dev/null; then
             echo "::error::Failed to import private key" >&2
