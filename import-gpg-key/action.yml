@@ -86,13 +86,13 @@ runs:
             exit 1
           fi
         
-          printf '%s\n' "${{ inputs.gpg_pass }}" | exec 3<&0 
+          exec 3<<< '${{ inputs.gpg_pass }}'
           
           if ! gpg --no-tty \
                  --batch \
                  --pinentry-mode loopback \
                  --passphrase-fd 3 \
-                 --import <(printf '%s\n' "${{ inputs.gpg_priv }}"); then
+                 --import <(printf '%s\n' "${{ inputs.gpg_priv }}") 2>/dev/null; then
             echo "::error::Failed to import private key" >&2
             exec 3>&-
             exit 1
@@ -135,9 +135,11 @@ runs:
             exit 1
           fi
           
-          printf '%s\n' "${{ inputs.gpg_pass }}" | exec 3<&0 
+          exec 3<<< '${{ inputs.gpg_pass }}'
 
-          if ! gpg --no-tty --batch --pinentry-mode loopback \
+          if ! gpg --no-tty \
+                 --batch \
+                 --pinentry-mode loopback \
                  --passphrase-fd 3 \
                  --import "${{ inputs.gpg_priv }}" 2>/dev/null; then
             echo "::error::Failed to import private key from file" >&2
