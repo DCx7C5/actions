@@ -56,75 +56,48 @@ runs:
       run: |
         set -euo pipefail
         
-        FINGERPRINT=""
         GPG_NAME="GitHub Actions"
         GPG_MAIL="actions@github.com"
-        HAS_KEY=false
+        GPG_EMPTY=$(gpg --with-colons --list-secret-keys 2>/dev/null | wc -l)
         
-        # ────────────────────────────────────────────────
-        # 1. Try user-provided fingerprint (safe check)
-        # ────────────────────────────────────────────────
-        if [ -n "$INPUT_FINGERPRINT" ]; then
-          # Test existence without crashing
-          if gpg --with-colons --list-secret-keys "$INPUT_FINGERPRINT" >/dev/null 2>&1; then
-            FINGERPRINT="$INPUT_FINGERPRINT"
-            HAS_KEY=true
-            echo "Using provided fingerprint: $FINGERPRINT"
-          else
-            echo "::warning::Provided fingerprint '$INPUT_FINGERPRINT' not found in secret keys"
-          fi
+        if [[ -n "$INPUT_FINGERPRINT" && "$GPG_EMPTY" -eq 0 ]]; then
+          echo "::error::Provided fingerprint not found in GNUPGHOME: $GNUPGHOME" >&2
+          exit 1
         fi
         
-        # ────────────────────────────────────────────────
-        # 2. Fallback: first available secret key (safe)
-        # ────────────────────────────────────────────────
-        if [ "$HAS_KEY" = false ]; then
-          # This line is safe — no argument to gpg
+        if [[ "$GPG_EMPTY" -ne 0 && -n "$INPUT_FINGERPRINT" ]]; then
+          echo "::notice::Using provided GPG key with fingerprint: $INPUT_FINGERPRINT"
+          FINGERPRINT=$(gpg --with-colons --list-secret-keys "$INPUT_FINGERPRINT" | awk -F: '/^fpr:/ {print $10; exit}')
+        elif [[ "$GPG_EMPTY" -ne 0 && -z "$INPUT_FINGERPRINT" ]]; then
+          echo "::notice::Using default GPG key found in GNUPGHOME: $GNUPGHOME"
           FINGERPRINT=$(gpg --with-colons --list-secret-keys | awk -F: '/^fpr:/ {print $10; exit}')
-          if [ -n "$FINGERPRINT" ]; then
-            HAS_KEY=true
-            echo "Found default secret key: $FINGERPRINT"
-          else
-            echo "::notice::No secret GPG keys found in $GNUPGHOME → using fallback identity"
+        elif [[ "$GPG_EMPTY" -eq 0 ]]; then
+          echo "::warning::No GPG keys found in GNUPGHOME: $GNUPGHOME, using fallback identity"
+          FINGERPRINT=""
+        fi
+        
+        UID_LINE=$(gpg --with-colons --list-keys "$FINGERPRINT" 2>/dev/null | awk -F: '/^uid:/ {print $0; exit}')
+        
+        if [ -n "$UID_LINE" ]; then
+          UID_DECODED=$(echo "$UID_LINE" | cut -d: -f10 | sed 's/%20/ /g; s/%3C/</g; s/%3E/>/g; s/%40/@/g')
+          if [[ "$UID_DECODED" =~ ^([^<]+)[[:space:]]+\<(.*)\>$ ]]; then
+            GPG_NAME="${BASH_REMATCH[1]//^[[:space:]]+|[[:space:]]+$/}"
+            GPG_MAIL="${BASH_REMATCH[2]}"
           fi
         fi
         
-        # ────────────────────────────────────────────────
-        # 3. ONLY extract name/email if we actually have a valid key
-        # ────────────────────────────────────────────────
-        if [ "$HAS_KEY" = true ] && [ -n "$FINGERPRINT" ]; then
-          # Now it's safe — $FINGERPRINT is guaranteed non-empty
-          UID_LINE=$(gpg --with-colons --list-keys "$FINGERPRINT" | awk -F: '/^uid:/ {print $0; exit}')
-          if [ -n "$UID_LINE" ]; then
-            UID_DECODED=$(echo "$UID_LINE" | cut -d: -f10 | sed 's/%20/ /g; s/%3C/</g; s/%3E/>/g; s/%40/@/g')
-            if [[ "$UID_DECODED" =~ ^([^<]+)[[:space:]]+\<(.*)\>$ ]]; then
-              GPG_NAME="${BASH_REMATCH[1]//^[[:space:]]+|[[:space:]]+$/}"
-              GPG_MAIL="${BASH_REMATCH[2]}"
-              echo "Extracted identity: $GPG_NAME <$GPG_MAIL>"
-            else
-              echo "::warning::Could not parse uid from: $UID_DECODED"
-            fi
-          fi
-        fi
-        
-        # ────────────────────────────────────────────────
-        # 4. gh CLI check
-        # ────────────────────────────────────────────────
         GH_CLI=false
         command -v gh >/dev/null 2>&1 && GH_CLI=true
         
-        # ────────────────────────────────────────────────
-        # 5. Outputs — always set, even if no key
-        # ────────────────────────────────────────────────
         echo "fingerprint=$FINGERPRINT" >> $GITHUB_OUTPUT
-        echo "gpg_name=$GPG_NAME"       >> $GITHUB_OUTPUT
-        echo "gpg_mail=$GPG_MAIL"       >> $GITHUB_OUTPUT
-        echo "gh_cli=$GH_CLI"           >> $GITHUB_OUTPUT
-        echo "has_key=$HAS_KEY"         >> $GITHUB_OUTPUT
+        echo "gpg_name=$GPG_NAME" >> $GITHUB_OUTPUT
+        echo "gpg_mail=$GPG_MAIL" >> $GITHUB_OUTPUT
+        echo "gh_cli=$GH_CLI" >> $GITHUB_OUTPUT
+        echo "gpg_empty=$GPG_EMPTY" >> $GITHUB_OUTPUT
 
     - name: Configure git for GPG signing
       id: gitconfig
-      if: steps.parse_gpg.outputs.has_key == 'true'
+      if: steps.parse_gpg.outputs.gpg_empty != 0
       shell: bash
       env:
         GNUPGHOME: ${{ steps.get_gpg_home.outputs.gpg_home }}
@@ -146,7 +119,7 @@ runs:
 
     - name: Configure gh for GPG signing
       id: ghconfig
-      if: steps.parse_gpg.outputs.gh_cli == 'true' && steps.parse_gpg.outputs.has_key == 'true'
+      if: steps.parse_gpg.outputs.gh_cli == 'true' && steps.parse_gpg.outputs.gpg_empty != 0
       shell: bash
       env:
         GNUPGHOME: ${{ steps.get_gpg_home.outputs.gpg_home }}
