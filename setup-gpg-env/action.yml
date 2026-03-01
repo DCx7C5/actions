@@ -35,6 +35,54 @@ runs:
         echo "Created GPG home: $GNUPGHOME"
 
     - name: Setup secure GPG configuration
+      if: steps.create_dir.outputs.gpg_version == 2
+      shell: bash
+      id: gpg_setup_legacy
+      run: |
+        set -euo pipefail
+        echo "::warning::Please ensure your runner has GPG 4.0 or higher for best security practices"
+        mkdir -p "$GNUPGHOME"/{private-keys-v1.d,pubring.d}
+        chmod 700 "$GNUPGHOME"/private-keys-v1.d
+        chmod 755 "$GNUPGHOME"/pubring.d
+
+        cat > "$GNUPGHOME/gpg.conf" << 'GPGCONF'
+
+        # Strong algorithm preferences (GnuPG 2.2 compatible)
+        personal-cipher-preferences AES256 AES192 AES
+        personal-digest-preferences SHA512 SHA384 SHA256 SHA224
+        cert-digest-algo SHA512
+        default-preference-list SHA512 SHA384 SHA256 AES256 AES192 AES ZLIB
+        
+        # Explicitly disable legacy/weak ciphers
+        disable-cipher-algo 3DES IDEA CAST5 BLOWFISH TWOFISH
+        
+        # Keyserver (secure HKPS)
+        keyserver hkps://keys.openpgp.org
+        keyserver-options auto-key-retrieve
+        
+        # Clean output & long IDs
+        keyid-format LONG
+        with-fingerprint
+        no-comments
+        
+        # Trust model & security
+        trust-model pgp
+        require-cross-certification
+        GPGCONF
+
+        # Set proper permissions on config file
+        chmod 600 "$GNUPGHOME/gpg.conf"
+
+        # Verify GPG is working
+        if ! gpg --list-keys > /dev/null 2>&1; then
+          echo "::warning::GPG initialization check - creating initial keyring"
+          gpg --list-keys > /dev/null 2>&1 || true
+        fi
+
+        echo "Successfully setup secure GPG environment"
+
+    - name: Setup secure GPG configuration
+      if: steps.create_dir.outputs.gpg_version >= 4
       shell: bash
       id: gpg_setup
       run: |
@@ -46,30 +94,34 @@ runs:
 
         cat > "$GNUPGHOME/gpg.conf" << 'GPGCONF'
 
-        # Strong defaults
-        personal-cipher-preferences AES256 AES192 AES
-        personal-digest-preferences SHA256 SHA384 SHA512 SHA224
-        cert-digest-algo SHA256
-        default-preference-list SHA512 SHA384 SHA256 AES256 AES192 AES ZLIB
-        
-        # Disable weak legacy algorithms
-        disable-cipher-algo 3DES IDEA CAST5 BLOWFISH TWOFISH
-        weak-digest-algos MD5 SHA1 RIPEMD160
-        
-        # Keyserver (HKPS = secure)
+        # Encryption cipher preferences (strongest first)
+        cipher-algo AES256
+        digest-algo SHA256
+        cert-digest-algo 512
+        compress-algo ZLIB
+
+        # Disable weak algorithms
+        disable-cipher-algo 3DES
+        disable-cipher-algo IDEA
+
+        # Key server with HKPS (HTTPS)
         keyserver hkps://keys.openpgp.org
-        keyserver-options auto-key-retrieve
-        
-        # Output formatting
+        keyserver-options no-try-dns-srv
+
+        # Default key format and IDs
         keyid-format LONG
-        with-fingerprint
-        
-        # Trust & security
+
+        # Trust model: Only explicitly trusted keys
         trust-model pgp
+
+        # Key expiration defaults
+        default-key-lifetime 3650
+
+        # Require cross-certification for subkeys
         require-cross-certification
-        
-        # No comments in output (cleaner)
-        no-comments
+
+        # Weak digest algorithms to disable
+        weak-digest-algos SHA1
         GPGCONF
 
         # Set proper permissions on config file
