@@ -25,6 +25,11 @@ inputs:
     default: 'false'
     description: "To import from secrets"
 
+outputs:
+  fingerprint:
+    description: "Fingerprint of the imported GPG key"
+    value: ${{ steps.import_key.outputs.fingerprint }}
+
 runs:
   using: composite
   steps:

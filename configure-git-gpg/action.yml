@@ -6,7 +6,10 @@ inputs:
   fingerprint:
     description: "Fingerprint of the GPG key to use for signing (optional, will use default key if not provided)"
     required: false
-
+  gpg_home:
+    description: "Path to GNUPGHOME directory (where keys are stored)"
+    required: false
+    default: "${{ github.workspace }}/.gnupg"
 
 outputs:
   fingerprint:
@@ -34,6 +37,7 @@ runs:
       shell: bash
       env:
         FINGERPRINT: ${{ inputs.fingerprint }}
+        GNUPGHOME: ${{ inputs.gpg_home }}
       run: |
         set -euo pipefail
         
@@ -74,27 +78,37 @@ runs:
     - name: Configure git for GPG signing
       id: gitconfig
       shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home }}
+        GPG_NAME: ${{ steps.parse_gpg.outputs.gpg_name }}
+        GPG_MAIL: ${{ steps.parse_gpg.outputs.gpg_mail }}
+        FINGERPRINT: ${{ steps.parse_gpg.outputs.fingerprint }}
       run: |
         set -euo pipefail
         
-        git config --global user.name "${{ steps.parse_gpg.outputs.gpg_name }}"
-        git config --global user.email "${{ steps.parse_gpg.outputs.gpg_mail }}"
-        git config --global user.signingkey "${{ steps.parse_gpg.outputs.fingerprint }}"
+        git config --global user.name "$GPG_NAME"
+        git config --global user.email "$GPG_MAIL"
+        git config --global user.signingkey "$FINGERPRINT"
         git config --global commit.gpgsign true
         git config --global tag.gpgsign true
         git config --global tag.forceSignAnnotated true
         git config --global gpg.program gpg
         
-        echo "Configured git with GPG key: ${{ steps.parse_gpg.outputs.fingerprint }} (${GPG_NAME} <${GPG_MAIL}>)"
+        echo "Configured git with GPG key: $FINGERPRINT (${GPG_NAME} <${GPG_MAIL}>)"
 
     - name: Configure gh for GPG signing
       if: steps.parse_gpg.outputs.gh_cli == 'true'
       id: ghconfig
       shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home }}
+        GPG_NAME: ${{ steps.parse_gpg.outputs.gpg_name }}
+        GPG_MAIL: ${{ steps.parse_gpg.outputs.gpg_mail }}
+        FINGERPRINT: ${{ steps.parse_gpg.outputs.fingerprint }}
       run: |
         set -euo pipefail
         
-        gh config set -h github.com gpg_key_id "${{ steps.parse_gpg.outputs.fingerprint }}"
+        gh config set -h github.com gpg_key_id "$FINGERPRINT"
         gh config set -h github.com git_protocol https
         
-        echo "Configured gh CLI with GPG key: ${{ steps.parse_gpg.outputs.fingerprint }} (${GPG_NAME} <${GPG_MAIL}>)"
+        echo "Configured gh CLI with GPG key: $$FINGERPRINT (${GPG_NAME} <${GPG_MAIL}>)"
