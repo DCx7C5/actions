@@ -31,6 +31,8 @@ runs:
       if: inputs.fingerprint != ''
       run: |
         echo "::add-mask::${{ inputs.fingerprint }}"
+        echo "::add-mask::$FINGERPRINT"
+        echo "::add-mask::$INPUT_FINGERPRINT"
 
     - name: Get GNUPGHOME with fallback
       shell: bash
@@ -119,6 +121,7 @@ runs:
         git config --global gpg.program gpg
         
         echo "Configured git with GPG key: $FINGERPRINT (${GPG_NAME} <${GPG_MAIL}>)"
+        echo "config_success=true" >> $GITHUB_OUTPUT
 
     - name: Configure gh for GPG signing
       id: ghconfig
@@ -136,3 +139,21 @@ runs:
         gh config set -h github.com git_protocol https
         
         echo "Configured gh CLI with GPG key: $$FINGERPRINT (${GPG_NAME} <${GPG_MAIL}>)"
+
+    - name: Configure gpg-agent for non-interactive signing
+      if: steps.gitconfig.outputs.config_success == 'true'
+      id: gpgagent
+      shell: bash
+      env:
+        GNUPGHOME: ${{ steps.get_gpg_home.outputs.gpg_home }}
+      run: |
+        set -euo pipefail
+        
+        cat > "$GNUPGHOME/gpg-agent.conf" << 'EOF'
+        default-cache-ttl 600
+        max-cache-ttl 7200
+        allow-loopback-pinentry
+        pinentry-program /bin/true
+        EOF
+        
+        echo "Configured gpg-agent for non-interactive signing"

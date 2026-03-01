@@ -63,6 +63,7 @@ jobs:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
           fingerprint: "${{ steps.gpg_import.outputs.fingerprint }}"
+          gpg_pass: "${{ secrets.GPG_PASSPHRASE }}"
           version: "v1"
           gpg_home: "${{ steps.gpg_setup.outputs.gpg_home }}"
           commit_msg: "Release v1"
