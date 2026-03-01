@@ -56,12 +56,12 @@ runs:
           exit 1
         fi
 
-        if [[ -z "${{ inputs.gpg_priv }} && -z ${{ inputs.gpg_pub }}" ]]; then
+        if [[ -z "${{ inputs.gpg_priv }} && -z "${{ inputs.gpg_pub }}" ]]; then
           echo "::error::gpg_priv or gpg_pub required" >&2
           exit 1
         fi
         
-        if [ "${{ inputs.from_secrets }}" != "true" ] && [ "${{ inputs.from_file }}" != "true" ]; then
+        if [[ "${{ inputs.from_secrets }}" != "true" && "${{ inputs.from_file }}" != "true" ]]; then
           echo "::error::Either from_secrets or from_file must be true" >&2
           exit 1
         fi
