@@ -99,4 +99,5 @@ else
   echo "::error::No message ID in response" >&2
   exit 1
 fi
+true
 exit 0
