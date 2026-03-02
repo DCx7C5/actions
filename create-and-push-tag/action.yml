@@ -71,13 +71,12 @@ runs:
           chmod +x "${{ github.workspace }}/newgpg.sh"
           git config --global gpg.program "${{ github.workspace }}/newgpg.sh"
         fi
-        
         # Create the tag (no gpg-sign-options)
         if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" "${SIGN_ARGS[@]}" -s; then
           echo "::error::git tag signing failed"
           exit 1
         fi
-    
+        
         echo "::notice::Signed tag created successfully: $TAG"
         git show --pretty=fuller "$TAG" || true
 
