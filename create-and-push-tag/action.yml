@@ -67,9 +67,10 @@ runs:
           sleep 1
           gpgconf --homedir "$GNUPGHOME" --launch gpg-agent
           echo '${{ inputs.gpg_pass }}' | \
-            /usr/lib/gnupg/gpg-preset-passphrase --home "$GNUPGHOME" --preset "$FINGERPRINT" || true
+            /usr/lib/gnupg/gpg-preset-passphrase --homedir "$GNUPGHOME" --preset "$FINGERPRINT" || true
         fi
-    
+        export GPG_TTY=$(tty)
+
         # Create the tag (no gpg-sign-options)
         if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" "${SIGN_ARGS[@]}" -s; then
           echo "::error::git tag signing failed"
