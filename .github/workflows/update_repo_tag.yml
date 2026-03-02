@@ -80,6 +80,7 @@ jobs:
         with:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           to: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          parse_mode: 'HTML'
           message: |
             <b>New Signed Release!</b>
             Repository: <i>${{ github.repository }}</i>
