@@ -26,7 +26,7 @@ jobs:
 
       - name: Import GPG key
         id: gpg_import
-        uses: DCx7C5/actions/import-gpg-key@v1
+        uses: DCx7C5/actions/import-gpg-keys@v1
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:

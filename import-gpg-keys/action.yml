@@ -71,7 +71,7 @@ runs:
           exit 1
         fi
 
-    - name: Import GPG Key from secret
+    - name: Import GPG Keys from secret
       if: inputs.from_secrets == 'true'
       shell: bash
       run: |
@@ -116,7 +116,7 @@ runs:
         KEY_COUNT=$((KEY_COUNT_PUB + KEY_COUNT_SEC))
         echo "::notice::Total GPG keys available: $KEY_COUNT"
 
-    - name: Import GPG Key from file
+    - name: Import GPG Keys from file
       if: inputs.from_file == 'true'
       shell: bash
       run: |
