@@ -67,6 +67,8 @@ runs:
         # Trust model & security
         trust-model pgp
         require-cross-certification
+        no-tty
+
         GPGCONF
 
         # Set proper permissions on config file
