@@ -93,9 +93,8 @@ runs:
         default-cache-ttl 600
         max-cache-ttl 7200
         allow-loopback-pinentry
-        allow-preset-passphrase
         pinentry-program /usr/bin/pinentry-tty
         GPGCONF
-        
+        gpg-connect-agent reloadagent /bye
         chmod 600 "$GNUPGHOME/gpg-agent.conf"
         echo "::notice::Configured gpg-agent for non-interactive signing"
