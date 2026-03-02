@@ -38,6 +38,8 @@ runs:
       if: steps.create_dir.outputs.gpg_version == 2
       shell: bash
       id: gpg_setup_legacy
+      env:
+        GNUPGHOME: ${{ steps.create_dir.outputs.gpg_home }}
       run: |
         set -euo pipefail
         echo "::warning::Please ensure your runner has GPG 4.0 or higher for best security practices"
@@ -82,8 +84,11 @@ runs:
         echo "Successfully setup secure GPG environment"
 
     - name: Setup secure GPG configuration
+      if: steps.create_dir.outputs.gpg_version >= 4
       shell: bash
       id: gpg_setup
+      env:
+        GNUPGHOME: ${{ steps.create_dir.outputs.gpg_home }}
       run: |
         set -euo pipefail
 
@@ -138,7 +143,7 @@ runs:
       id: gpgagent
       shell: bash
       env:
-        GNUPGHOME: ${{ steps.get_gpg_home.outputs.gpg_home }}
+        GNUPGHOME: ${{ steps.create_dir.outputs.gpg_home }}
       run: |
         set -euo pipefail
         
