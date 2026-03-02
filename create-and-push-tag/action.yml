@@ -62,12 +62,9 @@ runs:
     
         # Export passphrase to agent (loopback mode must be allowed)
         if [ -n '${{ inputs.gpg_pass }}' ]; then
-          KEY_GRIP=$(gpg --with-keygrip -K | grep "Keygrip" | head -1 | awk -F'Keygrip = ' '{print $2}')
-          echo "allow-preset-passphrase" >> "$GNUPGHOME/gpg-agent.conf"
+          KEY_GRIP=$(gpg --with-keygrip -K --batch --yes | grep "^ *Keygrip" | awk '{print $3}' | head -1)
           gpgconf --kill gpg-agent 2>/dev/null || true
-          sleep 1
-          gpgconf --homedir "$GNUPGHOME" --launch gpg-agent
-          echo "::notice::Caching phrase" 
+          gpg-connect-agent /bye
           echo '${{ inputs.gpg_pass }}' | \
             /usr/lib/gnupg/gpg-preset-passphrase --homedir "$GNUPGHOME" --preset "$KEY_GRIP" || true
         fi

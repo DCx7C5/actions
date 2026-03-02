@@ -53,7 +53,7 @@ runs:
         default-preference-list SHA512 SHA384 SHA256 AES256 AES192 AES ZLIB
         
         # Explicitly disable legacy/weak ciphers
-        disable-cipher-algo 3DES IDEA CAST5 BLOWFISH TWOFISH
+        disable-cipher-algo 3DES IDEA CAST5 BLOWFISH
         pinentry-mode loopback
         
         # Keyserver (secure HKPS)
@@ -68,7 +68,6 @@ runs:
         # Trust model & security
         trust-model pgp
         require-cross-certification
-        batch
         GPGCONF
 
         # Set proper permissions on config file
@@ -94,7 +93,7 @@ runs:
         default-cache-ttl 600
         max-cache-ttl 7200
         allow-loopback-pinentry
-        pinentry-program /bin/true
+        allow-preset-passphrase
         GPGCONF
         
         chmod 600 "$GNUPGHOME/gpg-agent.conf"
