@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Error handling
+trap 'unset TELEGRAM_BOT_TOKEN' EXIT
+
 # Validate required environment variables
 if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
   echo "::error::TELEGRAM_BOT_TOKEN not set" >&2
