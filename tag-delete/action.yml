@@ -1,0 +1,27 @@
+name: "Delete Tag"
+description: "Deletes an existing Tag via GitHub Actions"
+author: "DCx7C5"
+
+inputs:
+  tag_name:
+    required: true
+    description: "The tag name/version to delete"
+
+
+runs:
+  using: composite
+  steps:
+    - id: tag_delete
+      shell: bash
+      env:
+        TAG_NAME: ${{ inputs.tag_name }}
+      run: |
+        set -euo pipefail
+        
+        if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+          echo "::notice::Deleting local tag $TAG_NAME"
+          git tag --delete "$TAG_NAME"
+        fi
+        
+        git push origin --delete "$TAG_NAME" 2>/dev/null || true
+        echo "Old tag $TAG_NAME removed (or didn't exist)"
