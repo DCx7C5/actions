@@ -63,11 +63,11 @@ runs:
         # Export passphrase to agent (loopback mode must be allowed)
         if [ -n '${{ inputs.gpg_pass }}' ]; then
           cat > "${{ github.workspace}}/newgpg.sh" << 'GPGEND'
-          #!/bin/bash
-          exec 3<<< '${{ inputs.gpg_pass }}'
-          gpg --batch --pinentry-mode loopback --passphrase-fd 3 "$@"
-          exec 3>&-
-          GPGEND
+        #!/bin/bash
+        exec 3<<< '${{ inputs.gpg_pass }}'
+        gpg --batch --pinentry-mode loopback --passphrase-fd 3 "$@"
+        exec 3>&-
+        GPGEND
           chmod +x "${{ github.workspace }}/newgpg.sh"
           git config --global gpg.program "${{ github.workspace }}/newgpg.sh"
         fi
