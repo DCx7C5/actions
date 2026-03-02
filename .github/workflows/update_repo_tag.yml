@@ -1,4 +1,4 @@
-name: "Update Repository Tag & Release"
+name: "Update Repository Tag"
 
 
 on:
@@ -31,8 +31,8 @@ jobs:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
           from_secrets: 'true'
-          gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
           gpg_priv: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Configure Git client to sign with GPG
         id: git_config
@@ -59,7 +59,7 @@ jobs:
 
       - name: Create and push new signed Tag
         id: tag_create
-        uses: DCx7C5/actions/create-tag-and-release@v1
+        uses: DCx7C5/actions/create-and-push-tag@v1
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
