@@ -73,3 +73,14 @@ jobs:
           prerelease: false
           generate_release_notes: ''
           fail_on_unmatched_files: true
+
+      - name: Notify on success
+        if: success()
+        uses: DCx7C5/actions/telegram-notify@v1
+        with:
+          token: '${{ secrets.TELEGRAM_BOT_TOKEN }}'
+          to: '${{ secrets.TELEGRAM_CHANNEL_ID }}'
+          message: |
+            New Signed Release!
+            Repository: ${{ github.repository }}
+            Signed: ${{ steps.gpg_import.outputs.fingerprint }}
