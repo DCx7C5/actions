@@ -61,4 +61,4 @@ runs:
         TELEGRAM_PARSE_MODE: ${{ inputs.parse_mode }}
         TELEGRAM_SILENT: ${{ inputs.silent }}
       run: |
-        ${{ github.action_path }}/entrypoint.sh.secure
+        ${{ github.action_path }}/entrypoint.sh
