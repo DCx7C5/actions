@@ -33,7 +33,6 @@ runs:
       shell: bash
       if: inputs.fingerprint != ''
       run: |
-        echo "::add-mask::${{ inputs.fingerprint }}"
         echo '::add-mask::${{ inputs.gpg_pass }}'
 
     - name: Create & sign annotated tag
@@ -67,6 +66,8 @@ runs:
           gpgconf --kill gpg-agent 2>/dev/null || true
           sleep 1
           gpgconf --homedir "$GNUPGHOME" --launch gpg-agent
+          cat "$GNUPGHOME"/gpg.conf || true
+          cat "$GNUPGHOME"/gpg-agent.conf || true
           echo '${{ inputs.gpg_pass }}' | \
             /usr/lib/gnupg/gpg-preset-passphrase --home "$GNUPGHOME" --preset "$FINGERPRINT" || true
         fi
@@ -74,7 +75,6 @@ runs:
         # Create the tag (no gpg-sign-options)
         if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" "${SIGN_ARGS[@]}" -s; then
           echo "::error::git tag signing failed"
-          gpg --list-secret-keys --keyid-format LONG || true
           exit 1
         fi
     
