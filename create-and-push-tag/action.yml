@@ -62,15 +62,16 @@ runs:
     
         # Export passphrase to agent (loopback mode must be allowed)
         if [ -n '${{ inputs.gpg_pass }}' ]; then
+          KEY_GRIP=$(gpg --with-keygrip -K | grep "Keygrip" | head -1 | awk -F'Keygrip = ' '{print $2}')
           echo "allow-preset-passphrase" >> "$GNUPGHOME/gpg-agent.conf"
           gpgconf --kill gpg-agent 2>/dev/null || true
           sleep 1
           gpgconf --homedir "$GNUPGHOME" --launch gpg-agent
+          echo "::notice::Caching phrase" 
           echo '${{ inputs.gpg_pass }}' | \
-            /usr/lib/gnupg/gpg-preset-passphrase --homedir "$GNUPGHOME" --preset "$FINGERPRINT" || true
+            /usr/lib/gnupg/gpg-preset-passphrase --homedir "$GNUPGHOME" --preset "$KEY_GRIP" || true
         fi
-        export GPG_TTY=$(tty)
-
+        echo "::notice::After export GPG_TTY"
         # Create the tag (no gpg-sign-options)
         if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" "${SIGN_ARGS[@]}" -s; then
           echo "::error::git tag signing failed"
