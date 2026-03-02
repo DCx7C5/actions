@@ -1,13 +1,4 @@
 #!/bin/bash
-# Secure Telegram notification script
-# Improvements:
-# - Uses jq for safe JSON construction
-# - Input validation
-# - Proper secret handling (masked)
-# - No command injection vulnerabilities
-# - Error handling and cleanup
-
-set -euo pipefail
 
 # Error handling
 trap 'unset TELEGRAM_BOT_TOKEN; exit 1' ERR EXIT
