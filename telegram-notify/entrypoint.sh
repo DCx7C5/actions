@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Error handling
-trap 'unset TELEGRAM_BOT_TOKEN; exit 0' EXIT
-
 # Validate required environment variables
 if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
   echo "::error::TELEGRAM_BOT_TOKEN not set" >&2
@@ -92,7 +89,7 @@ if ! echo "$RESPONSE_BODY" | jq -e '.ok' > /dev/null 2>&1; then
 fi
 
 # Extract message ID for verification
-MESSAGE_ID=$(echo "$RESPONSE_BODY" | jq -r '.result.message_id // empty')
+MESSAGE_ID=$(echo "$RESPONSE_BODY" | jq -r '.result.message_id // empty' || true)
 if [ -n "$MESSAGE_ID" ]; then
   echo "✓ Telegram message sent successfully! (Message ID: $MESSAGE_ID)"
 else
