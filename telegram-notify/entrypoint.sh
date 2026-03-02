@@ -104,8 +104,6 @@ fi
 MESSAGE_ID=$(echo "$RESPONSE_BODY" | jq -r '.result.message_id // empty')
 if [ -n "$MESSAGE_ID" ]; then
   echo "✓ Telegram message sent successfully! (Message ID: $MESSAGE_ID)"
-  exit 0
 else
   echo "::error::No message ID in response" >&2
-  exit 1
 fi
