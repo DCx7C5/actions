@@ -71,7 +71,6 @@ runs:
           echo '${{ inputs.gpg_pass }}' | \
             /usr/lib/gnupg/gpg-preset-passphrase --homedir "$GNUPGHOME" --preset "$KEY_GRIP" || true
         fi
-        echo "::notice::After export GPG_TTY"
         # Create the tag (no gpg-sign-options)
         if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" "${SIGN_ARGS[@]}" -s; then
           echo "::error::git tag signing failed"
