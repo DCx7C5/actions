@@ -3,7 +3,7 @@ description: "Send Telegram messages from GitHub Actions with security hardening
 author: "DCx7C5"
 
 inputs:
-  bot_token:
+  token:
     description: "Telegram Bot Token"
     required: true
   to:
@@ -30,14 +30,14 @@ runs:
         set -euo pipefail
 
         # Validate token format (number:alphanumeric-underscore)
-        if ! [[ "${{ inputs.bot_token }}" =~ ^[0-9]+:[A-Za-z0-9_-]+$ ]]; then
-          echo "ERROR: Invalid Telegram bot token format" >&2
+        if ! [[ "${{ inputs.token }}" =~ ^[0-9]+:[A-Za-z0-9_-]+$ ]]; then
+          echo "::error::Invalid Telegram bot token format" >&2
           exit 1
         fi
 
         # Validate chat ID (must be numeric, can be negative)
         if ! [[ "${{ inputs.to }}" =~ ^-?[0-9]+$ ]]; then
-          echo "ERROR: Invalid Telegram chat ID format" >&2
+          echo "::error::Invalid Telegram chat ID format" >&2
           exit 1
         fi
 
@@ -45,17 +45,17 @@ runs:
         case "${{ inputs.parse_mode }}" in
           MarkdownV2|Markdown|HTML) ;;
           *)
-            echo "ERROR: Invalid parse mode: ${{ inputs.parse_mode }}" >&2
+            echo "::error::Invalid parse mode: ${{ inputs.parse_mode }}" >&2
             exit 1
             ;;
         esac
 
-        echo "Input validation passed"
+        echo "::notice::Input validation passed"
 
     - name: Send Telegram Message
       shell: bash
       env:
-        TELEGRAM_BOT_TOKEN: ${{ inputs.bot_token }}
+        TELEGRAM_BOT_TOKEN: ${{ inputs.token }}
         TELEGRAM_TO: ${{ inputs.to }}
         TELEGRAM_MESSAGE: ${{ inputs.message }}
         TELEGRAM_PARSE_MODE: ${{ inputs.parse_mode }}
