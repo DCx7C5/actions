@@ -65,13 +65,10 @@ runs:
     
         # Export passphrase to agent (loopback mode must be allowed)
         if [ -n '${{ inputs.gpg_pass }}' ]; then
-          echo "allow-preset-passphrase" > ${{ inputs.gpg_home }}/gpg-agent.conf
-          gpgconf --kill gpg-agent
-          sleep 1
-          gpgconf --homedir "${{ inputs.gpg_home }}" --launch gpg-agent
+          echo "allow-preset-passphrase" > $GNUPGHOME/gpg-agent.conf
+          gpgconf --homedir "$GNUPGHOME" --launch gpg-agent
           echo '${{ inputs.gpg_pass }}' | \
-            /usr/lib/gnupg/gpg-preset-passphrase --home '${{ inputs.gpg_home }}' --preset "$FINGERPRINT" || true
-          gpgconf --reload gpg-agent || true
+            /usr/lib/gnupg/gpg-preset-passphrase --home "$GNUPGHOME" --preset "$FINGERPRINT" || true
         fi
     
         # Create the tag (no gpg-sign-options)
