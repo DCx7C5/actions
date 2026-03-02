@@ -43,19 +43,11 @@ jobs:
 
       - name: Delete old tag (if exists)
         id: tag_delete
-        shell: bash
+        uses: DCx7C5/actions/tag-delete@v1
         env:
-          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
-        run: |
-          set -euo pipefail
-          OLD_TAG="v1"
-          if git rev-parse "$OLD_TAG" >/dev/null 2>&1; then
-            echo "Deleting local tag $OLD_TAG"
-            git tag --delete "$OLD_TAG"
-          fi
-          git push origin --delete "$OLD_TAG" 2>/dev/null || true
-          echo "Old tag $OLD_TAG removed (or didn't exist)"
+        with:
+          tag_name: "v1"
 
       - name: Create and push new signed Tag
         id: tag_create
