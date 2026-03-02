@@ -75,85 +75,27 @@ runs:
         
         SIGN_ARGS=()
         if [ -n "$FINGERPRINT" ]; then
-          echo "Fingerprint provided → verifying key exists..."
-
-          # Check if this key is usable (secret key present)
-          if ! gpg --with-colons --list-secret-keys "$FINGERPRINT" >/dev/null 2>&1; then
-            gpg --list-secret-keys --keyid-format LONG || true
-            echo "::error::Provided fingerprint $FINGERPRINT not found or no secret key available."
-            exit 1
-          fi
-
-          echo "Key found → using --local-user $FINGERPRINT"
           SIGN_ARGS=(--local-user "$FINGERPRINT")
-
-          # Try to extract name/email from the key's uid
-          UID_LINE=$(gpg --with-colons --list-keys "$FINGERPRINT" | awk -F: '/^uid:/ {print $10; exit}')
-          if [ -n "$UID_LINE" ]; then
-            UID_DECODED=$(echo "$UID_LINE" | sed 's/%20/ /g; s/%3C/</g; s/%3E/>/g; s/%40/@/g')
-            if [[ "$UID_DECODED" =~ ^([^<]+)[[:space:]]+\<(.*)\>$ ]]; then
-              REAL_NAME="${BASH_REMATCH[1]//^[[:space:]]+|[[:space:]]+$/}"
-              REAL_EMAIL="${BASH_REMATCH[2]}"
-              echo "Using real identity from key: $REAL_NAME <$REAL_EMAIL>"
-              git config user.name "$REAL_NAME"
-              git config user.email "$REAL_EMAIL"
-            else
-              echo "::warning::Could not parse name/email from key uid: $UID_DECODED"
-            fi
-          else
-            echo "::warning::No uid found for key $FINGERPRINT → keeping default identity"
-          fi
+          echo "Using explicit key: $FINGERPRINT"
         else
-          echo "No fingerprint provided → looking for default secret key..."
-
-          DEFAULT_FP=$(gpg --with-colons --list-secret-keys | awk -F: '/^fpr:/ {print $10; exit}')
-          if [ -n "$DEFAULT_FP" ]; then
-            echo "Found default key: $DEFAULT_FP → using it"
-            FINGERPRINT="$DEFAULT_FP"
-            SIGN_ARGS=(--local-user "$FINGERPRINT")
-
-            # Try extract identity from default key
-            UID_LINE=$(gpg --with-colons --list-keys "$FINGERPRINT" | awk -F: '/^uid:/ {print $10; exit}')
-            if [ -n "$UID_LINE" ]; then
-              UID_DECODED=$(echo "$UID_LINE" | sed 's/%20/ /g; s/%3C/</g; s/%3E/>/g; s/%40/@/g')
-              if [[ "$UID_DECODED" =~ ^([^<]+)[[:space:]]+\<(.*)\>$ ]]; then
-                REAL_NAME="${BASH_REMATCH[1]//^[[:space:]]+|[[:space:]]+$/}"
-                REAL_EMAIL="${BASH_REMATCH[2]}"
-                git config user.name "$REAL_NAME"
-                git config user.email "$REAL_EMAIL"
-                echo "Using identity from default key: $REAL_NAME <$REAL_EMAIL>"
-              fi
-            fi
-          else
-            echo "::notice::No secret keys found → creating unsigned tag or failing depending on policy"
-            # If you want to require signing, exit 1 here
-            # exit 1
-          fi
+          echo "No explicit fingerprint → using default key"
         fi
-        
-        echo "Creating signed tag: $TAG"
-
+    
+        # Export passphrase to agent (loopback mode must be allowed)
         if [ -n '${{ inputs.gpg_pass }}' ]; then
-          # Passphrase-protected key → use fd for passphrase
-          if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" \
-               "${SIGN_ARGS[@]}" --sign \
-               --passphrase-fd 3 --pinentry-mode loopback \
-               3<<< '${{ inputs.gpg_pass }}'; then
-            echo "::error::git tag signing failed (check passphrase, key trust, or pinentry config)"
-            gpg --list-secret-keys --keyid-format LONG || true
-            exit 1
-          fi
-        else
-          # No passphrase → normal signing
-          if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" \
-               "${SIGN_ARGS[@]}" --sign; then
-            echo "::error::git tag signing failed"
-            gpg --list-secret-keys --keyid-format LONG || true
-            exit 1
-          fi
+          echo "allow-preset-passphrase" >> "$GNUPGHOME/gpg-agent.conf"
+          echo '${{ inputs.gpg_pass }}'' | gpg-preset-passphrase --preset "$FINGERPRINT" || true
+          gpgconf --reload gpg-agent || true
         fi
-
-        echo "Successfully created signed tag: $TAG"
+    
+        # Create the tag (no gpg-sign-options)
+        if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" "${SIGN_ARGS[@]}" -s; then
+          echo "::error::git tag signing failed"
+          gpg --list-secret-keys --keyid-format LONG || true
+          exit 1
+        fi
+    
+        echo "Signed tag created successfully: $TAG"
         git show --pretty=fuller "$TAG" || true
         
     - name: Push signed tag
