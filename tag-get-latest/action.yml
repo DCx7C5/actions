@@ -1,0 +1,28 @@
+name: "Get latest Tag"
+description: "Gets latest tag of a repository via GitHub Actions"
+author: "DCx7C5"
+
+inputs:
+  repository:
+    description: "The repository we search for the latest tag"
+    required: false
+    default: ${{ github.repository }}
+
+outputs:
+  tag_name:
+    description: "Stores value of the latest tag (if found)"
+    value: ${{ steps.tag_latest.outputs.tag_name }}
+
+runs:
+  using: composite
+  steps:
+    - id: tag_latest
+      shell: bash
+      env:
+        REPOSITORY: ${{ inputs.repository }}
+      run: |
+        RESPONSE=$(curl -s -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/$REPOSITORY/releases/latest)
+        TAG=$(echo "$RESPONSE" | jq -r .tag_name)
+        echo "tag_name=$TAG" >> $GITHUB_OUTPUT
