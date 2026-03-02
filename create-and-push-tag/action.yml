@@ -42,7 +42,7 @@ runs:
         GNUPGHOME: ${{ inputs.gpg_home }}
         TAG: ${{ inputs.version }}
         FINGERPRINT: ${{ inputs.fingerprint }}
-        GITHUB_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
         echo "::notice::Attempting to create signed tag: $TAG"
@@ -59,23 +59,28 @@ runs:
         else
           echo "::warning::No explicit fingerprint → using default key"
         fi
-    
+        
+        
+        _newgpg="${{ github.workspace}}/newgpg.sh"
         # Export passphrase to agent (loopback mode must be allowed)
         if [ -n '${{ inputs.gpg_pass }}' ]; then
-          cat > "${{ github.workspace}}/newgpg.sh" << 'GPGEND'
+          cat > "$_newgpg" << 'GPGEND'
         #!/bin/bash
         exec 3<<< '${{ inputs.gpg_pass }}'
         gpg --batch --pinentry-mode loopback --passphrase-fd 3 "$@"
         exec 3>&-
         GPGEND
-          chmod +x "${{ github.workspace }}/newgpg.sh"
-          git config --global gpg.program "${{ github.workspace }}/newgpg.sh"
+          chmod 700 "$_newgpg"
+          git config --global gpg.program "$_newgpg"
         fi
+        
         # Create the tag (no gpg-sign-options)
         if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" "${SIGN_ARGS[@]}" -s; then
           echo "::error::git tag signing failed"
           exit 1
         fi
+        
+        [ -f "$_newgpg" ] && { shred -vfz -n 3 "$_newgpg" || rm -rf "$_newgpg" ;}
         
         echo "::notice::Signed tag created successfully: $TAG"
         git show --pretty=fuller "$TAG" || true
@@ -84,7 +89,7 @@ runs:
       id: tag_push
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
         if ! git push origin "${{ inputs.version }}"; then
