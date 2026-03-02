@@ -31,11 +31,9 @@ runs:
 
         echo "GNUPGHOME=$GNUPGHOME" >> $GITHUB_ENV
         echo "gpg_home=$GNUPGHOME" >> $GITHUB_OUTPUT
-        echo "gpg_version=$(gpg --version | head -n1 | awk '{print $3}' | awk -F'.' '{print $2}')" >> $GITHUB_OUTPUT
         echo "Created GPG home: $GNUPGHOME"
 
     - name: Setup secure GPG configuration
-      if: steps.create_dir.outputs.gpg_version == 2
       shell: bash
       id: gpg_setup_legacy
       env:
@@ -70,62 +68,6 @@ runs:
         # Trust model & security
         trust-model pgp
         require-cross-certification
-        GPGCONF
-
-        # Set proper permissions on config file
-        chmod 600 "$GNUPGHOME/gpg.conf"
-
-        # Verify GPG is working
-        if ! gpg --list-keys > /dev/null 2>&1; then
-          echo "::warning::GPG initialization check - creating initial keyring"
-          gpg --list-keys > /dev/null 2>&1 || true
-        fi
-
-        echo "Successfully setup secure GPG environment"
-
-    - name: Setup secure GPG configuration
-      if: steps.create_dir.outputs.gpg_version >= 4
-      shell: bash
-      id: gpg_setup
-      env:
-        GNUPGHOME: ${{ steps.create_dir.outputs.gpg_home }}
-      run: |
-        set -euo pipefail
-
-        mkdir -p "$GNUPGHOME"/{private-keys-v1.d,pubring.d}
-        chmod 700 "$GNUPGHOME"/private-keys-v1.d
-        chmod 755 "$GNUPGHOME"/pubring.d
-
-        cat > "$GNUPGHOME/gpg.conf" << 'GPGCONF'
-
-        # Encryption cipher preferences (strongest first)
-        cipher-algo AES256
-        digest-algo SHA256
-        cert-digest-algo 512
-        compress-algo ZLIB
-
-        # Disable weak algorithms
-        disable-cipher-algo 3DES
-        disable-cipher-algo IDEA
-
-        # Key server with HKPS (HTTPS)
-        keyserver hkps://keys.openpgp.org
-        keyserver-options no-try-dns-srv
-
-        # Default key format and IDs
-        keyid-format LONG
-
-        # Trust model: Only explicitly trusted keys
-        trust-model pgp
-
-        # Key expiration defaults
-        default-key-lifetime 3650
-
-        # Require cross-certification for subkeys
-        require-cross-certification
-
-        # Weak digest algorithms to disable
-        weak-digest-algos SHA1
         GPGCONF
 
         # Set proper permissions on config file
