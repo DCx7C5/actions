@@ -22,7 +22,7 @@ jobs:
 
       - name: Setup GPG Environment
         id: gpg_setup
-        uses: DCx7C5/actions/setup-gpg-env@v1
+        uses: DCx7C5/actions/setup-gpg-home@v1
 
       - name: Import GPG key
         id: gpg_import
