@@ -58,7 +58,6 @@ runs:
         GNUPGHOME: ${{ steps.get_gpg_home.outputs.gpg_home }}
       run: |
         set -euo pipefail
-        local GPG_NAME GPG_MAIL GPG_EMPTY UID_LINE FINGERPRINT UID_DECODED
         
         GPG_NAME="GitHub Actions"
         GPG_MAIL="actions@github.com"
