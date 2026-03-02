@@ -82,7 +82,6 @@ runs:
         echo "Successfully setup secure GPG environment"
 
     - name: Setup secure GPG configuration
-      if: steps.create_dir.outputs.gpg_version >= 4
       shell: bash
       id: gpg_setup
       run: |
@@ -134,3 +133,20 @@ runs:
         fi
 
         echo "Successfully setup secure GPG environment"
+
+    - name: Configure gpg-agent for non-interactive signing
+      id: gpgagent
+      shell: bash
+      env:
+        GNUPGHOME: ${{ steps.get_gpg_home.outputs.gpg_home }}
+      run: |
+        set -euo pipefail
+        
+        cat > "$GNUPGHOME/gpg-agent.conf" << 'EOF'
+        default-cache-ttl 600
+        max-cache-ttl 7200
+        allow-loopback-pinentry
+        pinentry-program /bin/true
+        EOF
+        
+        echo "Configured gpg-agent for non-interactive signing"
