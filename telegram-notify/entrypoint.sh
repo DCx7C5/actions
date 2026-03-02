@@ -20,7 +20,7 @@ if [ -z "${TELEGRAM_MESSAGE:-}" ]; then
 fi
 
 # Set defaults
-TELEGRAM_PARSE_MODE="${TELEGRAM_PARSE_MODE:-MarkdownV2}"
+TELEGRAM_PARSE_MODE="${TELEGRAM_PARSE_MODE:-HTML}"
 TELEGRAM_SILENT="${TELEGRAM_SILENT:-false}"
 
 # Validate parse mode
@@ -97,4 +97,6 @@ if [ -n "$MESSAGE_ID" ]; then
   echo "✓ Telegram message sent successfully! (Message ID: $MESSAGE_ID)"
 else
   echo "::error::No message ID in response" >&2
+  exit 1
 fi
+exit 0
