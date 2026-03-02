@@ -1,5 +1,5 @@
-name: "Import GPG Key (Secure)"
-description: "Import GPG Keys from GitHub Actions with security hardening"
+name: "Import GPG Keys (Secure)"
+description: "Import GPG Keys from GitHub Actions"
 author: "DCx7C5"
 
 
@@ -158,7 +158,6 @@ runs:
             echo "::error::Failed to import public key from file" >&2
             exit 1
           fi
-
           echo "::notice::Public key imported successfully"
         fi
 
@@ -174,4 +173,4 @@ runs:
       run: |
         set -euo pipefail
         echo "${{ steps.import_key.outputs.fingerprint }}:6:" | gpg --import-ownertrust
-        echo "::info::Ownertrust level set"
+        echo "::notice::Ownertrust level set"

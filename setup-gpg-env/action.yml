@@ -31,7 +31,7 @@ runs:
 
         echo "GNUPGHOME=$GNUPGHOME" >> $GITHUB_ENV
         echo "gpg_home=$GNUPGHOME" >> $GITHUB_OUTPUT
-        echo "::info::Created GPG home: $GNUPGHOME"
+        echo "::notice::Created GPG home: $GNUPGHOME"
 
     - name: Setup secure GPG configuration
       shell: bash
@@ -78,7 +78,7 @@ runs:
           gpg --list-keys > /dev/null 2>&1 || true
         fi
 
-        echo "::info::Successfully setup secure GPG environment"
+        echo "::notice::Successfully setup secure GPG environment"
 
     - name: Configure gpg-agent for non-interactive signing
       id: gpgagent
@@ -97,4 +97,4 @@ runs:
         
         chmod 600 "$GNUPGHOME/gpg-agent.conf"
         gpgconf --kill gpg-agent || true
-        echo "::info::Configured gpg-agent for non-interactive signing"
+        echo "::notice::Configured gpg-agent for non-interactive signing"

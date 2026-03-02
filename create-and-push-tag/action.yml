@@ -48,7 +48,7 @@ runs:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
-        echo "::info::Attempting to create signed tag: $TAG"
+        echo "::notice::Attempting to create signed tag: $TAG"
 
         if git rev-parse "$TAG" >/dev/null 2>&1; then
           echo "::error::Tag $TAG already exists."
@@ -66,7 +66,7 @@ runs:
         # Export passphrase to agent (loopback mode must be allowed)
         if [ -n '${{ inputs.gpg_pass }}' ]; then
           echo "allow-preset-passphrase" >> "$GNUPGHOME/gpg-agent.conf"
-          echo '${{ inputs.gpg_pass }}' | gpg-preset-passphrase --preset "$FINGERPRINT" || true
+          echo '${{ inputs.gpg_pass }}' | /usr/lib/gnupg/gpg-preset-passphrase --preset "$FINGERPRINT" || true
           gpgconf --reload gpg-agent || true
         fi
     
@@ -77,7 +77,7 @@ runs:
           exit 1
         fi
     
-        echo "::info::Signed tag created successfully: $TAG"
+        echo "::notice::Signed tag created successfully: $TAG"
         git show --pretty=fuller "$TAG" || true
 
     - name: Push (signed) tag
@@ -92,4 +92,4 @@ runs:
           exit 1
         fi
         
-        echo "::info::Successfully pushed TAG to repository"
+        echo "::notice::Successfully pushed TAG to repository"

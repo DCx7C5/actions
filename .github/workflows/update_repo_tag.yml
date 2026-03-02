@@ -1,4 +1,4 @@
-name: "Update Repository Tag"
+name: "Update Repository Tag & Release"
 
 
 on:
