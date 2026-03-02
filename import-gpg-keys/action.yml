@@ -28,7 +28,7 @@ inputs:
 outputs:
   fingerprint:
     description: "Fingerprint of the imported GPG key"
-    value: ${{ steps.import_key.outputs.fingerprint }}
+    value: ${{ steps.gpg_trust.outputs.fingerprint }}
 
 runs:
   using: composite
@@ -167,10 +167,11 @@ runs:
         echo "::notice::Total GPG keys available: $KEY_COUNT"
 
     - name: Set owner trust level for GPG Key
-      if: steps.import_key.outputs.fingerprint != ''
       id: gpg_trust
       shell: bash
       run: |
         set -euo pipefail
-        echo "${{ steps.import_key.outputs.fingerprint }}:6:" | gpg --import-ownertrust
+        _fp=$(gpg --batch --list-secret-keys --with-colons | grep "^fpr" | head -1 | awk -F':' '{print $10}')
+        echo "$_fp:6:" | gpg --import-ownertrust
+        echo "fingerprint=$_fp" >> $GITHUB_OUTPUT
         echo "::notice::Ownertrust level set"

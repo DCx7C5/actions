@@ -64,8 +64,8 @@ jobs:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
         with:
-          fingerprint: ${{ steps.gpg_import.outputs.fingerprint }}
           gpg_home: ${{ steps.gpg_setup.outputs.gpg_home }}
+          fingerprint: ${{ steps.gpg_import.outputs.fingerprint }}
           gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
           version: "v1"
           commit_msg: "Release v1"
