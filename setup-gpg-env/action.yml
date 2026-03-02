@@ -31,7 +31,7 @@ runs:
 
         echo "GNUPGHOME=$GNUPGHOME" >> $GITHUB_ENV
         echo "gpg_home=$GNUPGHOME" >> $GITHUB_OUTPUT
-        echo "Created GPG home: $GNUPGHOME"
+        echo "::info::Created GPG home: $GNUPGHOME"
 
     - name: Setup secure GPG configuration
       shell: bash
@@ -46,7 +46,6 @@ runs:
         chmod 755 "$GNUPGHOME"/pubring.d
 
         cat > "$GNUPGHOME/gpg.conf" << 'GPGCONF'
-
         # Strong algorithm preferences (GnuPG 2.2 compatible)
         personal-cipher-preferences AES256 AES192 AES
         personal-digest-preferences SHA512 SHA384 SHA256 SHA224
@@ -79,7 +78,7 @@ runs:
           gpg --list-keys > /dev/null 2>&1 || true
         fi
 
-        echo "Successfully setup secure GPG environment"
+        echo "::info::Successfully setup secure GPG environment"
 
     - name: Configure gpg-agent for non-interactive signing
       id: gpgagent
@@ -98,4 +97,4 @@ runs:
         
         chmod 600 "$GNUPGHOME/gpg-agent.conf"
         gpgconf --kill gpg-agent || true
-        echo "Configured gpg-agent for non-interactive signing"
+        echo "::info::Configured gpg-agent for non-interactive signing"

@@ -162,9 +162,16 @@ runs:
           echo "::notice::Public key imported successfully"
         fi
 
-        gpg --list-keys | head -5
-        
         KEY_COUNT_PUB=$(gpg --list-keys --with-colons 2>/dev/null | grep -c "^pub:" || true)
         KEY_COUNT_SEC=$(gpg --list-secret-keys --with-colons 2>/dev/null | grep -c "^sec:" || true)
         KEY_COUNT=$((KEY_COUNT_PUB + KEY_COUNT_SEC))
         echo "::notice::Total GPG keys available: $KEY_COUNT"
+
+    - name: Set owner trust level for GPG Key
+      if: steps.import_key.outputs.fingerprint != ''
+      id: gpg_trust
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "${{ steps.import_key.outputs.fingerprint }}:6:" | gpg --import-ownertrust
+        echo "::info::Ownertrust level set"

@@ -34,17 +34,19 @@ jobs:
           gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
           gpg_priv: ${{ secrets.GPG_PRIVATE_KEY }}
 
-      - name: Configure Git clients to sign with GPG
+      - name: Configure Git client to sign with GPG
         id: git_config
         uses: DCx7C5/actions/configure-git-gpg@v1
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
 
       - name: Delete old tag (if exists)
         id: tag_delete
         shell: bash
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
         run: |
           set -euo pipefail
           OLD_TAG="v1"
@@ -52,19 +54,30 @@ jobs:
             echo "Deleting local tag $OLD_TAG"
             git tag --delete "$OLD_TAG"
           fi
-          
           git push origin --delete "$OLD_TAG" 2>/dev/null || true
           echo "Old tag $OLD_TAG removed (or didn't exist)"
 
-      - name: Create new Tag and Release
-        id: create_release
+      - name: Create and push new signed Tag
+        id: tag_create
         uses: DCx7C5/actions/create-tag-and-release@v1
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
         with:
-          fingerprint: "${{ steps.gpg_import.outputs.fingerprint }}"
-          gpg_pass: "${{ secrets.GPG_PASSPHRASE }}"
+          fingerprint: ${{ steps.gpg_import.outputs.fingerprint }}
+          gpg_home: ${{ steps.gpg_setup.outputs.gpg_home }}
+          gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
           version: "v1"
-          gpg_home: "${{ steps.gpg_setup.outputs.gpg_home }}"
           commit_msg: "Release v1"
-          release_notes: "Release v1 - Updated tag to point to latest commit on main branch"
+
+      - name: Create GitHub Release
+        id: rel_create
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v1"
+          name: "v1"
+          body: "Release v1 - Updated tag to point to latest commit on main branch"
+          draft: false
+          prerelease: false
+          generate_release_notes: ''
+          fail_on_unmatched_files: true

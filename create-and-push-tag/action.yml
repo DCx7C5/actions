@@ -1,5 +1,5 @@
-name: "Create & Push Signed Release"
-description: "Create & push a signed git tag + GitHub Release with optional file signing"
+name: "Create & Push Signed Tag"
+description: "Create & push a signed git tag"
 author: "DCx7C5"
 
 
@@ -7,14 +7,6 @@ inputs:
   version:
     description: "The new version to use (e.g. v1.2.3 or 1.2.3)"
     required: true
-  files:
-    description: "Space-separated list of files/globs to attach to the release"
-    required: false
-    default: ""
-  pre_release:
-    description: "Mark this as a pre-release"
-    required: false
-    default: 'false'
   gpg_home:
     description: "Path to GNUPGHOME directory (where keys are stored)"
     required: false
@@ -31,42 +23,32 @@ inputs:
     description: "Commit message for the annotated tag"
     required: false
     default: "Release ${{ inputs.version }}"
-  release_notes:
-    description: "Release body/notes (markdown supported)"
-    required: false
-    default: "Release ${{ inputs.version }}"
-
-
-outputs:
-  new_rel:
-    description: "Name of the new release (tag name)"
-    value: ${{ steps.create_release.outputs.tag_name }}
-  release_url:
-    description: "URL of the created GitHub Release"
-    value: ${{ steps.create_release.outputs.url }}
 
 
 runs:
   using: composite
   steps:
     - name: Mask sensitive values
+      id: mask_vars
       shell: bash
       if: inputs.fingerprint != ''
       run: |
         echo "::add-mask::${{ inputs.fingerprint }}"
-        echo "::add-mask::${{ inputs.gpg_pass }}"
+        echo '::add-mask::${{ inputs.gpg_pass }}'
         echo "::add-mask::$FINGERPRINT"
         echo "::add-mask::$INPUT_FINGERPRINT"
 
     - name: Create & sign annotated tag
+      id: tag_create
       shell: bash
       env:
         GNUPGHOME: ${{ inputs.gpg_home }}
         TAG: ${{ inputs.version }}
         FINGERPRINT: ${{ inputs.fingerprint }}
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
-        echo "Attempting to create signed tag: $TAG"
+        echo "::info::Attempting to create signed tag: $TAG"
 
         if git rev-parse "$TAG" >/dev/null 2>&1; then
           echo "::error::Tag $TAG already exists."
@@ -76,15 +58,15 @@ runs:
         SIGN_ARGS=()
         if [ -n "$FINGERPRINT" ]; then
           SIGN_ARGS=(--local-user "$FINGERPRINT")
-          echo "Using explicit key: $FINGERPRINT"
+          echo "::notice::Using explicit key: $FINGERPRINT"
         else
-          echo "No explicit fingerprint → using default key"
+          echo "::warning::No explicit fingerprint → using default key"
         fi
     
         # Export passphrase to agent (loopback mode must be allowed)
         if [ -n '${{ inputs.gpg_pass }}' ]; then
           echo "allow-preset-passphrase" >> "$GNUPGHOME/gpg-agent.conf"
-          echo '${{ inputs.gpg_pass }}'' | gpg-preset-passphrase --preset "$FINGERPRINT" || true
+          echo '${{ inputs.gpg_pass }}' | gpg-preset-passphrase --preset "$FINGERPRINT" || true
           gpgconf --reload gpg-agent || true
         fi
     
@@ -95,31 +77,19 @@ runs:
           exit 1
         fi
     
-        echo "Signed tag created successfully: $TAG"
+        echo "::info::Signed tag created successfully: $TAG"
         git show --pretty=fuller "$TAG" || true
-        
-    - name: Push signed tag
+
+    - name: Push (signed) tag
+      id: tag_push
       shell: bash
       env:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
-        git push origin "${{ inputs.version }}"
-
-    - name: Create GitHub Release
-      id: create_release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ inputs.version }}
-        name: ${{ inputs.version }}
-        body: ${{ inputs.release_notes }}
-        draft: false
-        prerelease: ${{ inputs.pre_release == 'true' }}
-        generate_release_notes: ${{ inputs.release_notes == '' }}
-        fail_on_unmatched_files: true
-        files: ${{ inputs.files }}
-
-    - name: Output release info
-      shell: bash
-      run: |
-        echo "new_release_url=${{ steps.create_release.outputs.url }}" >> $GITHUB_OUTPUT
-        echo "new_release_tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
+        set -euo pipefail
+        if ! git push origin "${{ inputs.version }}"; then
+          echo "::error::Failed pushing TAG to repository"
+          exit 1
+        fi
+        
+        echo "::info::Successfully pushed TAG to repository"
