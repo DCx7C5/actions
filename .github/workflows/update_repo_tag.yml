@@ -12,7 +12,7 @@ permissions:
 
 
 jobs:
-  create-tag:
+  create-tag-and-release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -22,11 +22,11 @@ jobs:
 
       - name: Setup GPG Environment
         id: gpg_setup
-        uses: DCx7C5/actions/setup-gpg-home@v1
+        uses: DCx7C5/actions/gpg-setup-home@v1
 
       - name: Import GPG key
         id: gpg_import
-        uses: DCx7C5/actions/import-gpg-keys@v1
+        uses: DCx7C5/actions/gpg-import-keys@v1
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
@@ -36,7 +36,7 @@ jobs:
 
       - name: Configure Git client to sign with GPG
         id: git_config
-        uses: DCx7C5/actions/configure-git-gpg@v1
+        uses: DCx7C5/actions/git-configure-gnupg@v1
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
@@ -59,7 +59,7 @@ jobs:
 
       - name: Create and push new signed Tag
         id: tag_create
-        uses: DCx7C5/actions/create-and-push-tag@v1
+        uses: DCx7C5/actions/tag-create-and-push@v1
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
