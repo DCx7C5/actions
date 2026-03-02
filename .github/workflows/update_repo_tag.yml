@@ -81,6 +81,6 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           to: ${{ secrets.TELEGRAM_CHANNEL_ID }}
           message: |
-            New Signed Release!
-            Repository: ${{ github.repository }}
+            <b>New Signed Release!</b>
+            Repository: <i>${{ github.repository }}</i>
             Signed: ${{ steps.gpg_import.outputs.fingerprint }}

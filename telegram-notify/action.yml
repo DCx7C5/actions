@@ -15,7 +15,7 @@ inputs:
   parse_mode:
     description: "Parse mode: MarkdownV2 (default), Markdown, or HTML"
     required: false
-    default: "MarkdownV2"
+    default: "HTML"
   silent:
     description: "Disable notification sound (true/false)"
     required: false
