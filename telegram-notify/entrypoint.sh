@@ -14,17 +14,17 @@ trap 'unset TELEGRAM_BOT_TOKEN; exit 1' ERR EXIT
 
 # Validate required environment variables
 if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
-  echo "ERROR: TELEGRAM_BOT_TOKEN not set" >&2
+  echo "::error::TELEGRAM_BOT_TOKEN not set" >&2
   exit 1
 fi
 
 if [ -z "${TELEGRAM_TO:-}" ]; then
-  echo "ERROR: TELEGRAM_TO not set" >&2
+  echo "::error::TELEGRAM_TO not set" >&2
   exit 1
 fi
 
 if [ -z "${TELEGRAM_MESSAGE:-}" ]; then
-  echo "ERROR: TELEGRAM_MESSAGE not set" >&2
+  echo "::error::TELEGRAM_MESSAGE not set" >&2
   exit 1
 fi
 
@@ -36,14 +36,14 @@ TELEGRAM_SILENT="${TELEGRAM_SILENT:-false}"
 case "$TELEGRAM_PARSE_MODE" in
   MarkdownV2|Markdown|HTML) ;;
   *)
-    echo "ERROR: Invalid parse mode: $TELEGRAM_PARSE_MODE" >&2
+    echo "::error::Invalid parse mode: $TELEGRAM_PARSE_MODE" >&2
     exit 1
     ;;
 esac
 
 # Validate silent flag
 if ! [[ "$TELEGRAM_SILENT" =~ ^(true|false)$ ]]; then
-  echo "ERROR: TELEGRAM_SILENT must be true or false" >&2
+  echo "::error::TELEGRAM_SILENT must be true or false" >&2
   exit 1
 fi
 
@@ -69,7 +69,7 @@ JSON_PAYLOAD=$(jq -n \
   }')
 
 if [ -z "$JSON_PAYLOAD" ]; then
-  echo "ERROR: Failed to construct JSON payload" >&2
+  echo "::error::Failed to construct JSON payload" >&2
   exit 1
 fi
 
@@ -88,14 +88,14 @@ RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
 
 # Check HTTP status code
 if [ "$HTTP_STATUS" != "200" ]; then
-  echo "ERROR: HTTP $HTTP_STATUS" >&2
+  echo "::error::HTTP $HTTP_STATUS" >&2
   echo "Response: $RESPONSE_BODY" >&2
   exit 1
 fi
 
 # Parse JSON response
 if ! echo "$RESPONSE_BODY" | jq -e '.ok' > /dev/null 2>&1; then
-  echo "ERROR: Telegram API error" >&2
+  echo "::error::Telegram API error" >&2
   echo "Response: $RESPONSE_BODY" >&2
   exit 1
 fi
@@ -104,10 +104,8 @@ fi
 MESSAGE_ID=$(echo "$RESPONSE_BODY" | jq -r '.result.message_id // empty')
 if [ -n "$MESSAGE_ID" ]; then
   echo "✓ Telegram message sent successfully! (Message ID: $MESSAGE_ID)"
+  exit 0
 else
-  echo "ERROR: No message ID in response" >&2
+  echo "::error::No message ID in response" >&2
   exit 1
 fi
-
-exit 0
-
