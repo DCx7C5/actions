@@ -92,7 +92,6 @@ runs:
         default-cache-ttl 600
         max-cache-ttl 7200
         allow-loopback-pinentry
-        allow-preset-passphrase
         pinentry-program /bin/true
         EOF
         
