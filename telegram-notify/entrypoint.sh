@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Error handling
-trap 'unset TELEGRAM_BOT_TOKEN; exit 1' ERR EXIT
+trap 'unset TELEGRAM_BOT_TOKEN; exit 0' EXIT
 
 # Validate required environment variables
 if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
@@ -99,4 +99,5 @@ else
   echo "::error::No message ID in response" >&2
   exit 1
 fi
-true
+
+exit 0
