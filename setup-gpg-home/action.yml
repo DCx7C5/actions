@@ -55,6 +55,7 @@ runs:
         # Explicitly disable legacy/weak ciphers
         disable-cipher-algo 3DES IDEA CAST5 BLOWFISH TWOFISH
         pinentry-mode loopback
+        
         # Keyserver (secure HKPS)
         keyserver hkps://keys.openpgp.org
         keyserver-options auto-key-retrieve
@@ -67,6 +68,7 @@ runs:
         # Trust model & security
         trust-model pgp
         require-cross-certification
+        no-tty
         GPGCONF
 
         # Set proper permissions on config file
