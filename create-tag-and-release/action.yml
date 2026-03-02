@@ -137,7 +137,7 @@ runs:
           # Passphrase-protected key → use fd for passphrase
           if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" \
                "${SIGN_ARGS[@]}" --sign \
-               --gpg-sign-options "--passphrase-fd 3 --pinentry-mode loopback" \
+               --passphrase-fd 3 --pinentry-mode loopback \
                3<<< '${{ inputs.gpg_pass }}'; then
             echo "::error::git tag signing failed (check passphrase, key trust, or pinentry config)"
             gpg --list-secret-keys --keyid-format LONG || true
