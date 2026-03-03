@@ -34,7 +34,7 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
 
       - name: Fail if latest tag is already up to date
-        if: steps.tag_latest.outputs.tag_name == 'null' || steps.tag_latest.outputs.tag_name == ''
+        if: steps.tag_latest.outputs.tag_name != 'v1'
         shell: bash
         run: exit 1
 
