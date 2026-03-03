@@ -124,5 +124,4 @@ runs:
           echo "::error::Failed to push tag to repository" >&2
           exit 1
         fi
-        
         echo "::notice::Successfully pushed tag '$TAG' to repository"
