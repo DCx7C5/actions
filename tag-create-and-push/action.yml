@@ -1,7 +1,10 @@
 name: "Create & Push Signed Tag"
-description: "Create & push a signed git tag"
+description: "Create a new annotated tag with GPG signature and push it to the repository"
 author: "DCx7C5"
 
+branding:
+  icon: "git-commit"
+  color: "orange"
 
 inputs:
   version:
@@ -15,8 +18,8 @@ inputs:
     description: "GPG key fingerprint or email to use for signing the tag (optional)"
     required: false
     default: ""
-  gpg_pass:
-    description: "Passphrase for the GPG key (if needed, optional)"
+  pass:
+    description: "Passphrase for the GPG key (if needed, optional) - will be masked in logs"
     required: false
     default: ""
   commit_msg:
@@ -24,77 +27,102 @@ inputs:
     required: false
     default: "Release ${{ inputs.version }}"
 
+outputs:
+  tag:
+    description: "The created tag name"
+    value: ${{ steps.tag_create.outputs.tag }}
 
 runs:
   using: composite
   steps:
     - name: Mask sensitive values
-      id: mask_vars
       shell: bash
-      if: inputs.fingerprint != ''
       run: |
-        echo '::add-mask::${{ inputs.gpg_pass }}'
+        if [ -n '${{ inputs.pass }}' ]; then
+          echo "::add-mask::${{ inputs.pass }}"
+        fi
+
+    - name: Validate inputs
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        VERSION='${{ inputs.version }}'
+        if [ -z "$VERSION" ]; then
+          echo "::error::version input is required" >&2
+          exit 1
+        fi
+        
+        echo "::notice::Target tag: $VERSION"
 
     - name: Create & sign annotated tag
       id: tag_create
       shell: bash
       env:
         GNUPGHOME: ${{ inputs.gpg_home }}
-        TAG: ${{ inputs.version }}
-        FINGERPRINT: ${{ inputs.fingerprint }}
-        GH_TOKEN: ${{ github.token }}
+        TAG: '${{ inputs.version }}'
+        FINGERPRINT: '${{ inputs.fingerprint }}'
+        PASS: '${{ inputs.pass }}'
+        COMMIT_MSG: '${{ inputs.commit_msg }}'
       run: |
         set -euo pipefail
-        echo "::notice::Attempting to create signed tag: $TAG"
-
+        
+        trap 'unset PASS 2>/dev/null || true' EXIT
+        
+        # Check if tag already exists
         if git rev-parse "$TAG" >/dev/null 2>&1; then
-          echo "::error::Tag $TAG already exists."
+          echo "::error::Tag $TAG already exists" >&2
           exit 1
         fi
         
-        SIGN_ARGS=()
+        echo "::notice::Creating signed tag: $TAG"
+        
+        # Build git tag command
+        TAG_ARGS=(-a "$TAG" -m "$COMMIT_MSG" -s)
+        
         if [ -n "$FINGERPRINT" ]; then
-          SIGN_ARGS=(--local-user "$FINGERPRINT")
+          TAG_ARGS+=(-u "$FINGERPRINT")
           echo "::notice::Using explicit key: $FINGERPRINT"
         else
-          echo "::warning::No explicit fingerprint → using default key"
+          echo "::notice::Using default GPG key"
         fi
         
-        
-        _newgpg="${{ github.workspace}}/newgpg.sh"
-        # Export passphrase to agent (loopback mode must be allowed)
-        if [ -n '${{ inputs.gpg_pass }}' ]; then
-          cat > "$_newgpg" << 'GPGEND'
-        #!/bin/bash
-        exec 3<<< '${{ inputs.gpg_pass }}'
-        gpg --batch --pinentry-mode loopback --passphrase-fd 3 "$@"
-        exec 3>&-
-        GPGEND
-          chmod 700 "$_newgpg"
-          git config --global gpg.program "$_newgpg"
+        # Create tag with passphrase if provided
+        if [ -n "$PASS" ]; then
+          # Use loopback mode to provide passphrase via pipe
+          export GPG_PINENTRY_MODE=loopback
+          
+          if echo "$PASS" | git tag "${TAG_ARGS[@]}"; then
+            echo "::notice::Signed tag created successfully: $TAG"
+          else
+            echo "::error::Failed to create signed tag" >&2
+            exit 1
+          fi
+        else
+          if git tag "${TAG_ARGS[@]}"; then
+            echo "::notice::Signed tag created successfully: $TAG"
+          else
+            echo "::error::Failed to create signed tag" >&2
+            exit 1
+          fi
         fi
         
-        # Create the tag (no gpg-sign-options)
-        if ! git tag -a "$TAG" -m "${{ inputs.commit_msg }}" "${SIGN_ARGS[@]}" -s; then
-          echo "::error::git tag signing failed"
-          exit 1
-        fi
+        # Show tag details
+        git show --pretty=fuller "$TAG" 2>/dev/null || true
         
-        [ -f "$_newgpg" ] && { shred -vfz -n 3 "$_newgpg" || rm -rf "$_newgpg" ;}
-        
-        echo "::notice::Signed tag created successfully: $TAG"
-        git show --pretty=fuller "$TAG" || true
+        # Output
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-    - name: Push (signed) tag
-      id: tag_push
+    - name: Push tag to repository
       shell: bash
-      env:
-        GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
-        if ! git push origin "${{ inputs.version }}"; then
-          echo "::error::Failed pushing TAG to repository"
+        
+        TAG='${{ inputs.version }}'
+        
+        if ! git push origin "$TAG"; then
+          echo "::error::Failed to push tag to repository" >&2
           exit 1
         fi
         
-        echo "::notice::Successfully pushed TAG to repository"
+        echo "::notice::Successfully pushed tag '$TAG' to repository"
