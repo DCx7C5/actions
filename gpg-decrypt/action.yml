@@ -14,13 +14,17 @@ inputs:
     required: false
     default: ''
     description: "Password/Passphrase for decryption (GPG or SSL) - will be masked in logs"
+  format:
+    required: false
+    default: 'base64'
+    description: "Output format: 'base64' (default), 'raw' (plaintext), or 'pgp-block' (with PGP headers)"
 
 outputs:
   encryption_type:
     description: "Detected encryption type: 'gpg', 'ssl', or 'plaintext'"
     value: ${{ steps.decrypt.outputs.encryption_type }}
   decrypted_content:
-    description: "The decrypted file content (as base64 encoded string)"
+    description: "The decrypted file content (format depends on 'format' input: base64, raw, or pgp-block)"
     value: ${{ steps.decrypt.outputs.decrypted_content }}
   file_size:
     description: "Size of the decrypted file in bytes"
@@ -56,6 +60,7 @@ runs:
       env:
         FILE_PATH: ${{ inputs.file_path }}
         PASS: '${{ inputs.pass }}'
+        FORMAT: '${{ inputs.format }}'
       run: |
         set -euo pipefail
         
@@ -98,15 +103,45 @@ runs:
         # ===== Outputs (streamed, no plaintext buffering) =====
         echo "encryption_type=$ENCRYPTION_TYPE" >> "$GITHUB_OUTPUT"
         echo "file_size=$FILE_SIZE" >> "$GITHUB_OUTPUT"
-        echo "decrypted_content<<__DECRYPTED_B64__" >> "$GITHUB_OUTPUT"
+        echo "decrypted_content<<__DECRYPTED_CONTENT__" >> "$GITHUB_OUTPUT"
         
-        if [ "$ENCRYPTION_TYPE" = "gpg" ]; then
-          echo "$PASS" | gpg --no-tty --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt "$FILE_PATH" 2>/dev/null | base64 | tr -d '\n' >> "$GITHUB_OUTPUT"
-        elif [ "$ENCRYPTION_TYPE" = "ssl" ]; then
-          echo "$PASS" | openssl enc -d -aes-256-cbc -pbkdf2 -in "$FILE_PATH" -pass stdin 2>/dev/null | base64 | tr -d '\n' >> "$GITHUB_OUTPUT"
+        # Output format handling
+        if [ "$FORMAT" = "base64" ]; then
+          # Base64 format (default)
+          if [ "$ENCRYPTION_TYPE" = "gpg" ]; then
+            echo "$PASS" | gpg --no-tty --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt "$FILE_PATH" 2>/dev/null | base64 | tr -d '\n' >> "$GITHUB_OUTPUT"
+          elif [ "$ENCRYPTION_TYPE" = "ssl" ]; then
+            echo "$PASS" | openssl enc -d -aes-256-cbc -pbkdf2 -in "$FILE_PATH" -pass stdin 2>/dev/null | base64 | tr -d '\n' >> "$GITHUB_OUTPUT"
+          else
+            base64 "$FILE_PATH" | tr -d '\n' >> "$GITHUB_OUTPUT"
+          fi
+        
+        elif [ "$FORMAT" = "raw" ]; then
+          # Raw plaintext format (direct output)
+          if [ "$ENCRYPTION_TYPE" = "gpg" ]; then
+            echo "$PASS" | gpg --no-tty --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt "$FILE_PATH" 2>/dev/null >> "$GITHUB_OUTPUT"
+          elif [ "$ENCRYPTION_TYPE" = "ssl" ]; then
+            echo "$PASS" | openssl enc -d -aes-256-cbc -pbkdf2 -in "$FILE_PATH" -pass stdin 2>/dev/null >> "$GITHUB_OUTPUT"
+          else
+            cat "$FILE_PATH" >> "$GITHUB_OUTPUT"
+          fi
+        
+        elif [ "$FORMAT" = "pgp-block" ]; then
+          # PGP block format (with headers/footers)
+          if [ "$ENCRYPTION_TYPE" = "gpg" ]; then
+            echo "-----BEGIN PGP PRIVATE KEY BLOCK-----" >> "$GITHUB_OUTPUT"
+            echo "" >> "$GITHUB_OUTPUT"
+            echo "$PASS" | gpg --no-tty --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt "$FILE_PATH" 2>/dev/null | base64 | tr -d '\n' >> "$GITHUB_OUTPUT"
+            echo "" >> "$GITHUB_OUTPUT"
+            echo "-----END PGP PRIVATE KEY BLOCK-----" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::PGP-block format only valid for GPG-encrypted files" >&2
+            exit 1
+          fi
+        
         else
-          base64 "$FILE_PATH" | tr -d '\n' >> "$GITHUB_OUTPUT"
+          echo "::error::Invalid format: $FORMAT. Must be one of: base64, raw, pgp-block" >&2
+          exit 1
         fi
         
-        echo "" >> "$GITHUB_OUTPUT"
-        echo "__DECRYPTED_B64__" >> "$GITHUB_OUTPUT"
+        echo "__DECRYPTED_CONTENT__" >> "$GITHUB_OUTPUT"
