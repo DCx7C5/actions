@@ -16,7 +16,8 @@ outputs:
 runs:
   using: composite
   steps:
-    - id: tag_latest
+    - name: Get latest tag
+      id: tag_latest
       shell: bash
       env:
         REPOSITORY: ${{ inputs.repository }}
@@ -25,4 +26,4 @@ runs:
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           https://api.github.com/repos/$REPOSITORY/releases/latest)
         TAG=$(echo "$RESPONSE" | jq -r .tag_name)
-        echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+        echo "tag_name=$TAG" >> "$GITHUB_OUTPUT"
