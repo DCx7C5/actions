@@ -25,7 +25,8 @@ outputs:
 runs:
   using: composite
   steps:
-    - id: tag_delete
+    - name: Delete tag
+      id: tag_delete
       shell: bash
       env:
         TAG_NAME: ${{ inputs.tag_name }}
@@ -39,6 +40,7 @@ runs:
         fi
         
         TAG_EXISTS=false
+        PUSH_SUCCESS=false
         
         # Check if tag exists locally
         if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
@@ -55,24 +57,28 @@ runs:
           echo "::notice::Tag '$TAG_NAME' does not exist locally"
         fi
         
-        # Try to delete from remote
-        PUSH_SUCCESS=false
+        # Try to delete from remote (don't fail if tag doesn't exist remotely)
         if git push origin --delete "$TAG_NAME" 2>&1; then
           echo "::notice::Remote tag '$TAG_NAME' deleted successfully"
           PUSH_SUCCESS=true
         else
+          # Don't fail here - remote deletion is best-effort
           if [ "$TAG_EXISTS" = true ]; then
-            echo "::warning::Local tag was deleted but remote deletion failed"
+            echo "::warning::Local tag was deleted but remote deletion failed (tag may not exist on remote)"
+            PUSH_SUCCESS=false
           else
-            echo "::warning::Tag '$TAG_NAME' does not exist on remote"
+            echo "::notice::Tag '$TAG_NAME' does not exist remotely - nothing to delete"
+            PUSH_SUCCESS=false
           fi
         fi
         
-        # Set outputs
+        # Set outputs - Action succeeds if ANYTHING was deleted
         if [ "$TAG_EXISTS" = true ] || [ "$PUSH_SUCCESS" = true ]; then
           echo "deleted=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::Tag deletion completed successfully"
         else
           echo "deleted=false" >> "$GITHUB_OUTPUT"
+          echo "::notice::Tag '$TAG_NAME' did not exist locally or remotely - no action taken"
         fi
         
         echo "tag_existed=$TAG_EXISTS" >> "$GITHUB_OUTPUT"
