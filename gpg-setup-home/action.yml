@@ -2,6 +2,12 @@ name: "Setup GPG Environment"
 description: "Setup GPG Environment from GitHub Actions with security hardening"
 author: "DCx7C5"
 
+inputs:
+  gpg_home:
+    description: "Path to GPG home directory (optional, defaults to temporary directory)"
+    required: false
+    default: ''
+
 outputs:
   gpg_home:
     description: "Path to GPG home directory"
@@ -11,8 +17,8 @@ runs:
   using: composite
   steps:
     - name: Create secure GPG directory
-      shell: bash
       id: create_dir
+      shell: bash
       run: |
         set -euo pipefail
 
@@ -29,13 +35,13 @@ runs:
 
         chmod 700 "$GNUPGHOME"
 
-        echo "GNUPGHOME=$GNUPGHOME" >> $GITHUB_ENV
-        echo "gpg_home=$GNUPGHOME" >> $GITHUB_OUTPUT
+        echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+        echo "gpg_home=$GNUPGHOME" >> "$GITHUB_OUTPUT"
         echo "::notice::Created GPG home: $GNUPGHOME"
 
     - name: Setup secure GPG configuration
-      shell: bash
       id: gpg_setup_legacy
+      shell: bash
       env:
         GNUPGHOME: ${{ steps.create_dir.outputs.gpg_home }}
       run: |
