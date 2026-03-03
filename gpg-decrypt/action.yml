@@ -1,0 +1,112 @@
+name: "Decrypt File (GPG/SSL/Plaintext Detection)"
+description: "Detects encryption type (GPG, SSL/OpenSSL), or plaintext and decrypts accordingly"
+author: "DCx7C5"
+
+branding:
+  icon: "unlock"
+  color: "green"
+
+inputs:
+  file_path:
+    required: true
+    description: "Path to the file to decrypt or check"
+  pass:
+    required: false
+    default: ''
+    description: "Password/Passphrase for decryption (GPG or SSL) - will be masked in logs"
+
+outputs:
+  encryption_type:
+    description: "Detected encryption type: 'gpg', 'ssl', or 'plaintext'"
+    value: ${{ steps.decrypt.outputs.encryption_type }}
+  decrypted_content:
+    description: "The decrypted file content (as base64 encoded string)"
+    value: ${{ steps.decrypt.outputs.decrypted_content }}
+  file_size:
+    description: "Size of the decrypted file in bytes"
+    value: ${{ steps.decrypt.outputs.file_size }}
+
+runs:
+  using: composite
+  steps:
+    - name: Mask sensitive values
+      shell: bash
+      run: |
+        if [ -n '${{ inputs.pass }}' ]; then
+          echo "::add-mask::${{ inputs.pass }}"
+        fi
+
+    - name: Validate and detect encryption
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        FILE_PATH="${{ inputs.file_path }}"
+        
+        if [ ! -f "$FILE_PATH" ]; then
+          echo "::error::File not found: $FILE_PATH" >&2
+          exit 1
+        fi
+        
+        echo "::notice::Analyzing file: $FILE_PATH"
+
+    - name: Detect and decrypt file
+      id: decrypt
+      shell: bash
+      env:
+        FILE_PATH: ${{ inputs.file_path }}
+        PASS: '${{ inputs.pass }}'
+      run: |
+        set -euo pipefail
+        
+        trap 'unset PASS 2>/dev/null || true' EXIT
+        
+        # ===== Detect encryption type =====
+        if file "$FILE_PATH" | grep -qi "gpg\|pgp\|encrypted"; then
+          ENCRYPTION_TYPE="gpg"
+        elif head -c 2 "$FILE_PATH" | od -An -tx1 | grep -q "84 02\|85 01\|85 02\|88 00\|89 02"; then
+          ENCRYPTION_TYPE="gpg"
+        elif grep -q "^-----BEGIN PGP MESSAGE-----" "$FILE_PATH" 2>/dev/null; then
+          ENCRYPTION_TYPE="gpg"
+        elif grep -q "^-----BEGIN ENCRYPTED DATA-----\|^-----BEGIN OPENSSH PRIVATE KEY-----" "$FILE_PATH" 2>/dev/null; then
+          ENCRYPTION_TYPE="ssl"
+        elif head -c 8 "$FILE_PATH" | grep -q "Salted__" 2>/dev/null; then
+          ENCRYPTION_TYPE="ssl"
+        else
+          ENCRYPTION_TYPE="plaintext"
+        fi
+        
+        echo "::notice::Detected encryption type: $ENCRYPTION_TYPE"
+        
+        # Passphrase nur für verschlüsselte Dateien erzwingen
+        if [ "$ENCRYPTION_TYPE" != "plaintext" ] && [ -z "$PASS" ]; then
+          echo "::error::Passphrase/password required for encrypted file" >&2
+          exit 1
+        fi
+        
+        # ===== Compute decrypted size without plaintext variable =====
+        if [ "$ENCRYPTION_TYPE" = "gpg" ]; then
+          FILE_SIZE=$(echo "$PASS" | gpg --no-tty --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt "$FILE_PATH" 2>/dev/null | wc -c | tr -d ' ')
+        elif [ "$ENCRYPTION_TYPE" = "ssl" ]; then
+          FILE_SIZE=$(echo "$PASS" | openssl enc -d -aes-256-cbc -pbkdf2 -in "$FILE_PATH" -pass stdin 2>/dev/null | wc -c | tr -d ' ')
+        else
+          FILE_SIZE=$(wc -c < "$FILE_PATH" | tr -d ' ')
+        fi
+        
+        echo "::notice::Decrypted content size: $FILE_SIZE bytes"
+        
+        # ===== Outputs (streamed, no plaintext buffering) =====
+        echo "encryption_type=$ENCRYPTION_TYPE" >> "$GITHUB_OUTPUT"
+        echo "file_size=$FILE_SIZE" >> "$GITHUB_OUTPUT"
+        echo "decrypted_content<<__DECRYPTED_B64__" >> "$GITHUB_OUTPUT"
+        
+        if [ "$ENCRYPTION_TYPE" = "gpg" ]; then
+          echo "$PASS" | gpg --no-tty --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt "$FILE_PATH" 2>/dev/null | base64 | tr -d '\n' >> "$GITHUB_OUTPUT"
+        elif [ "$ENCRYPTION_TYPE" = "ssl" ]; then
+          echo "$PASS" | openssl enc -d -aes-256-cbc -pbkdf2 -in "$FILE_PATH" -pass stdin 2>/dev/null | base64 | tr -d '\n' >> "$GITHUB_OUTPUT"
+        else
+          base64 "$FILE_PATH" | tr -d '\n' >> "$GITHUB_OUTPUT"
+        fi
+        
+        echo "" >> "$GITHUB_OUTPUT"
+        echo "__DECRYPTED_B64__" >> "$GITHUB_OUTPUT"
