@@ -1,0 +1,152 @@
+name: "Import GPG Keys from Files"
+description: "Import GPG keys from local files"
+author: "DCx7C5"
+
+branding:
+  icon: "lock"
+  color: "blue"
+
+inputs:
+  gpg_priv:
+    required: false
+    default: ''
+    description: "Path to GPG private key file"
+  gpg_pass:
+    required: false
+    default: ''
+    description: "GPG key passphrase - will be masked in logs"
+  gpg_pub:
+    required: false
+    default: ''
+    description: "Path to GPG public key file"
+  delete_after_import:
+    required: false
+    default: 'true'
+    description: "Securely delete private key file after import"
+
+outputs:
+  fingerprint:
+    description: "Fingerprint of the imported private GPG key (empty if only public key imported)"
+    value: ${{ steps.import.outputs.fingerprint }}
+  keys_total:
+    description: "Total number of GPG keys available"
+    value: ${{ steps.import.outputs.keys_total }}
+  keys_public:
+    description: "Number of public keys"
+    value: ${{ steps.import.outputs.keys_public }}
+  keys_secret:
+    description: "Number of secret keys"
+    value: ${{ steps.import.outputs.keys_secret }}
+
+runs:
+  using: composite
+  steps:
+    - name: Mask sensitive inputs
+      shell: bash
+      run: |
+        if [ -n '${{ inputs.gpg_pass }}' ]; then
+          echo "::add-mask::${{ inputs.gpg_pass }}"
+        fi
+
+    - name: Validate inputs and environment
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        if [ -z "${GNUPGHOME:-}" ] || [ ! -d "${GNUPGHOME}" ]; then
+          echo "::error::GNUPGHOME not set or does not exist: ${GNUPGHOME:-'(empty)'}" >&2
+          exit 1
+        fi
+        
+        if [ -z '${{ inputs.gpg_priv }}' ] && [ -z '${{ inputs.gpg_pub }}' ]; then
+          echo "::error::Either gpg_priv or gpg_pub input is required" >&2
+          exit 1
+        fi
+        
+        if [ -n '${{ inputs.gpg_priv }}' ] && [ -z '${{ inputs.gpg_pass }}' ]; then
+          echo "::error::gpg_pass (passphrase) is required when importing a private key from file" >&2
+          exit 1
+        fi
+
+    - name: Import GPG keys from files
+      id: import
+      shell: bash
+      env:
+        GPG_PRIV: '${{ inputs.gpg_priv }}'
+        GPG_PASS: '${{ inputs.gpg_pass }}'
+        GPG_PUB: '${{ inputs.gpg_pub }}'
+        DELETE_AFTER: '${{ inputs.delete_after_import }}'
+      run: |
+        set -euo pipefail
+        
+        # Source helper library
+        source "$(dirname "$0")/../lib/gpg-helpers.sh"
+        
+        trap 'unset GPG_PASS 2>/dev/null || true' EXIT
+        
+        # ===== Import Private Key =====
+        if [ -n "$GPG_PRIV" ]; then
+          if [ ! -f "$GPG_PRIV" ]; then
+            echo "::error::Private key file not found: $GPG_PRIV" >&2
+            exit 1
+          fi
+          
+          if gpg --no-tty --batch --pinentry-mode loopback \
+             --passphrase "$GPG_PASS" --import "$GPG_PRIV" 2>&1 | grep -q "imported\|unchanged"; then
+            echo "::notice::Private key imported successfully from file: $GPG_PRIV"
+            
+            # Securely delete the file after import
+            if [ "$DELETE_AFTER" = "true" ]; then
+              if command -v shred &>/dev/null; then
+                shred -vfz -n 3 "$GPG_PRIV" 2>/dev/null || true
+              else
+                rm -f "$GPG_PRIV"
+              fi
+              echo "::notice::Private key file securely removed"
+            fi
+          else
+            echo "::error::Failed to import private key from file: $GPG_PRIV" >&2
+            exit 1
+          fi
+        fi
+        
+        # ===== Import Public Key =====
+        if [ -n "$GPG_PUB" ]; then
+          if [ ! -f "$GPG_PUB" ]; then
+            echo "::error::Public key file not found: $GPG_PUB" >&2
+            exit 1
+          fi
+          
+          if gpg --no-tty --batch --import "$GPG_PUB" 2>&1 | grep -q "imported\|unchanged"; then
+            echo "::notice::Public key imported successfully from file: $GPG_PUB"
+          else
+            echo "::error::Failed to import public key from file: $GPG_PUB" >&2
+            exit 1
+          fi
+        fi
+        
+        # ===== Count Keys and Set Owner Trust =====
+        read -r KEY_COUNT_TOTAL KEY_COUNT_PUB KEY_COUNT_SEC <<< "$(gpg_count_keys)"
+        gpg_log_key_stats "$KEY_COUNT_TOTAL" "$KEY_COUNT_PUB" "$KEY_COUNT_SEC"
+        
+        if [ -n "$GPG_PRIV" ]; then
+          FINGERPRINT=$(gpg_get_secret_fingerprint)
+          
+          if [ -n "$FINGERPRINT" ]; then
+            gpg_set_owner_trust "$FINGERPRINT"
+            echo "::notice::Owner trust level set for fingerprint: $FINGERPRINT"
+            echo "fingerprint=$FINGERPRINT" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Could not determine fingerprint for owner trust setup"
+            echo "fingerprint=" >> "$GITHUB_OUTPUT"
+          fi
+        else
+          echo "fingerprint=" >> "$GITHUB_OUTPUT"
+        fi
+        
+        # ===== Outputs =====
+        echo "keys_public=$KEY_COUNT_PUB" >> "$GITHUB_OUTPUT"
+        echo "keys_secret=$KEY_COUNT_SEC" >> "$GITHUB_OUTPUT"
+        echo "keys_total=$KEY_COUNT_TOTAL" >> "$GITHUB_OUTPUT"
+
+
