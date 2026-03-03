@@ -27,10 +27,4 @@ runs:
           -H "Authorization: Bearer $GH_TOKEN" \
           https://api.github.com/repos/$REPOSITORY/releases/latest)
         TAG=$(echo "$RESPONSE" | jq -r .tag_name)
-        
-        if [[ -z "$TAG" || "$TAG" == "null" ]]; then
-          echo "::warning::No tags found in repository '$REPOSITORY'"
-          exit 1
-        fi
-
         echo "tag_name=$TAG" >> "$GITHUB_OUTPUT"
