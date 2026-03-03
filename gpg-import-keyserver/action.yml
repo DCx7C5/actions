@@ -58,7 +58,7 @@ runs:
         set -euo pipefail
         
         # Source helper library
-        source "$(dirname "$0")/../lib/gpg-helpers.sh"
+        source "${{ github.action_path }}/../lib/gpg-helpers.sh"
         
         echo "::notice::Importing public key from keyserver: $KEYSERVER_URL"
         echo "::notice::Fingerprint: $FINGERPRINT"
@@ -79,4 +79,3 @@ runs:
         echo "keys_public=$KEY_COUNT_PUB" >> "$GITHUB_OUTPUT"
         echo "keys_secret=$KEY_COUNT_SEC" >> "$GITHUB_OUTPUT"
         echo "keys_total=$KEY_COUNT_TOTAL" >> "$GITHUB_OUTPUT"
-

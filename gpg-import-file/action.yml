@@ -80,7 +80,7 @@ runs:
         set -euo pipefail
         
         # Source helper library
-        source "$(dirname "$0")/../lib/gpg-helpers.sh"
+        source "${{ github.action_path }}/../lib/gpg-helpers.sh"
         
         trap 'unset PASS 2>/dev/null || true' EXIT
         
