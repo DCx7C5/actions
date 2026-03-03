@@ -64,6 +64,7 @@ runs:
         FINGERPRINT: '${{ inputs.fingerprint }}'
         PASS: '${{ inputs.pass }}'
         COMMIT_MSG: '${{ inputs.commit_msg }}'
+        GPG_PINENTRY_MODE: loopback
       run: |
         set -euo pipefail
         
@@ -89,17 +90,15 @@ runs:
         
         # Create tag with passphrase if provided
         if [ -n "$PASS" ]; then
-          # Use loopback mode to provide passphrase via pipe
-          export GPG_PINENTRY_MODE=loopback
-          
-          if echo "$PASS" | git tag "${TAG_ARGS[@]}"; then
+          # Use loopback mode to provide passphrase to gpg
+          if echo "$PASS" | GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" --no-edit 2>&1; then
             echo "::notice::Signed tag created successfully: $TAG"
           else
             echo "::error::Failed to create signed tag" >&2
             exit 1
           fi
         else
-          if git tag "${TAG_ARGS[@]}"; then
+          if git tag "${TAG_ARGS[@]}" --no-edit 2>&1; then
             echo "::notice::Signed tag created successfully: $TAG"
           else
             echo "::error::Failed to create signed tag" >&2
