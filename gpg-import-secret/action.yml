@@ -11,10 +11,10 @@ inputs:
     required: false
     default: ''
     description: "GPG private key (inline) - will be masked in logs"
-  gpg_pass:
+  pass:
     required: false
     default: ''
-    description: "GPG key passphrase - will be masked in logs"
+    description: "Passphrase for the private key - will be masked in logs"
   gpg_pub:
     required: false
     default: ''
@@ -43,8 +43,8 @@ runs:
         if [ -n '${{ inputs.gpg_priv }}' ]; then
           echo "::add-mask::${{ inputs.gpg_priv }}"
         fi
-        if [ -n '${{ inputs.gpg_pass }}' ]; then
-          echo "::add-mask::${{ inputs.gpg_pass }}"
+        if [ -n '${{ inputs.pass }}' ]; then
+          echo "::add-mask::${{ inputs.pass }}"
         fi
         if [ -n '${{ inputs.gpg_pub }}' ]; then
           echo "::add-mask::${{ inputs.gpg_pub }}"
@@ -65,8 +65,8 @@ runs:
           exit 1
         fi
         
-        if [ -n '${{ inputs.gpg_priv }}' ] && [ -z '${{ inputs.gpg_pass }}' ]; then
-          echo "::error::gpg_pass (passphrase) is required when importing a private key" >&2
+        if [ -n '${{ inputs.gpg_priv }}' ] && [ -z '${{ inputs.pass }}' ]; then
+          echo "::error::pass (passphrase) is required when importing a private key" >&2
           exit 1
         fi
 
@@ -75,7 +75,7 @@ runs:
       shell: bash
       env:
         GPG_PRIV: '${{ inputs.gpg_priv }}'
-        GPG_PASS: '${{ inputs.gpg_pass }}'
+        PASS: '${{ inputs.pass }}'
         GPG_PUB: '${{ inputs.gpg_pub }}'
       run: |
         set -euo pipefail
@@ -83,12 +83,12 @@ runs:
         # Source helper library
         source "$(dirname "$0")/../lib/gpg-helpers.sh"
         
-        trap 'unset GPG_PASS GPG_PRIV 2>/dev/null || true' EXIT
+        trap 'unset PASS GPG_PRIV 2>/dev/null || true' EXIT
         
         # ===== Import Private Key =====
         if [ -n "$GPG_PRIV" ]; then
           if echo "$GPG_PRIV" | gpg --no-tty --batch --pinentry-mode loopback \
-             --passphrase "$GPG_PASS" --import 2>&1 | grep -q "imported\|unchanged"; then
+             --passphrase "$PASS" --import 2>&1 | grep -q "imported\|unchanged"; then
             echo "::notice::Private key imported successfully from secret"
           else
             echo "::error::Failed to import private key from secret" >&2

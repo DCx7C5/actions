@@ -14,10 +14,10 @@ inputs:
     required: false
     default: ''
     description: "GPG private key (inline for 'secret', or file path for 'file')"
-  gpg_pass:
+  pass:
     required: false
     default: ''
-    description: "GPG key passphrase - will be masked in logs"
+    description: "Passphrase/password for decryption (GPG or SSL) - will be masked in logs"
   gpg_pub:
     required: false
     default: ''
@@ -63,7 +63,7 @@ runs:
       uses: ./gpg-import-secret
       with:
         gpg_priv: ${{ inputs.gpg_priv }}
-        gpg_pass: ${{ inputs.gpg_pass }}
+        pass: ${{ inputs.pass }}
         gpg_pub: ${{ inputs.gpg_pub }}
       id: secret_import
 
@@ -72,7 +72,7 @@ runs:
       uses: ./gpg-import-file
       with:
         gpg_priv: ${{ inputs.gpg_priv }}
-        gpg_pass: ${{ inputs.gpg_pass }}
+        pass: ${{ inputs.pass }}
         gpg_pub: ${{ inputs.gpg_pub }}
         delete_after_import: ${{ inputs.delete_after_import }}
       id: file_import
