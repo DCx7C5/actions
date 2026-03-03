@@ -1,5 +1,5 @@
 name: "Decrypt File (GPG/SSL/Plaintext Detection)"
-description: "Detects encryption type (GPG, SSL/OpenSSL), or plaintext and decrypts accordingly"
+description: "Detects encryption type (GPG, SSL/OpenSSL, or plaintext) and decrypts accordingly"
 author: "DCx7C5"
 
 branding:
