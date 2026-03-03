@@ -27,13 +27,24 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get latest tag
+        id: tag_latest
+        uses: ./actions/tag-get-latest
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+
+      - name: Fail if latest tag is already up to date
+        if: steps.tag_latest.outputs.tag_name == 'null' || steps.tag_latest.outputs.tag_name == ''
+        shell: bash
+        run: exit 1
+
       - name: Setup GPG Environment
         id: gpg_setup
-        uses: ./actions/gpg-setup-home
+        uses: DCx7C5/actions/gpg-setup-home@v1
 
       - name: Import GPG key
         id: gpg_import
-        uses: ./actions/gpg-import
+        uses: DCx7C5/actions/gpg-import@v1
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
@@ -44,20 +55,20 @@ jobs:
 
       - name: Configure Git client to sign with GPG
         id: git_config
-        uses: ./actions/git-configure-gnupg
+        uses: DCx7C5/actions/git-configure-gnupg@v1
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
 
       - name: Delete old tag (if exists)
         id: tag_delete
-        uses: ./actions/tag-delete
+        uses: DCx7C5/actions/tag-delete@v1
         with:
           tag_name: "v1"
 
       - name: Create and push new signed Tag
         id: tag_create
-        uses: ./actions/tag-create-and-push
+        uses: DCx7C5/actions/tag-create-and-push@v1
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
@@ -81,7 +92,7 @@ jobs:
 
       - name: Notify on success
         if: success()
-        uses: ./actions/telegram-notify
+        uses: DCx7C5/actions/telegram-notify@v1
         with:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           to: ${{ secrets.TELEGRAM_CHANNEL_ID }}
