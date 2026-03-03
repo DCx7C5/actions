@@ -1,0 +1,120 @@
+name: "Import GPG Keys"
+description: "Smart dispatcher for importing GPG keys from various sources (secrets, files, or keyserver)"
+author: "DCx7C5"
+
+branding:
+  icon: "lock"
+  color: "blue"
+
+inputs:
+  method:
+    required: true
+    description: "Import method: 'secret', 'file', or 'keyserver'"
+  gpg_priv:
+    required: false
+    default: ''
+    description: "GPG private key (inline for 'secret', or file path for 'file')"
+  gpg_pass:
+    required: false
+    default: ''
+    description: "GPG key passphrase - will be masked in logs"
+  gpg_pub:
+    required: false
+    default: ''
+    description: "GPG public key (inline for 'secret', file path for 'file', or fingerprint for 'keyserver')"
+  keyserver_url:
+    required: false
+    default: 'hkps://keys.openpgp.org'
+    description: "Keyserver URL to use for 'keyserver' method"
+  delete_after_import:
+    required: false
+    default: 'true'
+    description: "For 'file' method: securely delete private key file after import"
+
+outputs:
+  fingerprint:
+    description: "Fingerprint of the imported private GPG key or keyserver import"
+    value: ${{ steps.dispatch.outputs.fingerprint }}
+  keys_total:
+    description: "Total number of GPG keys available"
+    value: ${{ steps.dispatch.outputs.keys_total }}
+  keys_public:
+    description: "Number of public keys"
+    value: ${{ steps.dispatch.outputs.keys_public }}
+  keys_secret:
+    description: "Number of secret keys"
+    value: ${{ steps.dispatch.outputs.keys_secret }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate method input
+      shell: bash
+      run: |
+        METHOD='${{ inputs.method }}'
+        if [ "$METHOD" != "secret" ] && [ "$METHOD" != "file" ] && [ "$METHOD" != "keyserver" ]; then
+          echo "::error::Invalid method: $METHOD. Must be one of: secret, file, keyserver" >&2
+          exit 1
+        fi
+        echo "::notice::Using import method: $METHOD"
+
+    - name: Import from secret
+      if: inputs.method == 'secret'
+      uses: ./gpg-import-secret
+      with:
+        gpg_priv: ${{ inputs.gpg_priv }}
+        gpg_pass: ${{ inputs.gpg_pass }}
+        gpg_pub: ${{ inputs.gpg_pub }}
+      id: secret_import
+
+    - name: Import from file
+      if: inputs.method == 'file'
+      uses: ./gpg-import-file
+      with:
+        gpg_priv: ${{ inputs.gpg_priv }}
+        gpg_pass: ${{ inputs.gpg_pass }}
+        gpg_pub: ${{ inputs.gpg_pub }}
+        delete_after_import: ${{ inputs.delete_after_import }}
+      id: file_import
+
+    - name: Import from keyserver
+      if: inputs.method == 'keyserver'
+      uses: ./gpg-import-keyserver
+      with:
+        fingerprint: ${{ inputs.gpg_pub }}
+        keyserver_url: ${{ inputs.keyserver_url }}
+      id: keyserver_import
+
+    - name: Aggregate outputs
+      id: dispatch
+      shell: bash
+      run: |
+        # Determine which import method was used and propagate its outputs
+        METHOD='${{ inputs.method }}'
+        
+        case "$METHOD" in
+          secret)
+            FP='${{ steps.secret_import.outputs.fingerprint }}'
+            PUB='${{ steps.secret_import.outputs.keys_public }}'
+            SEC='${{ steps.secret_import.outputs.keys_secret }}'
+            TOT='${{ steps.secret_import.outputs.keys_total }}'
+            ;;
+          file)
+            FP='${{ steps.file_import.outputs.fingerprint }}'
+            PUB='${{ steps.file_import.outputs.keys_public }}'
+            SEC='${{ steps.file_import.outputs.keys_secret }}'
+            TOT='${{ steps.file_import.outputs.keys_total }}'
+            ;;
+          keyserver)
+            FP='${{ steps.keyserver_import.outputs.fingerprint }}'
+            PUB='${{ steps.keyserver_import.outputs.keys_public }}'
+            SEC='${{ steps.keyserver_import.outputs.keys_secret }}'
+            TOT='${{ steps.keyserver_import.outputs.keys_total }}'
+            ;;
+        esac
+        
+        echo "fingerprint=$FP" >> "$GITHUB_OUTPUT"
+        echo "keys_public=$PUB" >> "$GITHUB_OUTPUT"
+        echo "keys_secret=$SEC" >> "$GITHUB_OUTPUT"
+        echo "keys_total=$TOT" >> "$GITHUB_OUTPUT"
+
