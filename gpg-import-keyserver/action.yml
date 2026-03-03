@@ -79,3 +79,4 @@ runs:
         echo "keys_public=$KEY_COUNT_PUB" >> "$GITHUB_OUTPUT"
         echo "keys_secret=$KEY_COUNT_SEC" >> "$GITHUB_OUTPUT"
         echo "keys_total=$KEY_COUNT_TOTAL" >> "$GITHUB_OUTPUT"
+
