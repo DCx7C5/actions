@@ -1,0 +1,81 @@
+name: "Import GPG Keys from Keyserver"
+description: "Import GPG public keys from a keyserver by fingerprint"
+author: "DCx7C5"
+
+branding:
+  icon: "lock"
+  color: "blue"
+
+inputs:
+  fingerprint:
+    required: true
+    description: "GPG key fingerprint (at least 16 characters)"
+  keyserver_url:
+    required: false
+    default: 'hkps://keys.openpgp.org'
+    description: "Keyserver URL (e.g., hkps://keys.openpgp.org, hkps://keyserver.ubuntu.com)"
+
+outputs:
+  fingerprint:
+    description: "The imported fingerprint"
+    value: ${{ steps.import.outputs.fingerprint }}
+  keys_total:
+    description: "Total number of GPG keys available"
+    value: ${{ steps.import.outputs.keys_total }}
+  keys_public:
+    description: "Number of public keys"
+    value: ${{ steps.import.outputs.keys_public }}
+  keys_secret:
+    description: "Number of secret keys"
+    value: ${{ steps.import.outputs.keys_secret }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate inputs and environment
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        if [ -z "${GNUPGHOME:-}" ] || [ ! -d "${GNUPGHOME}" ]; then
+          echo "::error::GNUPGHOME not set or does not exist: ${GNUPGHOME:-'(empty)'}" >&2
+          exit 1
+        fi
+        
+        FINGERPRINT='${{ inputs.fingerprint }}'
+        if [ -z "$FINGERPRINT" ] || [ ${#FINGERPRINT} -lt 16 ]; then
+          echo "::error::Invalid fingerprint. Must be at least 16 characters" >&2
+          exit 1
+        fi
+
+    - name: Import GPG key from keyserver
+      id: import
+      shell: bash
+      env:
+        FINGERPRINT: '${{ inputs.fingerprint }}'
+        KEYSERVER_URL: '${{ inputs.keyserver_url }}'
+      run: |
+        set -euo pipefail
+        
+        # Source helper library
+        source "$(dirname "$0")/../lib/gpg-helpers.sh"
+        
+        echo "::notice::Importing public key from keyserver: $KEYSERVER_URL"
+        echo "::notice::Fingerprint: $FINGERPRINT"
+        
+        if gpg --no-tty --batch --keyserver "$KEYSERVER_URL" --recv-keys "$FINGERPRINT" 2>&1 | grep -q "imported\|unchanged"; then
+          echo "::notice::Public key imported successfully from keyserver"
+        else
+          echo "::error::Failed to import public key from keyserver: $KEYSERVER_URL" >&2
+          exit 1
+        fi
+        
+        # ===== Count Keys =====
+        read -r KEY_COUNT_TOTAL KEY_COUNT_PUB KEY_COUNT_SEC <<< "$(gpg_count_keys)"
+        gpg_log_key_stats "$KEY_COUNT_TOTAL" "$KEY_COUNT_PUB" "$KEY_COUNT_SEC"
+        
+        # ===== Outputs =====
+        echo "fingerprint=$FINGERPRINT" >> "$GITHUB_OUTPUT"
+        echo "keys_public=$KEY_COUNT_PUB" >> "$GITHUB_OUTPUT"
+        echo "keys_secret=$KEY_COUNT_SEC" >> "$GITHUB_OUTPUT"
+        echo "keys_total=$KEY_COUNT_TOTAL" >> "$GITHUB_OUTPUT"
