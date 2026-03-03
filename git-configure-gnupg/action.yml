@@ -36,15 +36,15 @@ runs:
         echo "::add-mask::$INPUT_FINGERPRINT"
 
     - name: Get GNUPGHOME with fallback
-      shell: bash
       id: get_gpg_home
+      shell: bash
       run: |
         if [[ -n "$GNUPGHOME" ]]; then
-          echo "gpg_home=$GNUPGHOME" >> $GITHUB_OUTPUT
+          echo "gpg_home=$GNUPGHOME" >> "$GITHUB_OUTPUT"
         elif [[ -n "${{ inputs.gpg_home }}" ]]; then
-          echo "gpg_home=${{ inputs.gpg_home }}" >> $GITHUB_OUTPUT
+          echo "gpg_home=${{ inputs.gpg_home }}" >> "$GITHUB_OUTPUT"
         elif [[ -z "$GNUPGHOME" ]]; then
-          echo "gpg_home=${{ inputs.gpg_home }}" >> $GITHUB_OUTPUT
+          echo "gpg_home=${{ inputs.gpg_home }}" >> "$GITHUB_OUTPUT"
         else
           echo "::error::Could not determine GNUPGHOME directory" >&2
           exit 1
