@@ -7,52 +7,52 @@ branding:
   color: "blue"
 
 inputs:
-  gpg_priv:
+  gpg_key:
     required: false
     default: ''
-    description: "Path to GPG private key file"
+    description: "Path to GPG key file"
   pass:
     required: false
     default: ''
     description: "Passphrase for the private key - will be masked in logs"
-  gpg_pub:
-    required: false
-    default: ''
-    description: "Path to GPG public key file"
   delete_after_import:
     required: false
     default: 'true'
     description: "Securely delete private key file after import"
+  gpg_type:
+    required: false
+    default: 'auto'
+    description: "Type of GPG key to import (auto, private, public) - auto-detects based on file content"
 
 
 outputs:
   fingerprint:
-    description: "Fingerprint of the imported private GPG key (empty if only public key imported)"
-    value: ${{ steps.import.outputs.fingerprint }}
+    description: "Fingerprint of the imported private GPG key"
+    value: ${{ steps.import_protected.outputs.fingerprint || steps.import_unprotected.outputs.fingerprint }}
   keys_total:
     description: "Total number of GPG keys available"
-    value: ${{ steps.import.outputs.keys_total }}
+    value: ${{ steps.import_protected.outputs.keys_total || steps.import_unprotected.outputs.keys_total }}
   keys_public:
     description: "Number of public keys"
-    value: ${{ steps.import.outputs.keys_public }}
+    value: ${{ steps.import_protected.outputs.keys_public || steps.import_unprotected.outputs.keys_public }}
   keys_secret:
     description: "Number of secret keys"
-    value: ${{ steps.import.outputs.keys_secret }}
+    value: ${{ steps.import_protected.outputs.keys_secret || steps.import_unprotected.outputs.keys_secret }}
+
 
 runs:
   using: composite
   steps:
-    - name: Mask sensitive inputs
-      shell: bash
-      run: |
-        if [ -n '${{ inputs.pass }}' ]; then
-          echo "::add-mask::${{ inputs.pass }}"
-        fi
 
     - name: Validate inputs and environment
+      id: mask_and_validate
       shell: bash
       run: |
         set -euo pipefail
+        
+        if [ -n '${{ inputs.pass }}' ]; then
+          echo "::add-mask::${{ inputs.pass }}"
+        fi
         
         if [ -z "${GNUPGHOME:-}" ] || [ ! -d "${GNUPGHOME}" ]; then
           echo "::error::GNUPGHOME not set or does not exist: ${GNUPGHOME:-'(empty)'}" >&2
@@ -69,70 +69,39 @@ runs:
           exit 1
         fi
 
-    - name: Import GPG keys from files
-      id: import
+    - name: Determine import method
+      id: determine_method
+      if: inputs.gpg_type == 'auto'
       shell: bash
       env:
         GPG_PRIV: '${{ inputs.gpg_priv }}'
-        PASS: '${{ inputs.pass }}'
         GPG_PUB: '${{ inputs.gpg_pub }}'
-        DELETE_AFTER: '${{ inputs.delete_after_import }}'
       run: |
-        set -euo pipefail
-        
-        # Source helper library
-        source "${{ github.action_path }}/../lib/gpg-helpers.sh"
-        
-        trap 'unset PASS 2>/dev/null || true' EXIT
-        
-        # ===== Import Private Key =====
         if [ -n "$GPG_PRIV" ]; then
-          if [ ! -f "$GPG_PRIV" ]; then
-            echo "::error::Private key file not found: $GPG_PRIV" >&2
-            exit 1
-          fi
-          
-          if gpg --no-tty --batch --pinentry-mode loopback \
-             --passphrase "$PASS" --import "$GPG_PRIV" 2>&1 | grep -qE "imported|unchanged"; then
-            echo "::notice::Private key imported successfully from file: $GPG_PRIV"
-            
-            # Securely delete the file after import
-            if [ "$DELETE_AFTER" = "true" ]; then
-              if command -v shred &>/dev/null; then
-                shred --remove wipesync -fz -n 10 "$GPG_PRIV" 2>/dev/null || true
-              else
-                rm -f "$GPG_PRIV"
-              fi
-              echo "::notice::Private key file securely removed"
-            fi
-          else
-            echo "::error::Failed to import private key from file: $GPG_PRIV" >&2
-            exit 1
-          fi
+          echo "import_method=private" >> "$GITHUB_OUTPUT"
+        elif [ -n "$GPG_PUB" ]; then
+          echo "import_method=public" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::No valid GPG key input provided" >&2
+          exit 1
         fi
-        
-        # ===== Import Public Key =====
-        if [ -n "$GPG_PUB" ]; then
-          if [ ! -f "$GPG_PUB" ]; then
-            echo "::error::Public key file not found: $GPG_PUB" >&2
-            exit 1
-          fi
-          
-          if gpg --no-tty --batch --import "$GPG_PUB" 2>&1 | grep -qE "imported|unchanged"; then
-            echo "::notice::Public key imported successfully from file: $GPG_PUB"
-          else
-            echo "::error::Failed to import public key from file: $GPG_PUB" >&2
-            exit 1
-          fi
-        fi        
-        
-        # ===== Count Keys =====
-        read -r KEY_COUNT_TOTAL KEY_COUNT_PUB KEY_COUNT_SEC <<< "$(gpg_count_keys)"
-        gpg_log_key_stats "$KEY_COUNT_TOTAL" "$KEY_COUNT_PUB" "$KEY_COUNT_SEC"
-        
-        
-        # ===== Outputs =====
-        echo "fingerprint=$(gpg_get_fingerprint)" >> "$GITHUB_OUTPUT"
-        echo "keys_public=$KEY_COUNT_PUB" >> "$GITHUB_OUTPUT"
-        echo "keys_secret=$KEY_COUNT_SEC" >> "$GITHUB_OUTPUT"
-        echo "keys_total=$KEY_COUNT_TOTAL" >> "$GITHUB_OUTPUT"
+
+    - name: Import Protected Key
+      id: import_protected
+      if: inputs.gpg_type == 'private' || steps.mask_and_validate.outputs.import_method == 'private'
+      uses: ./gpg-import/gpg-import-protected
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+      with:
+        gpg_key: '${{ inputs.gpg_key }}'
+        pass: '${{ inputs.pass }}'
+        type: 'file'
+
+    - name: Import Unprotected Key
+      id: import_unprotected
+      if: inputs.gpg_type == 'public' || steps.mask_and_validate.outputs.import_method == 'public'
+      uses: ./gpg-import/gpg-import-no-protection
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+      with:
+        gpg_key: '${{ inputs.gpg_key }}'
