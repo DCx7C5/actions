@@ -49,7 +49,7 @@ jobs:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
           method: 'secret'
-          gpg_key: '${{ secrets.GPG_PRIVATE_KEY }}'
+          gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
           pass: ${{ secrets.GPG_PASSPHRASE }}
           delete_after_import: 'true'
 
