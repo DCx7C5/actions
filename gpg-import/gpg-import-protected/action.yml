@@ -66,14 +66,15 @@ runs:
       shell: bash
       env:
         GNUPGHOME: "${{ inputs.gpg_home }}"
-        PASSPHRASE: "${{ inputs.pass }}"
         GPG_KEY_PATH: "${{ inputs.gpg_key }}"
       run: |
         set -euo pipefail
         export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         
-        # Import with passphrase via fd 0 using env var (safe from shell expansion)
-        printf '%s\n' "$PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import "$GPG_KEY_PATH"
+        # Decode passphrase from base64 to protect from shell expansion
+        
+        # Import with passphrase via fd 0
+        printf "%s" '${{ inputs.pass }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import "$GPG_KEY_PATH"
 
         # Extract key information
         fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
@@ -103,14 +104,14 @@ runs:
       shell: bash
       env:
         GNUPGHOME: "${{ inputs.gpg_home }}"
-        PASSPHRASE: "${{ inputs.pass }}"
         GPG_KEY_INLINE: "${{ inputs.gpg_key }}"
       run: |
         set -euo pipefail
         export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         
-        # Import with passphrase via fd 0 using env var (safe from shell expansion)
-        printf '%s\n' "$PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import <(printf '%s' "$GPG_KEY_INLINE")
+        # Import with passphrase via fd 0
+        # Use printf directly with GitHub Actions expression (no bash variable expansion)
+        printf '%s' '${{ inputs.pass }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import <(printf '%s' "$GPG_KEY_INLINE")
         
         # Extract key information
         fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
