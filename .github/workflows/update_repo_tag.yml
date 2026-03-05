@@ -74,7 +74,7 @@ jobs:
         with:
           gpg_home: ${{ steps.gpg_setup.outputs.gpg_home }}
           fingerprint: ${{ steps.gpg_import.outputs.fingerprint }}
-          pass: ${{ secrets.GPG_PASSPHRASE }}
+          pass: ''
           version: "v1"
           commit_msg: "Release v1"
 
@@ -89,6 +89,12 @@ jobs:
           prerelease: false
           generate_release_notes: ''
           fail_on_unmatched_files: true
+
+      - name: Cleanup GPG keys from runner
+        if: steps.gpg_setup.outputs.gpg_home != ''
+        uses: DCx7C5/actions/gpg-cleanup@v1
+        env:
+          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
 
       - name: Notify on success
         if: success()
@@ -117,3 +123,4 @@ jobs:
 
             <b>🔗 Links:</b>
             <a href="https://github.com/${{ github.repository }}/releases/tag/v1">View Release</a> | <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">View Commit</a>
+  
