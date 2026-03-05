@@ -10,7 +10,6 @@ inputs:
   gpg_home:
     description: "Path to GNUPGHOME directory (where keys are stored)"
     required: false
-    default: "${{ github.workspace }}/.gnupg"
 
 outputs:
   fingerprint:
@@ -35,27 +34,12 @@ runs:
         echo "::add-mask::$FINGERPRINT"
         echo "::add-mask::$INPUT_FINGERPRINT"
 
-    - name: Get GNUPGHOME with fallback
-      id: get_gpg_home
-      shell: bash
-      run: |
-        if [[ -n "$GNUPGHOME" ]]; then
-          echo "gpg_home=$GNUPGHOME" >> "$GITHUB_OUTPUT"
-        elif [[ -n "${{ inputs.gpg_home }}" ]]; then
-          echo "gpg_home=${{ inputs.gpg_home }}" >> "$GITHUB_OUTPUT"
-        elif [[ -z "$GNUPGHOME" ]]; then
-          echo "gpg_home=${{ inputs.gpg_home }}" >> "$GITHUB_OUTPUT"
-        else
-          echo "::error::Could not determine GNUPGHOME directory" >&2
-          exit 1
-        fi
-
     - name: Parse Key Credentials
       id: parse_gpg
       shell: bash
       env:
         INPUT_FINGERPRINT: ${{ inputs.fingerprint }}
-        GNUPGHOME: ${{ steps.get_gpg_home.outputs.gpg_home }}
+        GNUPGHOME: ${{ inputs.gpg_home }} || ${{ env.GNUPGHOME }}
       run: |
         set -euo pipefail
         
