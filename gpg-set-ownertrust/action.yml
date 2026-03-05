@@ -48,10 +48,10 @@ runs:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
         set -euo pipefail
-        export GNUPGHOME=${GNUPGHOME:-"${GITHUB_WORKSPACE}/.gnupg"}
+        export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         if ! echo "trust\n${{ inputs.trust_level }}\ny\n" | gpg --no-tty --batch --command-fd0 --edit-key "${{ inputs.fingerprint }}"; then
-          echo "::error::Failed setting trust level of key: ${{ inputs.fingerprint }}
+          echo "::error::Failed setting trust level of key: ${{ inputs.fingerprint }}" >&2
           exit 1
         fi
         
-        echo "::notice::Successfully set trust level for key: ${{ inputs.fingerprint }}
+        echo "::notice::Successfully set trust level for key: ${{ inputs.fingerprint }}"
