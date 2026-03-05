@@ -25,9 +25,7 @@ outputs:
   keys_public:
     description: "Number of public keys"
     value: ${{ steps.import.outputs.keys_public }}
-  keys_secret:
-    description: "Number of secret keys"
-    value: ${{ steps.import.outputs.keys_secret }}
+
 
 runs:
   using: composite
