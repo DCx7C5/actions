@@ -6,6 +6,7 @@ branding:
   icon: "git-commit"
   color: "orange"
 
+
 inputs:
   version:
     description: "The new version to use (e.g. v1.2.3 or 1.2.3)"
@@ -13,7 +14,7 @@ inputs:
   gpg_home:
     description: "Path to GNUPGHOME directory (where keys are stored)"
     required: false
-    default: "${{ github.workspace }}/.gnupg"
+    default: ''
   fingerprint:
     description: "GPG key fingerprint or email to use for signing the tag (optional)"
     required: false
@@ -27,10 +28,12 @@ inputs:
     required: false
     default: "Release ${{ inputs.version }}"
 
+
 outputs:
   tag:
     description: "The created tag name"
     value: ${{ steps.tag_create.outputs.tag }}
+
 
 runs:
   using: composite
@@ -59,7 +62,7 @@ runs:
       id: tag_create
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home }}
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
         TAG: '${{ inputs.version }}'
         FINGERPRINT: '${{ inputs.fingerprint }}'
         PASS: '${{ inputs.pass }}'
@@ -82,7 +85,7 @@ runs:
         TAG_ARGS=(-a "$TAG" -m "$COMMIT_MSG" -s)
         
         if [ -n "$FINGERPRINT" ]; then
-          TAG_ARGS+=(-u "$FINGERPRINT")
+          TAG_ARGS+=(-u "$FINGERPRINT" -s)
           echo "::notice::Using explicit key: $FINGERPRINT"
         else
           echo "::notice::Using default GPG key"
