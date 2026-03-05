@@ -66,11 +66,11 @@ runs:
       env:
         FINGERPRINT: '${{ inputs.fingerprint }}'
         KEYSERVER_URL: '${{ inputs.keyserver_url }}'
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+        GNUPGHOME: '${{ inputs.gpg_home }}'
       run: |
         set -euo pipefail
         
-        GNUPGHOME=${GNUPGHOME:-"${GITHUB_WORKSPACE:-.}/.gnupg"}
+        GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         # Source helper library
         source "${{ github.action_path }}/../lib/gpg-helpers.sh"
         
