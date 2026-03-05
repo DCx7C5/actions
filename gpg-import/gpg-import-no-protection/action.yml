@@ -1,0 +1,36 @@
+name: "Import unprotected GPG Key from file or inline variable"
+description: "Import GPG key from file path or inline key material without protection checks"
+author: "DCx7C5"
+
+branding:
+  icon: unlock
+  color: blue
+
+inputs:
+  gpg_key:
+    required: true
+    description: "GPG key path or inline variable"
+  gpg_home:
+    required: false
+    default: ''
+    description: "Custom GPG home directory (optional, defaults to $GITHUB_WORKSPACE/.gnupg)"
+
+
+
+runs:
+  using: composite
+  steps:
+    - id: import
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+      run: |
+        set -euo pipefail
+
+        key_input="${{ inputs.gpg_key }}"
+
+        if [[ -f "$key_input" ]]; then
+          gpg --batch --import "$key_input"
+        else
+          printf '%s\n' "$key_input" | gpg --batch --import
+        fi
