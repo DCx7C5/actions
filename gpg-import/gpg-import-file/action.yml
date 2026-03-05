@@ -23,7 +23,10 @@ inputs:
     required: false
     default: 'auto'
     description: "Type of GPG key to import (auto, private, public) - auto-detects based on file content"
-
+  gpg_home:
+    required: false
+    default: ''
+    description: "Path to GPG Home Directory (optional, can also be set via GNUPGHOME env variable)"
 
 outputs:
   fingerprint:
@@ -90,18 +93,16 @@ runs:
       id: import_protected
       if: inputs.gpg_type == 'private' || steps.mask_and_validate.outputs.import_method == 'private'
       uses: ./gpg-import/gpg-import-protected
-      env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       with:
-        gpg_key: "${{ inputs.gpg_key }}"
+        gpg_key: '${{ inputs.gpg_key }}'
         pass: '${{ inputs.pass }}'
         type: 'file'
+        gpg_home: "${{ inputs.gpg_home }}"
 
     - name: Import Unprotected Key
       id: import_unprotected
       if: inputs.gpg_type == 'public' || steps.mask_and_validate.outputs.import_method == 'public'
       uses: ./gpg-import/gpg-import-no-protection
-      env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       with:
-        gpg_key: "${{ inputs.gpg_key }}"
+        gpg_key: '${{ inputs.gpg_key }}'
+        gpg_home: "${{ inputs.gpg_home }}"

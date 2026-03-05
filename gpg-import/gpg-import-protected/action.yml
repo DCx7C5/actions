@@ -44,18 +44,21 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        if [[ -n "${{ inputs.pass }} && -n "${{ inputs.gpg_key }} ]]; then
-          echo
+        if [[ -n "${{ inputs.pass }}" && -n "${{ inputs.gpg_key }}" ]]; then
+          echo "::add-mask::${{ inputs.pass }}"
+          echo "::add-mask::${{ inputs.gpg_key }}"
         fi
 
     - id: validate_type
       if: inputs.type == 'auto'
       shell: bash
+      env:
+        GPG_KEY: "${{ inputs.gpg_key }}"
       run: |
         set -euo pipefail
-        if [[ -n "$gpg_key" && -f "$gpg_key" ]]; then
+        if [[ -n "$GPG_KEY" && -f "$GPG_KEY" ]]; then
           echo "type=file" >> "$GITHUB_OUTPUT"
-        elif [[ -n "$gpg_key" && ! -f "$gpg_key" ]]; then
+        elif [[ -n "$GPG_KEY" && ! -f "$GPG_KEY" ]]; then
           echo "type=inline" >> "$GITHUB_OUTPUT"
         fi
 
@@ -63,59 +66,79 @@ runs:
       if: steps.validate_type.outputs.type == 'file' || inputs.type == 'file'
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+        GNUPGHOME: "${{ inputs.gpg_home }}"
       run: |
         set -euo pipefail
         GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
+        
         key_input="${{ inputs.gpg_key }}"
         passphrase="${{ inputs.pass }}"
         
-        gpg_cmd=(gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0)
+        # Import with passphrase via fd 0
+        printf '%s\n' "$passphrase" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import "$key_input"
 
-        if [[ -n "$GNUPGHOME" ]]; then
-          gpg_cmd+=(--homedir "$GNUPGHOME")
-        fi
-
-        printf '%s\n' "$passphrase" | "${gpg_cmd[@]}" --import "$key_input"
-
+        # Extract key information
         fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
         keys_total=$(gpg --batch --with-colons --list-keys | grep -c '^pub:' || echo 0)
         keys_public=$(gpg --batch --with-colons --list-public-keys | grep -c '^pub:' || echo 0)
         keys_secret=$(gpg --batch --with-colons --list-secret-keys | grep -c '^sec:' || echo 0)
 
+        # Output results
         {
           echo "fingerprint=${fingerprint}"
           echo "keys_total=${keys_total}"
           echo "keys_public=${keys_public}"
           echo "keys_secret=${keys_secret}"
         } >> "$GITHUB_OUTPUT"
+        
+        # Output script
+        echo "::group::Import Summary (Protected Key from File)"
+        echo "✓ Protected GPG key imported successfully"
+        echo "  Fingerprint: ${fingerprint}"
+        echo "  Total keys: ${keys_total}"
+        echo "  Public keys: ${keys_public}"
+        echo "  Secret keys: ${keys_secret}"
+        echo "::endgroup::"
 
     - id: import_protected_inline
       if: steps.validate_type.outputs.type == 'inline' || inputs.type == 'inline' || inputs.type == 'secret'
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+        GNUPGHOME: "${{ inputs.gpg_home }}"
       run: |
         set -euo pipefail
         GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
+        
         key_input="${{ inputs.gpg_key }}"
         passphrase="${{ inputs.pass }}"
         
-        gpg_cmd=(gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0)
-
+        # Create temporary file for inline key
         key_tmp="$(mktemp)"
         trap 'rm -f "$key_tmp"' EXIT
         printf '%s\n' "$key_input" > "$key_tmp"
-        printf '%s\n' "$passphrase" | "${gpg_cmd[@]}" --import "$key_tmp"
         
+        # Import with passphrase via fd 0
+        printf '%s\n' "$passphrase" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import "$key_tmp"
+        
+        # Extract key information
         fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
         keys_total=$(gpg --batch --with-colons --list-keys | grep -c '^pub:' || echo 0)
         keys_public=$(gpg --batch --with-colons --list-public-keys | grep -c '^pub:' || echo 0)
         keys_secret=$(gpg --batch --with-colons --list-secret-keys | grep -c '^sec:' || echo 0)
 
+        # Output results
         {
           echo "fingerprint=${fingerprint}"
           echo "keys_total=${keys_total}"
           echo "keys_public=${keys_public}"
           echo "keys_secret=${keys_secret}"
         } >> "$GITHUB_OUTPUT"
+        
+        # Output script
+        echo "::group::Import Summary (Protected Key from Inline)"
+        echo "✓ Protected GPG key imported successfully"
+        echo "  Fingerprint: ${fingerprint}"
+        echo "  Total keys: ${keys_total}"
+        echo "  Public keys: ${keys_public}"
+        echo "  Secret keys: ${keys_secret}"
+        echo "::endgroup::"

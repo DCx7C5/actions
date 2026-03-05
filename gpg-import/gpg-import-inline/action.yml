@@ -53,7 +53,7 @@ runs:
           echo "::add-mask::${{ inputs.pass }}"
         elif [[ -z "${{ inputs.gpg_key }}" ]]; then
           echo "::error:: inputs.gpg_key is missing!"  >&2
-          exit1
+          exit 1
         fi
         
         if [ -z "${GNUPGHOME:-}" ] || [ ! -d "${GNUPGHOME}" ]; then
@@ -69,7 +69,7 @@ runs:
         GPG_KEY: "${{ inputs.gpg_key }}"
       run: |
         set -euo pipefail
-        header=(echo "$GPG_KEY" | head -n 1)
+        header=$(echo "$GPG_KEY" | head -n 1)
         if [[ "$header" == *"BEGIN PGP PRIVATE KEY BLOCK"* ]]; then
           echo "seckey=$GPG_KEY" >> "$GITHUB_OUTPUT"
         elif [[ "$header" == *"BEGIN PGP PUBLIC KEY BLOCK"* ]]; then
@@ -83,18 +83,16 @@ runs:
       id: import_protected
       if: steps.mask_and_validate.outputs.seckey != ''
       uses: ./gpg-import/gpg-import-protected
-      env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       with:
         gpg_key: "${{ inputs.gpg_key }}"
         pass: '${{ inputs.pass }}'
         type: 'inline'
+        gpg_home: "${{ inputs.gpg_home }}"
 
     - name: Import Unprotected Key
       id: import_unprotected
       if: steps.mask_and_validate.outputs.pubkey != ''
       uses: ./gpg-import/gpg-import-no-protection
-      env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       with:
         gpg_key: "${{ inputs.gpg_key }}"
+        gpg_home: "${{ inputs.gpg_home }}"
