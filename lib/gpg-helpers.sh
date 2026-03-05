@@ -14,18 +14,6 @@ gpg_count_keys() {
   echo "$KEY_COUNT_TOTAL $KEY_COUNT_PUB $KEY_COUNT_SEC"
 }
 
-# Set owner trust level for a given fingerprint
-# Arguments: $1 = fingerprint
-gpg_set_owner_trust() {
-  local fingerprint="$1"
-
-  if [ -z "$fingerprint" ]; then
-    return 1
-  fi
-
-  echo "$fingerprint:6:" | gpg --import-ownertrust 2>/dev/null || true
-}
-
 # Get fingerprint of the first secret key
 # Returns: fingerprint or empty string
 gpg_get_secret_fingerprint() {
@@ -34,6 +22,18 @@ gpg_get_secret_fingerprint() {
   fingerprint=$(gpg --batch --list-secret-keys --with-colons 2>/dev/null | grep "^fpr:" | head -1 | cut -d: -f10)
 
   echo "$fingerprint"
+}
+
+get_fingerprint() {
+  if [ -n "$1" ]; then
+    echo "$1" | gpg --with-colons --with-fingerprint --with-subkey-fingerprint --list-secret-keys 2>/dev/null | \
+    grep -E "^fpr:.*:" | head -1 | cut -d: -f10
+  elif [ -n "$2" ]; then
+    echo "$2" | gpg --with-colons --with-fingerprint --with-subkey-fingerprint --list-keys 2>/dev/null | \
+    grep -E "^fpr:.*:" | head -1 | cut -d: -f10
+  else
+    echo ""
+  fi
 }
 
 # Log key count statistics
