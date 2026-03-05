@@ -18,12 +18,36 @@ inputs:
   type:
     required: false
     default: 'auto'
-    description: "Set to true if gpg_key is file path or to false if its an inline variable"
+    description: "Set to true if gpg_key is file path or to inline if its an inline variable"
+
+
+outputs:
+  fingerprint:
+    description: "Fingerprint of the imported GPG key"
+    value: ${{ steps.import_protected_file.outputs.fingerprint || steps.import_protected_inline.outputs.fingerprint }}
+  keys_total:
+    description: "Total number of GPG keys available after import"
+    value: ${{ steps.import_protected_file.outputs.keys_total || steps.import_protected_inline.outputs.keys_total }}
+  keys_public:
+    description: "Number of public keys available after import"
+    value: ${{ steps.import_protected_file.outputs.keys_public || steps.import_protected_inline.outputs.keys_public }}
+  keys_secret:
+    description: "Number of secret keys available after import"
+    value: ${{ steps.import_protected_file.outputs.keys_secret || steps.import_protected_inline.outputs.keys_secret }}
+
 
 
 runs:
   using: composite
   steps:
+    - id: mask
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [[ -n "${{ inputs.pass }} && -n "${{ inputs.gpg_key }} ]]; then
+          echo
+        fi
+
     - id: validate_type
       if: inputs.type == 'auto'
       shell: bash
@@ -34,7 +58,6 @@ runs:
         elif [[ -n "$gpg_key" && ! -f "$gpg_key" ]]; then
           echo "type=inline" >> "$GITHUB_OUTPUT"
         fi
-        
 
     - id: import_protected_file
       if: steps.validate_type.outputs.type == 'file' || inputs.type == 'file'
@@ -55,6 +78,18 @@ runs:
 
         printf '%s\n' "$passphrase" | "${gpg_cmd[@]}" --import "$key_input"
 
+        fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
+        keys_total=$(gpg --batch --with-colons --list-keys | grep -c '^pub:' || echo 0)
+        keys_public=$(gpg --batch --with-colons --list-public-keys | grep -c '^pub:' || echo 0)
+        keys_secret=$(gpg --batch --with-colons --list-secret-keys | grep -c '^sec:' || echo 0)
+
+        {
+          echo "fingerprint=${fingerprint}"
+          echo "keys_total=${keys_total}"
+          echo "keys_public=${keys_public}"
+          echo "keys_secret=${keys_secret}"
+        } >> "$GITHUB_OUTPUT"
+
     - id: import_protected_inline
       if: steps.validate_type.outputs.type == 'inline' || inputs.type == 'inline' || inputs.type == 'secret'
       shell: bash
@@ -72,3 +107,15 @@ runs:
         trap 'rm -f "$key_tmp"' EXIT
         printf '%s\n' "$key_input" > "$key_tmp"
         printf '%s\n' "$passphrase" | "${gpg_cmd[@]}" --import "$key_tmp"
+        
+        fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
+        keys_total=$(gpg --batch --with-colons --list-keys | grep -c '^pub:' || echo 0)
+        keys_public=$(gpg --batch --with-colons --list-public-keys | grep -c '^pub:' || echo 0)
+        keys_secret=$(gpg --batch --with-colons --list-secret-keys | grep -c '^sec:' || echo 0)
+
+        {
+          echo "fingerprint=${fingerprint}"
+          echo "keys_total=${keys_total}"
+          echo "keys_public=${keys_public}"
+          echo "keys_secret=${keys_secret}"
+        } >> "$GITHUB_OUTPUT"
