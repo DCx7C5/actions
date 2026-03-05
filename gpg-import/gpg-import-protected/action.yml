@@ -39,15 +39,6 @@ outputs:
 runs:
   using: composite
   steps:
-    - id: mask
-      shell: bash
-      run: |
-        set -euo pipefail
-        if [[ -n '${{ inputs.pass }}' && -n "${{ inputs.gpg_key }}" ]]; then
-          echo "::add-mask::${{ inputs.pass }}"
-          echo "::add-mask::${{ inputs.gpg_key }}"
-        fi
-
     - id: validate_type
       if: inputs.type == 'auto'
       shell: bash
