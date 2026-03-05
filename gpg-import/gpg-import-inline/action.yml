@@ -84,7 +84,7 @@ runs:
       if: steps.mask_and_validate.outputs.seckey != ''
       uses: ./gpg-import/gpg-import-protected
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       with:
         gpg_key: '${{ inputs.gpg_key }}'
         pass: '${{ inputs.pass }}'
@@ -95,6 +95,6 @@ runs:
       if: steps.mask_and_validate.outputs.pubkey != ''
       uses: ./gpg-import/gpg-import-no-protection
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       with:
         gpg_key: '${{ inputs.gpg_key }}'

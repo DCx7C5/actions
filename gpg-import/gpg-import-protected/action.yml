@@ -63,10 +63,10 @@ runs:
       if: steps.validate_type.outputs.type == 'file' || inputs.type == 'file'
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
         set -euo pipefail
-        
+        GNUPGHOME=${GNUPGHOME:-"${{ github.workspace}}/.gnupg"}
         key_input="${{ inputs.gpg_key }}"
         passphrase="${{ inputs.pass }}"
         
@@ -94,10 +94,10 @@ runs:
       if: steps.validate_type.outputs.type == 'inline' || inputs.type == 'inline' || inputs.type == 'secret'
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
         set -euo pipefail
-
+        GNUPGHOME=${GNUPGHOME:-"${{ github.workspace}}/.gnupg"}
         key_input="${{ inputs.gpg_key }}"
         passphrase="${{ inputs.pass }}"
         

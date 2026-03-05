@@ -84,7 +84,7 @@ runs:
       if: steps.validate.outputs.is_secret == 'true'
       uses: ./gpg-import/gpg-import-inline
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME || github.workspace/.gnupg }}"
       with:
         gpg_key: ${{ steps.decrypt_ssl.outputs.gpg_key || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.pass }}
@@ -94,7 +94,7 @@ runs:
       if: steps.validate.outputs.is_file == 'true'
       uses: ./gpg-import/gpg-import-file
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       with:
         gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.pass }}
@@ -105,7 +105,7 @@ runs:
       if: steps.validate.outputs.is_fingerprint == 'true'
       uses: ./gpg-import/gpg-import-keyserver
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       with:
         fingerprint: ${{ steps.validate.outputs.gpg_key }}
         keyserver_url: ${{ inputs.keyserver_url }}
@@ -147,6 +147,6 @@ runs:
       if: inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true'
       uses: DCx7C5/actions/gpg-set-ownertrust@v1
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       with:
         fingerprint: ${{ steps.dispatch.outputs.fingerprint }}
