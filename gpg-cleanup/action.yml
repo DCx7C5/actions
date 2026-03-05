@@ -1,0 +1,36 @@
+name: "GPG Cleanup"
+description: "Securely delete all GPG keys from the runner environment"
+author: "DCx7C5"
+
+branding:
+  icon: "trash"
+  color: "red"
+
+
+inputs:
+  gpg_home:
+    required: false
+    description: "Optional path to GPG home directory (defaults to GNUPGHOME environment variable)"
+
+
+runs:
+  using: composite
+  steps:
+    - name: Securely delete all GPG keys
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home }} || ${{ env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+      run: |
+        set -euo pipefail
+        
+        echo "::notice::Securely deleting all GPG keys from ${GNUPGHOME}"
+        
+        # Use find to securely delete all files in GNUPGHOME
+        find "${GNUPGHOME}" -type f -exec shred --remove wipesync -fz -n 10 {} 2>/dev/null \;
+        
+        # Optionally, remove the GNUPGHOME directory itself if empty
+        if [ -d "${GNUPGHOME}" ] && [ -z "$(ls -A "${GNUPGHOME}")" ]; then
+          rmdir "${GNUPGHOME}"
+        fi
+        
+        echo "::notice::GPG cleanup complete"
