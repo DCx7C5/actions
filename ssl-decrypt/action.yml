@@ -1,0 +1,226 @@
+name: "SSL Decrypt File or Secret/Value"
+description: "Decrypts SSL/OpenSSL encrypted file or value using provided password, with detection and security hardening for secrets"
+author: "DCx7C5"
+
+
+inputs:
+  enc_input:
+    required: true
+    description: "SSL/OpenSSL encrypted file path or inline variable to decrypt"
+  passphrase:
+    required: true
+    description: "Password for SSL/OpenSSL decryption"
+  salt:
+    required: false
+    default: ''
+    description: "Optional salt value for decryption (if not provided, will attempt decryption without salt)"
+  type:
+    required: false
+    default: 'auto'
+    description: "Input type: 'auto' (detect based on input), 'file' (treat enc_input as file path), or 'inline' (treat enc_input as inline variable)"
+  encoding:
+    required: false
+    default: 'auto'
+    description: "Output format: 'auto' (detect based on input), 'binary' (raw decrypted bytes), or 'text' (UTF-8 string output)"
+  cleanup:
+    required: false
+    default: 'true'
+    description: "Whether to securely delete the input file after decryption (only applies if type is 'file')"
+
+
+outputs:
+  type:
+    description: "Detected input type: 'file' or 'inline'"
+    value: ${{ steps.parse_type.outputs.type || inputs.type }}
+  encoding:
+    description: "Detected output format: 'binary' or 'text'"
+    value: ${{ steps.parse_encoding.outputs.encoding || inputs.encoding }}
+  decrypted_content:
+    description: "The decrypted content (text output; for binary use decrypted_content_b64)"
+    value: ${{ steps.decrypt_ssl.outputs.decrypted_content }}
+  decrypted_content_b64:
+    description: "Base64 encoded decrypted content for binary output"
+    value: ${{ steps.decrypt_ssl.outputs.decrypted_content_b64 }}
+
+
+runs:
+  using: composite
+  steps:
+    - name: Mask password input
+      id: mask_input
+      shell: bash
+      run: |
+        if [ -n '${{ inputs.enc_input }}' ]; then
+          echo "::add-mask::${{ inputs.enc_input }}"
+        fi
+        if [ -n '${{ inputs.passphrase }}' ]; then
+          echo "::add-mask::${{ inputs.passphrase }}"
+        fi
+        if [ -n '${{ inputs.salt }}' ]; then
+          echo "::add-mask::${{ inputs.salt }}"
+        fi
+
+    - name: Validate Input Type & Encoding
+      shell: bash
+      run: |
+        if [[ -z "${{ inputs.enc_input }}" || -z "${{ inputs.passphrase }}" ]]; then
+          echo "::error::'enc_input' cannot be empty." >&2
+          exit 1
+        fi
+        if [[ "${{ inputs.type }}" != "auto" && "${{ inputs.type }}" != "file" && "${{ inputs.type }}" != "inline" && "${{ inputs.type }}" != "secret" && "${{ inputs.type }}" != "value" && "${{ inputs.type }}" != "variable" ]]; then
+          echo "::error::Invalid 'type' input: '${{ inputs.type }}'. Must be 'auto', 'file', 'inline', 'secret', 'value', or 'variable'." >&2
+          exit 1
+        elif [[ "${{ inputs.encoding }}" != "auto" && "${{ inputs.encoding }}" != "binary" && "${{ inputs.encoding }}" != "text" ]]; then
+          echo "::error::Invalid 'format' input: '${{ inputs.encoding }}'. Must be 'auto', 'binary', or 'text'." >&2
+          exit 1
+        fi
+        if [[ "${{ inputs.type }}" == "auto" && -z "${{ inputs.enc_input }}" ]]; then
+          echo "::error::'enc_input' cannot be empty when 'type' is set to 'auto'." >&2
+          exit 1
+        fi
+
+    - name: Parse Type
+      id: parse_type
+      if: inputs.type == 'auto'
+      shell: bash
+      run: |
+        if [[ -n "${{ inputs.enc_input }}" && -f "${{ inputs.enc_input }}" ]]; then
+          echo "type=file" >> "$GITHUB_OUTPUT"
+        elif [[ -n "${{ inputs.enc_input }}" ]]; then
+          echo "type=inline" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::Unable to determine input type from 'enc_input'. Please specify 'type' explicitly." >&2
+          exit 1
+        fi
+
+    - name: Parse Encoding
+      id: parse_encoding
+      if: inputs.encoding == 'auto'
+      shell: bash
+      env:
+        INPUT_TYPE: ${{ steps.parse_type.outputs.type || inputs.type }}
+      run: |
+        if [[ "$INPUT_TYPE" == "file" && -f "${{ inputs.enc_input }}" ]]; then
+          if grep -qP "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]" "${{ inputs.enc_input }}"; then
+            echo "encoding=binary" >> "$GITHUB_OUTPUT"
+          else
+            echo "encoding=text" >> "$GITHUB_OUTPUT"
+          fi
+        elif [[ "$INPUT_TYPE" =~ ^(inline|secret|value|variable)$ ]]; then
+          if grep -qP "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]" <<< "${{ inputs.enc_input }}"; then
+            echo "encoding=binary" >> "$GITHUB_OUTPUT"
+          else
+            echo "encoding=text" >> "$GITHUB_OUTPUT"
+          fi
+        else
+          echo "::error::Unable to determine encoding for input. Please specify 'encoding' explicitly." >&2
+          exit 1
+        fi
+
+    - name: Decrypt SSL-encrypted value
+      id: decrypt_ssl
+      shell: bash
+      env:
+        INPUT_TYPE: ${{ steps.parse_type.outputs.type || inputs.type }}
+        INPUT_ENCODING: ${{ steps.parse_encoding.outputs.encoding || inputs.encoding }}
+      run: |
+        set -euo pipefail
+
+        if [[ -n "$salt_input" ]]; then
+          # Sanitize salt: remove leading/trailing whitespace and newlines
+          salt_input="${{ inputs.salt }}"
+          salt_input="${salt_input%${salt_input##*[![:space:]]}}"  # Remove trailing whitespace
+          salt_input="${salt_input#${salt_input%%[![:space:]]*}}"  # Remove leading whitespace
+          SALT_ARG=( -S "$salt_input" )
+        else
+          SALT_ARG=()
+        fi
+
+        if [[ "$INPUT_TYPE" == "file" ]]; then
+          if [[ "$INPUT_ENCODING" == "binary" ]]; then
+            decrypted_content_b64="$(
+              openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
+                -in "${{ inputs.enc_input }}" \
+                -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
+              | base64 -w0
+            )"
+            echo "decrypted_content_b64=$decrypted_content_b64" >> "$GITHUB_OUTPUT"
+          else
+            decrypted_content="$(
+              openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
+                -in "${{ inputs.enc_input }}" \
+                -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
+            )"
+            delim="__GHA_DELIM_$(date +%s%N)__"
+            {
+              echo "decrypted_content<<$delim"
+              printf '%s\n' "$decrypted_content"
+              echo "$delim"
+            } >> "$GITHUB_OUTPUT"
+          fi
+        elif [[ "$INPUT_TYPE" =~ ^(inline|secret|value|variable)$ ]]; then
+          if [[ "$INPUT_ENCODING" == "binary" ]]; then
+            decrypted_content_b64="$(
+              printf '%s' "${{ inputs.enc_input }}" \
+                | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
+                    -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
+                | base64 -w0
+            )"
+            echo "decrypted_content_b64=$decrypted_content_b64" >> "$GITHUB_OUTPUT"
+          else
+            decrypted_content="$(
+              printf '%s' "${{ inputs.enc_input }}" \
+                | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
+                    -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
+            )"
+            delim="__GHA_DELIM_$(date +%s%N)__"
+            {
+              echo "decrypted_content<<$delim"
+              printf '%s\n' "$decrypted_content"
+              echo "$delim"
+            } >> "$GITHUB_OUTPUT"
+          fi
+        else
+          echo "::error::Unsupported INPUT_TYPE='$INPUT_TYPE'" >&2
+          exit 1
+        fi
+
+    - name: Cleanup
+      if: always() && steps.parse_type.outputs.type == 'file' && inputs.cleanup == 'true'
+      shell: bash
+      run: |
+        set +e  # Don't exit on errors during cleanup
+        
+        input_file="${{ inputs.enc_input }}"
+        
+        # Verify file exists before attempting cleanup
+        if [[ -f "$input_file" ]]; then
+          # Attempt secure deletion with shred (overwrite before deletion)
+          if command -v shred &> /dev/null; then
+            if shred -vfz -n 10 "$input_file" 2>/dev/null; then
+              echo "::notice::Securely deleted encrypted input file: $input_file"
+            else
+              echo "::warning::shred failed, attempting standard removal of: $input_file"
+              rm -f "$input_file" 2>/dev/null || {
+                echo "::warning::Failed to delete encrypted input file: $input_file"
+                exit 1
+              }
+            fi
+          else
+            # Fallback: standard rm if shred not available
+            if rm -f "$input_file" 2>/dev/null; then
+              echo "::notice::Deleted encrypted input file: $input_file"
+            else
+              echo "::warning::Failed to delete encrypted input file: $input_file"
+              exit 1
+            fi
+          fi
+        else
+          echo "::notice::Input file not found or already removed: $input_file"
+        fi
+        
+        # Clear sensitive variables from environment (best effort)
+        unset PASSPHRASE 2>/dev/null || true
+        unset SALT_ARG 2>/dev/null || true
+        
+        echo "::notice::Cleanup completed"
