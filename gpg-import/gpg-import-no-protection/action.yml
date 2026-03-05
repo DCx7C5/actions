@@ -44,7 +44,7 @@ runs:
         
         GNUPGHOME=${GNUPGHOME:-"${{ github.workspace}}/.gnupg"}
         
-        if [[ -n '${{ inputs.gpg_key }}' ]]; then
+        if [[ -n "${{ inputs.gpg_key }}" ]]; then
           echo "::add-mask::${{ inputs.gpg_key }}"
         fi
         

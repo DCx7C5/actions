@@ -56,7 +56,7 @@ runs:
       run: |
         set -euo pipefail
 
-        input_key='${{ inputs.gpg_key }}'
+        input_key="${{ inputs.gpg_key }}"
 
         is_file=false
         is_secret=false

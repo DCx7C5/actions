@@ -58,7 +58,7 @@ runs:
     - name: Mask sensitive inputs
       shell: bash
       run: |
-        if [ -n '${{ inputs.gpg_key }}' ]; then
+        if [ -n "${{ inputs.gpg_key }}" ]; then
           echo "::add-mask::${{ inputs.gpg_key }}"
         fi
         if [ -n '${{ inputs.pass }}' ]; then
@@ -89,7 +89,7 @@ runs:
       env:
         GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
       with:
-        gpg_key: ${{ steps.decrypt_ssl.outputs.gpg_key || steps.validate.outputs.gpg_key }}
+        gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.pass }}
 
     - name: Import from file

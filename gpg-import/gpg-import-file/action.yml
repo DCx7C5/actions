@@ -93,7 +93,7 @@ runs:
       env:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       with:
-        gpg_key: '${{ inputs.gpg_key }}'
+        gpg_key: "${{ inputs.gpg_key }}"
         pass: '${{ inputs.pass }}'
         type: 'file'
 
@@ -104,4 +104,4 @@ runs:
       env:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       with:
-        gpg_key: '${{ inputs.gpg_key }}'
+        gpg_key: "${{ inputs.gpg_key }}"
