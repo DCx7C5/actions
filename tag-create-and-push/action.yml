@@ -85,7 +85,7 @@ runs:
         TAG_ARGS=(-a "$TAG" -m "$COMMIT_MSG" -s)
         
         if [ -n "$FINGERPRINT" ]; then
-          TAG_ARGS+=(-u "$FINGERPRINT" -s)
+          TAG_ARGS+=(-u "$FINGERPRINT")
           echo "::notice::Using explicit key: $FINGERPRINT"
         else
           echo "::notice::Using default GPG key"
