@@ -7,22 +7,19 @@ branding:
   color: "blue"
 
 inputs:
-  gpg_priv:
+  gpg_key:
     required: false
     default: ''
-    description: "GPG private key (inline) - will be masked in logs"
+    description: "GPG key (inline) - will be masked in logs"
   pass:
     required: false
     default: ''
     description: "Passphrase for the private key - will be masked in logs"
-  gpg_pub:
-    required: false
-    default: ''
-    description: "GPG public key (inline)"
+
 
 outputs:
   fingerprint:
-    description: "Fingerprint of the imported private GPG key (empty if only public key imported)"
+    description: "Fingerprint of the imported private GPG key"
     value: ${{ steps.import.outputs.fingerprint }}
   keys_total:
     description: "Total number of GPG keys available"
@@ -34,20 +31,18 @@ outputs:
     description: "Number of secret keys"
     value: ${{ steps.import.outputs.keys_secret }}
 
+
 runs:
   using: composite
   steps:
     - name: Mask sensitive inputs
       shell: bash
       run: |
-        if [ -n '${{ inputs.gpg_priv }}' ]; then
-          echo "::add-mask::${{ inputs.gpg_priv }}"
+        if [ -n '${{ inputs.gpg_key }}' ]; then
+          echo "::add-mask::${{ inputs.gpg_key }}"
         fi
         if [ -n '${{ inputs.pass }}' ]; then
           echo "::add-mask::${{ inputs.pass }}"
-        fi
-        if [ -n '${{ inputs.gpg_pub }}' ]; then
-          echo "::add-mask::${{ inputs.gpg_pub }}"
         fi
 
     - name: Validate inputs and environment
@@ -60,13 +55,25 @@ runs:
           exit 1
         fi
         
-        if [ -z '${{ inputs.gpg_priv }}' ] && [ -z '${{ inputs.gpg_pub }}' ]; then
-          echo "::error::Either gpg_priv or gpg_pub input is required" >&2
+        if [ -z '${{ inputs.gpg_key }}' ]; then
+          echo "::error::gpg_key input is required" >&2
           exit 1
         fi
-        
-        if [ -n '${{ inputs.gpg_priv }}' ] && [ -z '${{ inputs.pass }}' ]; then
-          echo "::error::pass (passphrase) is required when importing a private key" >&2
+
+    - name: Get Key Type
+      id: keytype
+      shell: bash
+      env:
+        GPG_KEY: '${{ inputs.gpg_key }}'
+      run: |
+        set -euo pipefail
+        header=(echo "$GPG_KEY" | head -n 1)
+        if [[ "$header" == *"BEGIN PGP PRIVATE KEY BLOCK"* ]]; then
+          echo "seckey=$GPG_KEY" >> "$GITHUB_OUTPUT"
+        elif [[ "$header" == *"BEGIN PGP PUBLIC KEY BLOCK"* ]]; then
+          echo "pubkey=$GPG_KEY" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::Invalid GPG key format: missing PGP block header" >&2
           exit 1
         fi
 
@@ -74,9 +81,9 @@ runs:
       id: import
       shell: bash
       env:
-        GPG_PRIV: '${{ inputs.gpg_priv }}'
+        GPG_PRIV: '${{ steps.keytype.outputs.seckey }}'
         PASS: '${{ inputs.pass }}'
-        GPG_PUB: '${{ inputs.gpg_pub }}'
+        GPG_PUB: '${{ steps.keytype.outputs.pubkey }}'
       run: |
         set -euo pipefail
         
@@ -88,7 +95,7 @@ runs:
         # ===== Import Private Key =====
         if [ -n "$GPG_PRIV" ]; then
           if echo "$GPG_PRIV" | gpg --no-tty --batch --pinentry-mode loopback \
-             --passphrase "$PASS" --import 2>&1 | grep -q "imported\|unchanged"; then
+             --passphrase "$PASS" --import 2>&1 | grep -qE "imported|unchanged"; then
             echo "::notice::Private key imported successfully from secret"
           else
             echo "::error::Failed to import private key from secret" >&2
@@ -98,36 +105,20 @@ runs:
         
         # ===== Import Public Key =====
         if [ -n "$GPG_PUB" ]; then
-          if echo "$GPG_PUB" | gpg --no-tty --batch --import 2>&1 | grep -q "imported\|unchanged"; then
+          if echo "$GPG_PUB" | gpg --no-tty --batch --import 2>&1 | grep -qE "imported|unchanged"; then
             echo "::notice::Public key imported successfully from secret"
           else
             echo "::error::Failed to import public key from secret" >&2
             exit 1
           fi
         fi
-        
-        # ===== Count Keys and Set Owner Trust =====
+
+        # ===== Count Keys =====
         read -r KEY_COUNT_TOTAL KEY_COUNT_PUB KEY_COUNT_SEC <<< "$(gpg_count_keys)"
         gpg_log_key_stats "$KEY_COUNT_TOTAL" "$KEY_COUNT_PUB" "$KEY_COUNT_SEC"
         
-        if [ -n "$GPG_PRIV" ]; then
-          FINGERPRINT=$(gpg_get_secret_fingerprint)
-          
-          if [ -n "$FINGERPRINT" ]; then
-            gpg_set_owner_trust "$FINGERPRINT"
-            echo "::notice::Owner trust level set for fingerprint: $FINGERPRINT"
-            echo "fingerprint=$FINGERPRINT" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::Could not determine fingerprint for owner trust setup"
-            echo "fingerprint=" >> "$GITHUB_OUTPUT"
-          fi
-        else
-          echo "fingerprint=" >> "$GITHUB_OUTPUT"
-        fi
-        
         # ===== Outputs =====
+        echo "fingerprint=$(gpg_get_fingerprint)" >> "$GITHUB_OUTPUT"
         echo "keys_public=$KEY_COUNT_PUB" >> "$GITHUB_OUTPUT"
         echo "keys_secret=$KEY_COUNT_SEC" >> "$GITHUB_OUTPUT"
         echo "keys_total=$KEY_COUNT_TOTAL" >> "$GITHUB_OUTPUT"
-
-

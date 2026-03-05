@@ -63,7 +63,7 @@ runs:
         echo "::notice::Importing public key from keyserver: $KEYSERVER_URL"
         echo "::notice::Fingerprint: $FINGERPRINT"
         
-        if gpg --no-tty --batch --keyserver "$KEYSERVER_URL" --recv-keys "$FINGERPRINT" 2>&1 | grep -q "imported\|unchanged"; then
+        if gpg --no-tty --batch --keyserver "$KEYSERVER_URL" --recv-keys "$FINGERPRINT" 2>&1 | grep -qE "imported|unchanged"; then
           echo "::notice::Public key imported successfully from keyserver"
         else
           echo "::error::Failed to import public key from keyserver: $KEYSERVER_URL" >&2

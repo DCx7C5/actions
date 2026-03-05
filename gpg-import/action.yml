@@ -6,22 +6,16 @@ branding:
   icon: "lock"
   color: "blue"
 
+
 inputs:
-  method:
-    required: true
-    description: "Import method: 'secret', 'file', or 'keyserver'"
-  gpg_priv:
+  gpg_key:
     required: false
     default: ''
-    description: "GPG private key (inline for 'secret', or file path for 'file')"
+    description: "GPG key (inline for 'secret', or file path for 'file', or fingerprint/identifier for 'keyserver')"
   pass:
     required: false
     default: ''
-    description: "Passphrase/password for decryption (GPG or SSL) - will be masked in logs"
-  gpg_pub:
-    required: false
-    default: ''
-    description: "GPG public key (inline for 'secret', file path for 'file', or fingerprint for 'keyserver')"
+    description: "Passphrase/password for decryption (GPG or SSL)"
   keyserver_url:
     required: false
     default: 'hkps://keys.openpgp.org'
@@ -30,6 +24,7 @@ inputs:
     required: false
     default: 'true'
     description: "For 'file' method: securely delete private key file after import"
+
 
 outputs:
   fingerprint:
@@ -45,45 +40,68 @@ outputs:
     description: "Number of secret keys"
     value: ${{ steps.dispatch.outputs.keys_secret }}
 
+
 runs:
   using: composite
   steps:
-    - name: Validate method input
+    - name: Mask sensitive inputs
       shell: bash
       run: |
-        METHOD='${{ inputs.method }}'
-        if [ "$METHOD" != "secret" ] && [ "$METHOD" != "file" ] && [ "$METHOD" != "keyserver" ]; then
-          echo "::error::Invalid method: $METHOD. Must be one of: secret, file, keyserver" >&2
+        if [ -n '${{ inputs.gpg_key }}' ]; then
+          echo "::add-mask::${{ inputs.gpg_key }}"
+        fi
+        if [ -n '${{ inputs.pass }}' ]; then
+          echo "::add-mask::${{ inputs.pass }}"
+        fi
+
+    - name: Validate GPG Key input
+      id: validate
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        if [[ -f "${{ inputs.gpg_key }} ]]; then
+          METHOD='file'
+        elif echo -n "${{ inputs.gpg_key }}" | wc -c | grep -qE "16|40" ; then
+          METHOD='keyserver'
+          PUBKEY="${{ inputs.gpg_key }}"
+        elif [[ -n "${{ inputs.gpg_key }}" ]]; then
+          METHOD='secret'
+        else
+          echo "::error::Invalid gpg_key input: must be a file path, a key, or a keyserver URL starting with hkps://" >&2
           exit 1
         fi
+
+        echo "seckey=$SECKEY" >> "$GITHUB_OUTPUT"
+        echo "pubkey=$PUBKEY" >> "$GITHUB_OUTPUT"
+        echo "method=$METHOD" >> "$GITHUB_OUTPUT"
         echo "::notice::Using import method: $METHOD"
 
     - name: Import from secret
-      if: inputs.method == 'secret'
-      uses: ./gpg-import-secret
-      with:
-        gpg_priv: ${{ inputs.gpg_priv }}
-        pass: ${{ inputs.pass }}
-        gpg_pub: ${{ inputs.gpg_pub }}
       id: secret_import
+      if: inputs.method == 'secret'
+      uses: ./gpg-import/gpg-import-secret
+      with:
+        gpg_key: ${{ inputs.gpg_key }}
+        pass: ${{ inputs.pass }}
 
     - name: Import from file
-      if: inputs.method == 'file'
-      uses: ./gpg-import-file
-      with:
-        gpg_priv: ${{ inputs.gpg_priv }}
-        pass: ${{ inputs.pass }}
-        gpg_pub: ${{ inputs.gpg_pub }}
-        delete_after_import: ${{ inputs.delete_after_import }}
       id: file_import
+      if: inputs.method == 'file'
+      uses: ./gpg-import/gpg-import-file
+      with:
+        gpg_priv: ${{ steps.validate.outputs.seckey }}
+        gpg_pub: ${{ steps.validate.outputs.pubkey }}
+        pass: ${{ inputs.pass }}
+        delete_after_import: ${{ inputs.delete_after_import }}
 
     - name: Import from keyserver
-      if: inputs.method == 'keyserver'
-      uses: ./gpg-import-keyserver
-      with:
-        fingerprint: ${{ inputs.gpg_pub }}
-        keyserver_url: ${{ inputs.keyserver_url }}
       id: keyserver_import
+      if: inputs.method == 'keyserver'
+      uses: ./gpg-import/gpg-import-keyserver
+      with:
+        fingerprint: ${{ steps.validate.outputs.pubkey }}
+        keyserver_url: ${{ inputs.keyserver_url }}
 
     - name: Aggregate outputs
       id: dispatch
@@ -118,3 +136,8 @@ runs:
         echo "keys_secret=$SEC" >> "$GITHUB_OUTPUT"
         echo "keys_total=$TOT" >> "$GITHUB_OUTPUT"
 
+    - name: Set Owner Trust (if private key imported)
+      if: inputs.method != 'keyserver' && steps.validate.outputs.seckey != ''
+      uses: ./gpg-set-ownertrust
+      with:
+        fingerprint: ${{ steps.dispatch.outputs.fingerprint }}

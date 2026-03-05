@@ -24,6 +24,7 @@ inputs:
     default: 'true'
     description: "Securely delete private key file after import"
 
+
 outputs:
   fingerprint:
     description: "Fingerprint of the imported private GPG key (empty if only public key imported)"
@@ -92,13 +93,13 @@ runs:
           fi
           
           if gpg --no-tty --batch --pinentry-mode loopback \
-             --passphrase "$PASS" --import "$GPG_PRIV" 2>&1 | grep -q "imported\|unchanged"; then
+             --passphrase "$PASS" --import "$GPG_PRIV" 2>&1 | grep -qE "imported|unchanged"; then
             echo "::notice::Private key imported successfully from file: $GPG_PRIV"
             
             # Securely delete the file after import
             if [ "$DELETE_AFTER" = "true" ]; then
               if command -v shred &>/dev/null; then
-                shred -vfz -n 3 "$GPG_PRIV" 2>/dev/null || true
+                shred --remove wipesync -fz -n 10 "$GPG_PRIV" 2>/dev/null || true
               else
                 rm -f "$GPG_PRIV"
               fi
@@ -117,36 +118,21 @@ runs:
             exit 1
           fi
           
-          if gpg --no-tty --batch --import "$GPG_PUB" 2>&1 | grep -q "imported\|unchanged"; then
+          if gpg --no-tty --batch --import "$GPG_PUB" 2>&1 | grep -qE "imported|unchanged"; then
             echo "::notice::Public key imported successfully from file: $GPG_PUB"
           else
             echo "::error::Failed to import public key from file: $GPG_PUB" >&2
             exit 1
           fi
-        fi
+        fi        
         
-        # ===== Count Keys and Set Owner Trust =====
+        # ===== Count Keys =====
         read -r KEY_COUNT_TOTAL KEY_COUNT_PUB KEY_COUNT_SEC <<< "$(gpg_count_keys)"
         gpg_log_key_stats "$KEY_COUNT_TOTAL" "$KEY_COUNT_PUB" "$KEY_COUNT_SEC"
         
-        if [ -n "$GPG_PRIV" ]; then
-          FINGERPRINT=$(gpg_get_secret_fingerprint)
-          
-          if [ -n "$FINGERPRINT" ]; then
-            gpg_set_owner_trust "$FINGERPRINT"
-            echo "::notice::Owner trust level set for fingerprint: $FINGERPRINT"
-            echo "fingerprint=$FINGERPRINT" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::Could not determine fingerprint for owner trust setup"
-            echo "fingerprint=" >> "$GITHUB_OUTPUT"
-          fi
-        else
-          echo "fingerprint=" >> "$GITHUB_OUTPUT"
-        fi
         
         # ===== Outputs =====
+        echo "fingerprint=$(gpg_get_fingerprint)" >> "$GITHUB_OUTPUT"
         echo "keys_public=$KEY_COUNT_PUB" >> "$GITHUB_OUTPUT"
         echo "keys_secret=$KEY_COUNT_SEC" >> "$GITHUB_OUTPUT"
         echo "keys_total=$KEY_COUNT_TOTAL" >> "$GITHUB_OUTPUT"
-
-
