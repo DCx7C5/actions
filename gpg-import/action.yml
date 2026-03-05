@@ -128,7 +128,7 @@ runs:
         echo "keys_total=$TOT" >> "$GITHUB_OUTPUT"
 
     - name: Set Owner Trust (if private key imported)
-      if: inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true'
+      if: (inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true') && steps.validate.outputs.is_publickey == 'true'
       uses: DCx7C5/actions/gpg-set-ownertrust@v1
       with:
         fingerprint: ${{ steps.dispatch.outputs.fingerprint }}

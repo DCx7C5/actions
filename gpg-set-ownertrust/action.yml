@@ -28,10 +28,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        if [ -z "${GNUPGHOME:-}" ] || [ ! -d "${GNUPGHOME}" ]; then
-          echo "::error::GNUPGHOME not set or does not exist: ${GNUPGHOME:-'(empty)'}" >&2
-          exit 1
-        fi
+
         if [ -z '${{ inputs.fingerprint }}' ]; then
           echo "::error::fingerprint input is required" >&2
           exit 1
