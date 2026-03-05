@@ -2,6 +2,7 @@ name: "Configure GitHub clients for GPG signing"
 description: "Configure GitHub (git & gh) client for GPG signing from GitHub Actions"
 author: "DCx7C5"
 
+
 inputs:
   fingerprint:
     description: "Fingerprint of the GPG key to use for signing (optional, will use default key if not provided)"
@@ -10,6 +11,12 @@ inputs:
   gpg_home:
     description: "Path to GNUPGHOME directory (where keys are stored)"
     required: false
+    default: ''
+  token:
+    description: "GitHub token for gh CLI configuration (optional, will use GH_TOKEN environment variable if not provided)"
+    required: false
+    default: ''
+
 
 outputs:
   fingerprint:
@@ -43,6 +50,7 @@ runs:
       run: |
         set -euo pipefail
         
+        export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         GPG_NAME="GitHub Actions"
         GPG_MAIL="actions@github.com"
         GPG_EMPTY=$(gpg --with-colons --list-secret-keys 2>/dev/null | wc -l)
@@ -85,14 +93,14 @@ runs:
       if: steps.parse_gpg.outputs.gpg_empty != 0
       shell: bash
       env:
-        GNUPGHOME: ${{ steps.get_gpg_home.outputs.gpg_home }}
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
         GPG_NAME: ${{ steps.parse_gpg.outputs.gpg_name }}
         GPG_MAIL: ${{ steps.parse_gpg.outputs.gpg_mail }}
         FINGERPRINT: ${{ steps.parse_gpg.outputs.fingerprint }}
-        GH_TOKEN: ${{ env.GH_TOKEN }}
+        GH_TOKEN: ${{ inputs.token || env.GH_TOKEN }}
       run: |
         set -euo pipefail
-        
+        export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         git config --global user.name "$GPG_NAME"
         git config --global user.email "$GPG_MAIL"
         git config --global user.signingkey "$FINGERPRINT"

@@ -57,8 +57,10 @@ jobs:
         id: git_config
         uses: DCx7C5/actions/git-configure-gnupg@v1
         env:
-          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        with:
+          gpg_home: ${{ steps.gpg_setup.outputs.gpg_home }}
+
 
       - name: Delete old tag (if exists)
         id: tag_delete
