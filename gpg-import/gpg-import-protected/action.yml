@@ -1,0 +1,74 @@
+name: "Import protected GPG Key from file or inline variable"
+description: "Import protected GPG key from file path or inline key material"
+author: "DCx7C5"
+
+
+inputs:
+  gpg_key:
+    required: true
+    description: "GPG key path or inline variable"
+  pass:
+    required: true
+    default: ''
+    description: "Passphrase for the private key"
+  gpg_home:
+    required: false
+    default: ''
+    description: "Path to GPG Home Directory"
+  type:
+    required: false
+    default: 'auto'
+    description: "Set to true if gpg_key is file path or to false if its an inline variable"
+
+
+runs:
+  using: composite
+  steps:
+    - id: validate_type
+      if: inputs.type == 'auto'
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [[ -n "$gpg_key" && -f "$gpg_key" ]]; then
+          echo "type=file" >> "$GITHUB_OUTPUT"
+        elif [[ -n "$gpg_key" && ! -f "$gpg_key" ]]; then
+          echo "type=inline" >> "$GITHUB_OUTPUT"
+        fi
+        
+
+    - id: import_protected_file
+      if: steps.validate_type.outputs.type == 'file' || inputs.type == 'file'
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+      run: |
+        set -euo pipefail
+        
+        key_input="${{ inputs.gpg_key }}"
+        passphrase="${{ inputs.pass }}"
+        
+        gpg_cmd=(gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0)
+
+        if [[ -n "$GNUPGHOME" ]]; then
+          gpg_cmd+=(--homedir "$GNUPGHOME")
+        fi
+
+        printf '%s\n' "$passphrase" | "${gpg_cmd[@]}" --import "$key_input"
+
+    - id: import_protected_inline
+      if: steps.validate_type.outputs.type == 'inline' || inputs.type == 'inline' || inputs.type == 'secret'
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+      run: |
+        set -euo pipefail
+
+        key_input="${{ inputs.gpg_key }}"
+        passphrase="${{ inputs.pass }}"
+        
+        gpg_cmd=(gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0)
+
+        key_tmp="$(mktemp)"
+        trap 'rm -f "$key_tmp"' EXIT
+        printf '%s\n' "$key_input" > "$key_tmp"
+        printf '%s\n' "$passphrase" | "${gpg_cmd[@]}" --import "$key_tmp"
