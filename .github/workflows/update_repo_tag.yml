@@ -72,7 +72,6 @@ jobs:
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
-          gpg_home: ${{ steps.gpg_setup.outputs.gpg_home }}
           fingerprint: ${{ steps.gpg_import.outputs.fingerprint }}
           pass: ''
           version: "v1"

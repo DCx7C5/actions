@@ -23,7 +23,7 @@ runs:
       id: create_dir
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home }} || ${{ env.GNUPGHOME }}
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
         set -euo pipefail
 
@@ -31,7 +31,7 @@ runs:
           GNUPGHOME=$(mktemp -d .gnupg.XXXXXXX)
           export GNUPGHOME="$(pwd)/${GNUPGHOME}"
         else
-          export GNUPGHOME="${{ inputs.gpg_home }}"
+          export GNUPGHOME="$GNUPGHOME"
         fi
 
         if [ ! -d "$GNUPGHOME" ]; then
