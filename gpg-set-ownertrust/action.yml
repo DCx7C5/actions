@@ -1,0 +1,56 @@
+name: "Set Trust Level for GPG Key"
+description: "Set the trust level for a GPG key in GitHub Actions"
+author: "DCx7C5"
+
+branding:
+  icon: lock
+  color: purple
+
+
+inputs:
+  fingerprint:
+    required: true
+    description: "Fingerprint of the GPG key to set trust level for"
+  trust_level:
+    required: false
+    default: "5"
+    description: "Set trust level of GPG Key (default: owner)"
+  gpg_home:
+    required: false
+    description: "Path to GNUPGHOME directory (where keys are stored)"
+
+
+runs:
+  using: composite
+  steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -z "${GNUPGHOME:-}" ] || [ ! -d "${GNUPGHOME}" ]; then
+          echo "::error::GNUPGHOME not set or does not exist: ${GNUPGHOME:-'(empty)'}" >&2
+          exit 1
+        fi
+        if [ -z '${{ inputs.fingerprint }}' ]; then
+          echo "::error::fingerprint input is required" >&2
+          exit 1
+        fi
+        if [ -z '${{ inputs.trust_level }}' ]; then
+          echo "::error::trust_level input is required" >&2
+          exit 1
+        fi
+
+    - name: Set GPG key trust level
+      id: set_trust
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home }} || ${{ env.GNUPGHOME }}
+      run: |
+        set -euo pipefail
+        
+        if ! echo "trust\n${{ inputs.trust_level }}\ny\n" | gpg --no-tty --batch --command-fd0 --edit-key "${{ inputs.fingerprint }}"; then
+          echo "::error::Failed setting trust level of key: ${{ inputs.fingerprint }}
+          exit 1
+        fi
+        
+        echo "::notice::Successfully set trust level for key: ${{ inputs.fingerprint }}
