@@ -65,7 +65,7 @@ runs:
         # Decode passphrase from base64 to protect from shell expansion
         
         # Import with passphrase via fd 0
-        printf '%s' ${{ toJSON(inputs.pass) }} | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import "$GPG_KEY_PATH"
+        printf '%s' '${{ inputs.pass }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import "$GPG_KEY_PATH"
 
         # Extract key information
         fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
@@ -102,7 +102,7 @@ runs:
         
         # Import with passphrase via fd 0
         # Use toJSON() to safely escape special characters like $ in passphrase
-        printf '%s' ${{ toJSON(inputs.pass) }} | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import <(printf '%s' "$GPG_KEY_INLINE")
+        printf '%s' '${{ inputs.pass }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import <(printf '%s' "$GPG_KEY_INLINE")
         
         # Extract key information
         fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
