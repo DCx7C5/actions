@@ -24,6 +24,14 @@ inputs:
     required: false
     default: 'true'
     description: "For 'file' method: securely delete private key file after import"
+  method:
+    required: false
+    default: 'auto'
+    description: "Import method to use (secret, file, keyserver)"
+  gpg_home:
+    required: false
+    default: ''
+    description: "Path to GPG Home Directory (optional, can also be set via GNUPGHOME env variable)"
 
 
 outputs:
@@ -56,51 +64,50 @@ runs:
 
     - name: Validate GPG Key input
       id: validate
-      shell: bash
-      run: |
-        set -euo pipefail
-        
-        if [[ -f "${{ inputs.gpg_key }} ]]; then
-          METHOD='file'
-        elif echo -n "${{ inputs.gpg_key }}" | wc -c | grep -qE "16|40" ; then
-          METHOD='keyserver'
-          PUBKEY="${{ inputs.gpg_key }}"
-        elif [[ -n "${{ inputs.gpg_key }}" ]]; then
-          METHOD='secret'
-        else
-          echo "::error::Invalid gpg_key input: must be a file path, a key, or a keyserver URL starting with hkps://" >&2
-          exit 1
-        fi
-
-        echo "seckey=$SECKEY" >> "$GITHUB_OUTPUT"
-        echo "pubkey=$PUBKEY" >> "$GITHUB_OUTPUT"
-        echo "method=$METHOD" >> "$GITHUB_OUTPUT"
-        echo "::notice::Using import method: $METHOD"
-
-    - name: Import from secret
-      id: secret_import
-      if: inputs.method == 'secret'
-      uses: ./gpg-import/gpg-import-secret
+      uses: ./gpg-import/gpg-validate-import
       with:
         gpg_key: ${{ inputs.gpg_key }}
+
+    - name: Decrypt SSL-encrypted key (if applicable)
+      id: decrypt_ssl
+      if: steps.validate.outputs.is_ssl_enc_and_armored_key == 'true' || steps.validate.outputs.is_ssl_enc_binary_key == 'true'
+      uses: DCx7C5/actions/ssl-decrypt@v1
+      with:
+        enc_input: ${{ steps.validate.outputs.gpg_key }}
+        passphrase: '${{ inputs.pass }}'
+        type: ${{ steps.validate.outputs.is_file == 'true' && 'file' || 'inline' }}
+        encoding: ${{ steps.validate.outputs.is_ssl_enc_binary_key == 'true' && 'binary' || 'text' }}
+        cleanup: 'true'
+
+    - name: Import from secret/variable/inline value
+      id: inline_import
+      if: steps.validate.outputs.is_secret == 'true'
+      uses: ./gpg-import/gpg-import-inline
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+      with:
+        gpg_key: ${{ steps.decrypt_ssl.outputs.gpg_key || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.pass }}
 
     - name: Import from file
       id: file_import
-      if: inputs.method == 'file'
+      if: steps.validate.outputs.is_file == 'true'
       uses: ./gpg-import/gpg-import-file
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
       with:
-        gpg_priv: ${{ steps.validate.outputs.seckey }}
-        gpg_pub: ${{ steps.validate.outputs.pubkey }}
+        gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.pass }}
         delete_after_import: ${{ inputs.delete_after_import }}
 
     - name: Import from keyserver
       id: keyserver_import
-      if: inputs.method == 'keyserver'
+      if: steps.validate.outputs.is_fingerprint == 'true'
       uses: ./gpg-import/gpg-import-keyserver
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
       with:
-        fingerprint: ${{ steps.validate.outputs.pubkey }}
+        fingerprint: ${{ steps.validate.outputs.gpg_key }}
         keyserver_url: ${{ inputs.keyserver_url }}
 
     - name: Aggregate outputs
@@ -137,7 +144,9 @@ runs:
         echo "keys_total=$TOT" >> "$GITHUB_OUTPUT"
 
     - name: Set Owner Trust (if private key imported)
-      if: inputs.method != 'keyserver' && steps.validate.outputs.seckey != ''
-      uses: ./gpg-set-ownertrust
+      if: inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true'
+      uses: DCx7C5/actions/gpg-set-ownertrust@v1
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
       with:
         fingerprint: ${{ steps.dispatch.outputs.fingerprint }}
