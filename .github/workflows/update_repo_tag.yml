@@ -49,8 +49,7 @@ jobs:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
           method: 'secret'
-          gpg_priv: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg_pub: ''
+          gpg_key: '${{ secrets.GPG_PRIVATE_KEY }}'
           pass: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Configure Git client to sign with GPG
