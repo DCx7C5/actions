@@ -1,6 +1,7 @@
-name: "Export GPG Key (Secure)"
+name: "Export GPG Key"
 description: "Export GPG Signing Key from GitHub Actions with security hardening"
 author: "DCx7C5"
+
 
 inputs:
   public:
@@ -19,14 +20,23 @@ inputs:
     required: false
     default: 'true'
     description: "Exports only Subkey true/false"
+  armored:
+    required: false
+    default: 'true'
+    description: "Exports GPG key in ASCII-armored format"
+  decrypted:
+    required: false
+    default: 'false'
+    description: "Exports GPG key in decrypted form (no passphrase protection)"
+  with_ssl_protection:
+    required: false
+    default: 'false'
+    description: "Exports GPG private key with SSL passphrase protection instead of GPG passphrase"
   export_dir:
     required: false
     default: "${{ github.workspace }}/"
     description: "Directory path to exported GPG key"
-  dcrypto:
-    required: false
-    default: 'false'
-    description: "Uses dystopian-crypto management script"
+
 
 runs:
   using: composite
@@ -45,21 +55,21 @@ runs:
 
         # Check if any keys exist
         if ! gpg --list-keys > /dev/null 2>&1; then
-          echo "ERROR: No GPG keys found" >&2
+          echo "::error::No GPG keys found" >&2
           exit 1
         fi
 
         # Count available keys
         KEY_COUNT=$(gpg --list-keys --with-colons 2>/dev/null | grep -c "^pub:" || true)
         if [ "$KEY_COUNT" -eq 0 ]; then
-          echo "ERROR: No GPG public keys found" >&2
+          echo "::error::No GPG public keys found" >&2
           exit 1
         fi
 
         echo "Found $KEY_COUNT GPG key(s)"
 
-    - name: Export GPG key securely
-      if: inputs.dcrypto == 'false'
+    - name: Export GPG key securely (encrypted)
+      if: inputs.with_ssl_protection != 'true'
       shell: bash
       run: |
         set -euo pipefail
@@ -69,7 +79,7 @@ runs:
           grep -E "^fpr:.*:" | head -1 | cut -d: -f10)
 
         if [ -z "$FPR" ] || [ ${#FPR} -lt 40 ]; then
-          echo "ERROR: Invalid or missing GPG fingerprint" >&2
+          echo "::error::Invalid or missing GPG fingerprint" >&2
           exit 1
         fi
 
@@ -80,18 +90,18 @@ runs:
           export_file="${{ inputs.export_dir }}/public.asc"
 
           if ! gpg --armor --export "$FPR" > "$export_file" 2>/dev/null; then
-            echo "ERROR: Failed to export public key" >&2
+            echo "::error::Failed to export public key" >&2
             rm -f "$export_file"
             exit 1
           fi
 
-          echo "✓ Public key exported to: $export_file"
+          echo "::notice::Public key exported to: $export_file"
         fi
 
         # Export private key if requested (with passphrase protection)
         if [ "${{ inputs.private }}" = "true" ]; then
           if [ -z "${{ inputs.pass }}" ]; then
-            echo "ERROR: Passphrase required for private key export" >&2
+            echo "::error::Passphrase required for private key export" >&2
             exit 1
           fi
 
@@ -101,7 +111,7 @@ runs:
           if ! exec 3<<< "${{ inputs.pass }}" && \
              gpg --armor --batch --pinentry-mode loopback \
                  --passphrase-fd 3 --export-secret-key "$FPR" > "$export_file" 2>/dev/null; then
-            echo "ERROR: Failed to export private key" >&2
+            echo "::error::Failed to export private key" >&2
             rm -f "$export_file"
             exec 3>&-
             exit 1
@@ -111,6 +121,11 @@ runs:
 
           # Secure the exported key file
           chmod 600 "$export_file"
-          echo "✓ Private key exported to: $export_file (perms: 600)"
+          echo "::notice::Private key exported to: $export_file (perms: 600)"
         fi
 
+    - name: Export GPG key securely (encrypted)
+      if: inputs.with_ssl_protection == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
