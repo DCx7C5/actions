@@ -9,7 +9,6 @@ inputs:
     description: "GPG key path or inline variable"
   pass:
     required: true
-    default: ''
     description: "Passphrase for the private key"
   gpg_home:
     required: false
@@ -44,7 +43,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        if [[ -n "${{ inputs.pass }}" && -n "${{ inputs.gpg_key }}" ]]; then
+        if [[ -n '${{ inputs.pass }}' && -n "${{ inputs.gpg_key }}" ]]; then
           echo "::add-mask::${{ inputs.pass }}"
           echo "::add-mask::${{ inputs.gpg_key }}"
         fi
