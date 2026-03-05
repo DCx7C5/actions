@@ -69,13 +69,12 @@ jobs:
       - name: Create and push new signed Tag
         id: tag_create
         uses: DCx7C5/actions/tag-create-and-push@v1
-        env:
-          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
           fingerprint: ${{ steps.gpg_import.outputs.fingerprint }}
           pass: ''
           version: "v1"
           commit_msg: "Release v1"
+          gpg_home: "${{ steps.gpg_setup.outputs.gpg_home }}"
 
       - name: Create GitHub Release
         id: rel_create
