@@ -1,0 +1,149 @@
+name: "Validate GPG key import inputs and environment"
+description: "Validate GPG key import inputs and environment for all import methods"
+author: "DCx7C5"
+
+branding:
+  icon: "check"
+  color: "blue"
+
+
+inputs:
+  gpg_key:
+    required: true
+    default: ''
+    description: "GPG key (inline or file path or key fingerprint/identifier) to validate for import"
+
+
+outputs:
+  gpg_key:
+    description: "The normalized gpg_key input value (for downstream steps)"
+    value: ${{ steps.mask_and_validate.outputs.gpg_key }}
+  is_file:
+    description: "Whether the gpg_key input is a file path"
+    value: ${{ steps.mask_and_validate.outputs.is_file }}
+  is_secret:
+    description: "Whether the gpg_key input is an inline secret key"
+    value: ${{ steps.mask_and_validate.outputs.is_secret }}
+  is_fingerprint:
+    description: "Whether the gpg_key input is a key fingerprint/identifier for keyserver lookup"
+    value: ${{ steps.mask_and_validate.outputs.is_fingerprint }}
+  is_publickey:
+    description: "Whether the gpg_key input is a public key"
+    value: ${{ steps.mask_and_validate.outputs.is_publickey }}
+  is_secretkey:
+    description: "Whether the gpg_key input is a secret key"
+    value: ${{ steps.mask_and_validate.outputs.is_secretkey }}
+  is_binary_key:
+    description: "Whether the gpg_key input is binary data (not a file path or text key)"
+    value: ${{ steps.mask_and_validate.outputs.is_binary_key }}
+  is_ascii_armored_key:
+    description: "Whether the gpg_key input is ASCII-armored text (public or secret key block)"
+    value: ${{ steps.mask_and_validate.outputs.is_ascii_armored }}
+  is_ssl_enc_and_armored_key:
+    description: "Whether the gpg_key input is an SSL-encrypted value (for keyserver password input)"
+    value: ${{ steps.mask_and_validate.outputs.is_ssl_encrypted }}
+  is_ssl_enc_binary_key:
+    description: "Whether the gpg_key input is an SSL-encrypted value in binary format (for keyserver password input)"
+    value: ${{ steps.mask_and_validate.outputs.is_ssl_encrypted_binary }}
+
+
+runs:
+  using: composite
+  steps:
+    - name: Validate and classify gpg_key
+      id: mask_and_validate
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        input_key='${{ inputs.gpg_key }}'
+
+        is_file=false
+        is_secret=false
+        is_fingerprint=false
+        is_publickey=false
+        is_secretkey=false
+        is_ssl_encrypted=false
+        is_ssl_encrypted_binary=false
+        is_binary_key=false
+        is_ascii_armored=false
+        normalized_key="$input_key"
+
+        if [[ -n "$input_key" ]]; then
+          echo "::add-mask::$input_key"
+        fi
+
+        if [[ -z "$input_key" ]]; then
+          echo "::error::gpg_key input is required" >&2
+          exit 1
+        fi
+
+        # Detect OpenSSL-style encrypted payloads independently of PGP classification.
+        if [[ -f "$input_key" ]]; then
+          if head -c 8 "$input_key" 2>/dev/null | grep -q "^Salted__"; then
+            is_ssl_encrypted=true
+            is_ssl_encrypted_binary=true
+          elif grep -qE "BEGIN OPENSSL ENCRYPTED DATA|BEGIN ENCRYPTED FILE|U2FsdGVkX1" "$input_key"; then
+            is_ssl_encrypted=true
+          fi
+        else
+          if grep -qE "BEGIN OPENSSL ENCRYPTED DATA|BEGIN ENCRYPTED FILE|U2FsdGVkX1" <<< "$input_key"; then
+            is_ssl_encrypted=true
+          fi
+        fi
+
+        if [[ -f "$input_key" ]]; then
+          is_file=true
+
+          if grep -qE "BEGIN PGP (PUBLIC|PRIVATE|SECRET) KEY BLOCK" "$input_key"; then
+            is_ascii_armored=true
+
+            if grep -q "BEGIN PGP PUBLIC KEY BLOCK" "$input_key"; then
+              is_publickey=true
+            else
+              is_secretkey=true
+            fi
+          else
+            mime_type="$(file -b --mime-type "$input_key" || true)"
+            if [[ "$mime_type" != text/* ]]; then
+              is_binary_key=true
+            fi
+          fi
+        else
+          if grep -qE "BEGIN PGP (PRIVATE|SECRET) KEY BLOCK" <<< "$input_key"; then
+            is_secret=true
+            is_ascii_armored=true
+            is_secretkey=true
+          elif grep -q "BEGIN PGP PUBLIC KEY BLOCK" <<< "$input_key"; then
+            is_ascii_armored=true
+            is_publickey=true
+          else
+            compact_key="$(tr -d '[:space:]' <<< "$input_key" | tr '[:lower:]' '[:upper:]')"
+            if [[ "$compact_key" =~ ^[A-F0-9]{8}$ || "$compact_key" =~ ^[A-F0-9]{16}$ || "$compact_key" =~ ^[A-F0-9]{40}$ ]]; then
+              is_fingerprint=true
+              is_publickey=true
+              normalized_key="$compact_key"
+            fi
+          fi
+        fi
+
+        if [[ "$is_file" != true && "$is_secret" != true && "$is_fingerprint" != true && "$is_publickey" != true && "$is_secretkey" != true && "$is_binary_key" != true && "$is_ascii_armored" != true ]]; then
+          echo "::error::Unable to classify gpg_key input. Provide a valid file path, armored key block, or key fingerprint/keyid." >&2
+          exit 1
+        fi
+
+        {
+          delim="__GHA_DELIM_$(date +%s%N)__"
+          echo "gpg_key<<$delim"
+          printf '%s\n' "$normalized_key"
+          echo "$delim"
+          echo "is_file=$is_file"
+          echo "is_secret=$is_secret"
+          echo "is_fingerprint=$is_fingerprint"
+          echo "is_publickey=$is_publickey"
+          echo "is_secretkey=$is_secretkey"
+          echo "is_binary_key=$is_binary_key"
+          echo "is_ascii_armored=$is_ascii_armored"
+          echo "is_ssl_encrypted=$is_ssl_encrypted"
+          echo "is_ssl_encrypted_binary=$is_ssl_encrypted_binary"
+        } >> "$GITHUB_OUTPUT"
