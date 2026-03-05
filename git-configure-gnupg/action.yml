@@ -83,14 +83,14 @@ runs:
           fi
         fi
         
-        echo "fingerprint=$FINGERPRINT" >> $GITHUB_OUTPUT
-        echo "gpg_name=$GPG_NAME" >> $GITHUB_OUTPUT
-        echo "gpg_mail=$GPG_MAIL" >> $GITHUB_OUTPUT
-        echo "gpg_empty=$GPG_EMPTY" >> $GITHUB_OUTPUT
+        echo "fingerprint=$FINGERPRINT" >> "$GITHUB_OUTPUT"
+        echo "gpg_name=$GPG_NAME" >> "$GITHUB_OUTPUT"
+        echo "gpg_mail=$GPG_MAIL" >> "$GITHUB_OUTPUT"
+        echo "gpg_empty=$GPG_EMPTY" >> "$GITHUB_OUTPUT"
 
     - name: Configure git for GPG signing
       id: gitconfig
-      if: steps.parse_gpg.outputs.gpg_empty != 0
+      if: steps.parse_gpg.outputs.gpg_empty != '0'
       shell: bash
       env:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}

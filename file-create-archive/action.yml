@@ -44,4 +44,4 @@ runs:
           tar -cvf "${_file_name}.tar.${_ext}" -T <(echo "${{ inputs.files }})
         fi
         
-        echo "file_path=${_file_name}.tar.gz" >> $GITHUB_OUTPUT
+        echo "file_path=${_file_name}.tar.gz" >> "$GITHUB_OUTPUT"
