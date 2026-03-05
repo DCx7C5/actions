@@ -19,7 +19,7 @@ runs:
     - name: Securely delete all GPG keys
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home }} || ${{ env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
         set -euo pipefail
         

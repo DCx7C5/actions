@@ -39,7 +39,7 @@ runs:
       shell: bash
       env:
         INPUT_FINGERPRINT: ${{ inputs.fingerprint }}
-        GNUPGHOME: ${{ inputs.gpg_home }} || ${{ env.GNUPGHOME }}
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
         set -euo pipefail
         

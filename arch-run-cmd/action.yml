@@ -48,7 +48,7 @@ runs:
     CCACHE_COMPRESS: "1"
     CCACHE_COMPRESSLEVEL: "6"
     # GPG configuration
-    GNUPGHOME: ${{ inputs.gpg-home }} || ${{ env.GNUPGHOME }}
+    GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
     PACKAGER: "${{ inputs.packager }}"
     # Disable telemetry in container
     DISABLE_TELEMETRY: "1"
