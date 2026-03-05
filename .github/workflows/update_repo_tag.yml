@@ -51,6 +51,7 @@ jobs:
           method: 'secret'
           gpg_key: '${{ secrets.GPG_PRIVATE_KEY }}'
           pass: ${{ secrets.GPG_PASSPHRASE }}
+          delete_after_import: 'true'
 
       - name: Configure Git client to sign with GPG
         id: git_config
