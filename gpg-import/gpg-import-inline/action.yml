@@ -47,8 +47,6 @@ runs:
     - name: Mask sensitive inputs
       id: mask_and_validate
       shell: bash
-      env:
-        GPG_HOME: "${{ inputs.gpg_home }}"
       run: |
         if [[ -n '${{ inputs.pass }}' && -n "${{ inputs.gpg_key }}" ]]; then
           echo "::add-mask::${{ inputs.gpg_key }}"
@@ -59,10 +57,10 @@ runs:
         fi
         
         # Validate or set GNUPGHOME - either from input or environment or default
-        if [[ -n "$GPG_HOME" ]]; then
+        if [[ -n "${{ inputs.gpg_home }}" ]]; then
           # Input gpg_home was provided - create if not exists
-          mkdir -p "$GPG_HOME"
-          export GNUPGHOME="$GPG_HOME"
+          export GNUPGHOME="${{ inputs.gpg_home }}"
+          mkdir -p "$GNUPGHOME"
         elif [[ -z "${GNUPGHOME:-}" ]]; then
           # No input and no env variable - use default
           export GNUPGHOME="${GITHUB_WORKSPACE:-.}/.gnupg"

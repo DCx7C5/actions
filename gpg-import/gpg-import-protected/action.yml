@@ -56,7 +56,7 @@ runs:
       if: steps.validate_type.outputs.type == 'file' || inputs.type == 'file'
       shell: bash
       env:
-        GNUPGHOME: "${{ inputs.gpg_home }}"
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
         GPG_KEY_PATH: "${{ inputs.gpg_key }}"
       run: |
         set -euo pipefail
@@ -93,11 +93,14 @@ runs:
     - id: import_protected_inline
       if: steps.validate_type.outputs.type == 'inline' || inputs.type == 'inline' || inputs.type == 'secret'
       shell: bash
-      env:
-        GNUPGHOME: "${{ inputs.gpg_home }}"
       run: |
         set -euo pipefail
-        export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
+        # Use inputs.gpg_home if provided, otherwise keep existing GNUPGHOME, or use default
+        if [[ -n "${{ inputs.gpg_home }}" ]]; then
+          export GNUPGHOME="${{ inputs.gpg_home }}"
+        else
+          export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
+        fi
         
         printf '%s' '${{ inputs.pass }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import <(printf '%s' "${{ inputs.gpg_key }}")
         
