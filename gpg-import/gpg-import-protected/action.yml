@@ -101,18 +101,14 @@ runs:
       shell: bash
       env:
         GNUPGHOME: "${{ inputs.gpg_home }}"
+        PASSPHRASE: "${{ inputs.pass }}"
+        GPG_KEY_INLINE: "${{ inputs.gpg_key }}"
       run: |
         set -euo pipefail
         export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         
-        key_input="${{ inputs.gpg_key }}"
-        
-        # Create temporary file for inline key
-
-        
-        # Import with passphrase via fd 0
-        # Use single quotes to prevent variable expansion in passphrase
-        printf '%s\n' '${{ inputs.pass }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import <(echo "${{ inputs.gpg_key }}")
+        # Import with passphrase via fd 0 using env var (safe from shell expansion)
+        printf '%s\n' "$PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import <(printf '%s' "$GPG_KEY_INLINE")
         
         # Extract key information
         fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
