@@ -1,26 +1,61 @@
-name: "Run Command In Archlinux Docker Container (Secure)"
-description: Run any command inside a clean Arch Linux base-devel container with GPG support
+name: "Run Command In Arch Linux Docker (AUR Build)"
+description: "Minimal, secure Arch Linux container for AUR builds with GPG & ccache support"
+author: "DCx7c5"
 
 inputs:
-  gpg_home:
-    description: Path to GNUPGHOME (passed from import-gpg action)
-    required: false
-    default: "${{ github.workspace }}/.gnupg"
-  dir:
-    description: Directory to run from
-    required: false
-    default: /github/workspace
-  run:
-    description: Script/command to execute
+  command:
+    description: "Command/script to execute inside container"
     required: true
+  working-directory:
+    description: "Working directory inside container (default: github.workspace)"
+    required: false
+    default: "${{ github.workspace }}"
+  packager:
+    description: "GPG Packager identity (required for AUR signing)"
+    required: false
+    default: "GitHub Actions <actions@localhost>"
+  gpg-home:
+    description: "GPG home directory (usually in workspace)"
+    required: false
+  ccache-dir:
+    description: "ccache directory for build caching"
+    required: false
+    default: "${{ github.workspace }}/.ccache"
+  enable-ccache:
+    description: "Enable ccache for faster incremental builds"
+    required: false
+    default: "true"
+  mount-src:
+    description: "Host path to mount (e.g., /tmp/my-data)"
+    required: false
+    default: ""
+  mount-dst:
+    description: "Container mount point (e.g., /mnt/data)"
+    required: false
+    default: "/mnt/build"
 
 runs:
   using: docker
   image: Dockerfile
   env:
-    USE_CCACHE: 1
-    CCACHE_DIR: "${{ github.workspace }}/.ccache"
-    GNUPGHOME: "${{ github.workspace }}/.gnupg"
+    # Security: Disable interactive features in CI
+    CI: "true"
+    GITHUB_ACTIONS: "true"
+    # Build optimization
+    MAKEFLAGS: "-j${{ runner.cpu-count }}"
+    CCACHE_DIR: "${{ inputs.ccache-dir }}"
+    CCACHE_MAXSIZE: "2G"
+    CCACHE_COMPRESS: "1"
+    CCACHE_COMPRESSLEVEL: "6"
+    # GPG configuration
+    GNUPGHOME: ${{ inputs.gpg-home }} || ${{ env.GNUPGHOME }}
+    PACKAGER: "${{ inputs.packager }}"
+    # Disable telemetry in container
+    DISABLE_TELEMETRY: "1"
+    PYTHONDONTWRITEBYTECODE: "1"
+    # Mount points
+    MOUNT_SRC: "${{ inputs.mount-src }}"
+    MOUNT_DST: "${{ inputs.mount-dst }}"
   args:
-    - ${{ inputs.dir }}
-    - ${{ inputs.run }}
+    - "${{ inputs.working-directory }}"
+    - "${{ inputs.command }}"
