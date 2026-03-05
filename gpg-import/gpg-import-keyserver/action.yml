@@ -14,6 +14,10 @@ inputs:
     required: false
     default: 'hkps://keys.openpgp.org'
     description: "Keyserver URL (e.g., hkps://keys.openpgp.org, hkps://keyserver.ubuntu.com)"
+  gpg_home:
+    required: false
+    default: ''
+    description: "Path to GPG Home Directory (optional, can also be set via GNUPGHOME env variable)"
 
 outputs:
   fingerprint:
@@ -32,13 +36,23 @@ runs:
   steps:
     - name: Validate inputs and environment
       shell: bash
+      env:
+        GPG_HOME: "${{ inputs.gpg_home }}"
       run: |
         set -euo pipefail
         
-        if [ -z "${GNUPGHOME:-}" ] || [ ! -d "${GNUPGHOME}" ]; then
-          echo "::error::GNUPGHOME not set or does not exist: ${GNUPGHOME:-'(empty)'}" >&2
-          exit 1
+        # Validate or set GNUPGHOME - either from input or environment or default
+        if [[ -n "$GPG_HOME" ]]; then
+          # Input gpg_home was provided - create if not exists
+          mkdir -p "$GPG_HOME"
+          export GNUPGHOME="$GPG_HOME"
+        elif [[ -z "${GNUPGHOME:-}" ]]; then
+          # No input and no env variable - use default
+          export GNUPGHOME="${GITHUB_WORKSPACE:-.}/.gnupg"
+          mkdir -p "$GNUPGHOME"
         fi
+        
+        echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
         
         FINGERPRINT='${{ inputs.fingerprint }}'
         if [ -z "$FINGERPRINT" ] || [ ${#FINGERPRINT} -lt 16 ]; then
@@ -52,9 +66,11 @@ runs:
       env:
         FINGERPRINT: '${{ inputs.fingerprint }}'
         KEYSERVER_URL: '${{ inputs.keyserver_url }}'
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
       run: |
         set -euo pipefail
         
+        GNUPGHOME=${GNUPGHOME:-"${GITHUB_WORKSPACE:-.}/.gnupg"}
         # Source helper library
         source "${{ github.action_path }}/../lib/gpg-helpers.sh"
         

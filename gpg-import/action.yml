@@ -90,6 +90,7 @@ runs:
         gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.pass }}
         gpg_home: ${{ inputs.gpg_home }}
+        type: 'auto'
 
     - name: Import from file
       id: file_import
@@ -105,39 +106,21 @@ runs:
       id: keyserver_import
       if: steps.validate.outputs.is_fingerprint == 'true'
       uses: ./gpg-import/gpg-import-keyserver
-      env:
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME || github.workspace }}/.gnupg"
       with:
         fingerprint: ${{ steps.validate.outputs.gpg_key }}
         keyserver_url: ${{ inputs.keyserver_url }}
+        gpg_home: "${{ inputs.gpg_home }}"
 
     - name: Aggregate outputs
       id: dispatch
       shell: bash
       run: |
         # Determine which import method was used and propagate its outputs
-        METHOD='${{ inputs.method }}'
-        
-        case "$METHOD" in
-          secret)
-            FP='${{ steps.secret_import.outputs.fingerprint }}'
-            PUB='${{ steps.secret_import.outputs.keys_public }}'
-            SEC='${{ steps.secret_import.outputs.keys_secret }}'
-            TOT='${{ steps.secret_import.outputs.keys_total }}'
-            ;;
-          file)
-            FP='${{ steps.file_import.outputs.fingerprint }}'
-            PUB='${{ steps.file_import.outputs.keys_public }}'
-            SEC='${{ steps.file_import.outputs.keys_secret }}'
-            TOT='${{ steps.file_import.outputs.keys_total }}'
-            ;;
-          keyserver)
-            FP='${{ steps.keyserver_import.outputs.fingerprint }}'
-            PUB='${{ steps.keyserver_import.outputs.keys_public }}'
-            SEC='${{ steps.keyserver_import.outputs.keys_secret }}'
-            TOT='${{ steps.keyserver_import.outputs.keys_total }}'
-            ;;
-        esac
+        # Try to get outputs from each import step (in order of priority)
+        FP='${{ steps.inline_import.outputs.fingerprint || steps.file_import.outputs.fingerprint || steps.keyserver_import.outputs.fingerprint }}'
+        PUB='${{ steps.inline_import.outputs.keys_public || steps.file_import.outputs.keys_public || steps.keyserver_import.outputs.keys_public }}'
+        SEC='${{ steps.inline_import.outputs.keys_secret || steps.file_import.outputs.keys_secret || steps.keyserver_import.outputs.keys_secret }}'
+        TOT='${{ steps.inline_import.outputs.keys_total || steps.file_import.outputs.keys_total || steps.keyserver_import.outputs.keys_total }}'
         
         echo "fingerprint=$FP" >> "$GITHUB_OUTPUT"
         echo "keys_public=$PUB" >> "$GITHUB_OUTPUT"

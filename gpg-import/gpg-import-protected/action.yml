@@ -18,7 +18,7 @@ inputs:
   type:
     required: false
     default: 'auto'
-    description: "Set to true if gpg_key is file path or to inline if its an inline variable"
+    description: "Import type: 'auto' (auto-detect), 'file' (from file path), 'inline' (from inline value), 'secret'/'private' (protected key)"
 
 
 outputs:

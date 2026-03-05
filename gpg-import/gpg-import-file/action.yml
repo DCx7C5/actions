@@ -46,52 +46,45 @@ outputs:
 runs:
   using: composite
   steps:
-
-    - name: Validate inputs and environment
+    - name: Mask sensitive inputs
       id: mask_and_validate
       shell: bash
       run: |
-        set -euo pipefail
-        
         if [ -n '${{ inputs.pass }}' ]; then
           echo "::add-mask::${{ inputs.pass }}"
         fi
         
-        if [ -z "${GNUPGHOME:-}" ] || [ ! -d "${GNUPGHOME}" ]; then
-          echo "::error::GNUPGHOME not set or does not exist: ${GNUPGHOME:-'(empty)'}" >&2
-          exit 1
-        fi
-        
-        if [ -z '${{ inputs.gpg_priv }}' ] && [ -z '${{ inputs.gpg_pub }}' ]; then
-          echo "::error::Either gpg_priv or gpg_pub input is required" >&2
-          exit 1
-        fi
-        
-        if [ -n '${{ inputs.gpg_priv }}' ] && [ -z '${{ inputs.pass }}' ]; then
-          echo "::error::pass (passphrase) is required when importing a private key from file" >&2
+        if [ -z '${{ inputs.gpg_key }}' ]; then
+          echo "::error::gpg_key input is required" >&2
           exit 1
         fi
 
-    - name: Determine import method
-      id: determine_method
+    - name: Determine Key Type
+      id: keytype
       if: inputs.gpg_type == 'auto'
       shell: bash
       env:
-        GPG_PRIV: '${{ inputs.gpg_priv }}'
-        GPG_PUB: '${{ inputs.gpg_pub }}'
+        GPG_KEY: '${{ inputs.gpg_key }}'
       run: |
-        if [ -n "$GPG_PRIV" ]; then
-          echo "import_method=private" >> "$GITHUB_OUTPUT"
-        elif [ -n "$GPG_PUB" ]; then
-          echo "import_method=public" >> "$GITHUB_OUTPUT"
+        set -euo pipefail
+        
+        if [ ! -f "$GPG_KEY" ]; then
+          echo "::error::GPG key file not found: $GPG_KEY" >&2
+          exit 1
+        fi
+        
+        if grep -qE "BEGIN PGP (PRIVATE|SECRET) KEY BLOCK" "$GPG_KEY"; then
+          echo "key_type=secret" >> "$GITHUB_OUTPUT"
+        elif grep -q "BEGIN PGP PUBLIC KEY BLOCK" "$GPG_KEY"; then
+          echo "key_type=public" >> "$GITHUB_OUTPUT"
         else
-          echo "::error::No valid GPG key input provided" >&2
+          echo "::error::Invalid GPG key format in file: $GPG_KEY" >&2
           exit 1
         fi
 
     - name: Import Protected Key
       id: import_protected
-      if: inputs.gpg_type == 'private' || steps.mask_and_validate.outputs.import_method == 'private'
+      if: (inputs.gpg_type == 'auto' && steps.keytype.outputs.key_type == 'secret') || inputs.gpg_type == 'private'
       uses: ./gpg-import/gpg-import-protected
       with:
         gpg_key: '${{ inputs.gpg_key }}'
@@ -101,8 +94,19 @@ runs:
 
     - name: Import Unprotected Key
       id: import_unprotected
-      if: inputs.gpg_type == 'public' || steps.mask_and_validate.outputs.import_method == 'public'
+      if: (inputs.gpg_type == 'auto' && steps.keytype.outputs.key_type == 'public') || inputs.gpg_type == 'public'
       uses: ./gpg-import/gpg-import-no-protection
       with:
         gpg_key: '${{ inputs.gpg_key }}'
         gpg_home: "${{ inputs.gpg_home }}"
+
+    - name: Delete key file after import (if requested)
+      if: inputs.delete_after_import == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        key_file='${{ inputs.gpg_key }}'
+        if [ -f "$key_file" ]; then
+          shred -vfz -n 3 "$key_file" || rm -f "$key_file"
+          echo "::notice::GPG key file securely deleted: $key_file"
+        fi

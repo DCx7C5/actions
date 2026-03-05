@@ -19,7 +19,7 @@ inputs:
   type:
     required: false
     default: 'auto'
-    description: "GPG Key Type "
+    description: "GPG key type filter: 'auto' (auto-detect), 'secret'/'private' (import protected key), 'public' (import public key only)"
   gpg_home:
     required: false
     default: ''
@@ -47,6 +47,8 @@ runs:
     - name: Mask sensitive inputs
       id: mask_and_validate
       shell: bash
+      env:
+        GPG_HOME: "${{ inputs.gpg_home }}"
       run: |
         if [[ -n '${{ inputs.pass }}' && -n "${{ inputs.gpg_key }}" ]]; then
           echo "::add-mask::${{ inputs.gpg_key }}"
@@ -56,12 +58,20 @@ runs:
           exit 1
         fi
         
-        if [ -z "${GNUPGHOME:-}" ] || [ ! -d "${GNUPGHOME}" ]; then
-          echo "::error::GNUPGHOME not set or does not exist: ${GNUPGHOME:-'(empty)'}" >&2
-          exit 1
+        # Validate or set GNUPGHOME - either from input or environment or default
+        if [[ -n "$GPG_HOME" ]]; then
+          # Input gpg_home was provided - create if not exists
+          mkdir -p "$GPG_HOME"
+          export GNUPGHOME="$GPG_HOME"
+        elif [[ -z "${GNUPGHOME:-}" ]]; then
+          # No input and no env variable - use default
+          export GNUPGHOME="${GITHUB_WORKSPACE:-.}/.gnupg"
+          mkdir -p "$GNUPGHOME"
         fi
+        
+        echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
 
-    - name: Get Key Type
+    - name: Determine Key Type
       id: keytype
       if: inputs.type == 'auto'
       shell: bash
@@ -70,10 +80,10 @@ runs:
       run: |
         set -euo pipefail
         header=$(echo "$GPG_KEY" | head -n 1)
-        if [[ "$header" == *"BEGIN PGP PRIVATE KEY BLOCK"* ]]; then
-          echo "seckey=$GPG_KEY" >> "$GITHUB_OUTPUT"
+        if [[ "$header" == *"BEGIN PGP PRIVATE KEY BLOCK"* ]] || [[ "$header" == *"BEGIN PGP SECRET KEY BLOCK"* ]]; then
+          echo "key_type=secret" >> "$GITHUB_OUTPUT"
         elif [[ "$header" == *"BEGIN PGP PUBLIC KEY BLOCK"* ]]; then
-          echo "pubkey=$GPG_KEY" >> "$GITHUB_OUTPUT"
+          echo "key_type=public" >> "$GITHUB_OUTPUT"
         else
           echo "::error::Invalid GPG key format: missing PGP block header" >&2
           exit 1
@@ -81,7 +91,7 @@ runs:
 
     - name: Import Protected Key
       id: import_protected
-      if: steps.mask_and_validate.outputs.seckey != ''
+      if: (inputs.type == 'auto' && steps.keytype.outputs.key_type == 'secret') || inputs.type == 'secret' || inputs.type == 'private'
       uses: ./gpg-import/gpg-import-protected
       with:
         gpg_key: "${{ inputs.gpg_key }}"
@@ -91,7 +101,7 @@ runs:
 
     - name: Import Unprotected Key
       id: import_unprotected
-      if: steps.mask_and_validate.outputs.pubkey != ''
+      if: (inputs.type == 'auto' && steps.keytype.outputs.key_type == 'public') || inputs.type == 'public'
       uses: ./gpg-import/gpg-import-no-protection
       with:
         gpg_key: "${{ inputs.gpg_key }}"
