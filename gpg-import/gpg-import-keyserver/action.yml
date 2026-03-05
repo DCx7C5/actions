@@ -70,7 +70,7 @@ runs:
       run: |
         set -euo pipefail
         
-        GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
+        export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         # Source helper library
         source "${{ github.action_path }}/../lib/gpg-helpers.sh"
         
