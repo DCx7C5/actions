@@ -17,6 +17,7 @@ inputs:
     description: "Set trust level of GPG Key (default: owner)"
   gpg_home:
     required: false
+    default: ''
     description: "Path to GNUPGHOME directory (where keys are stored)"
 
 
@@ -44,10 +45,10 @@ runs:
       id: set_trust
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
         set -euo pipefail
-        
+        export GNUPGHOME=${GNUPGHOME:-"${GITHUB_WORKSPACE}/.gnupg"}
         if ! echo "trust\n${{ inputs.trust_level }}\ny\n" | gpg --no-tty --batch --command-fd0 --edit-key "${{ inputs.fingerprint }}"; then
           echo "::error::Failed setting trust level of key: ${{ inputs.fingerprint }}
           exit 1
