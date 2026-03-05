@@ -6,6 +6,7 @@ branding:
   icon: "lock"
   color: "blue"
 
+
 inputs:
   gpg_key:
     required: false
@@ -15,53 +16,54 @@ inputs:
     required: false
     default: ''
     description: "Passphrase for the private key - will be masked in logs"
+  type:
+    required: false
+    default: 'auto'
+    description: "GPG Key Type "
+  gpg_home:
+    required: false
+    default: ''
+    description: "Path to GPG Home Directory"
 
 
 outputs:
   fingerprint:
     description: "Fingerprint of the imported private GPG key"
-    value: ${{ steps.import.outputs.fingerprint }}
+    value: ${{ steps.import_protected.outputs.fingerprint || steps.import_unprotected.outputs.fingerprint }}
   keys_total:
     description: "Total number of GPG keys available"
-    value: ${{ steps.import.outputs.keys_total }}
+    value: ${{ steps.import_protected.outputs.keys_total || steps.import_unprotected.outputs.keys_total }}
   keys_public:
     description: "Number of public keys"
-    value: ${{ steps.import.outputs.keys_public }}
+    value: ${{ steps.import_protected.outputs.keys_public || steps.import_unprotected.outputs.keys_public }}
   keys_secret:
     description: "Number of secret keys"
-    value: ${{ steps.import.outputs.keys_secret }}
+    value: ${{ steps.import_protected.outputs.keys_secret || steps.import_unprotected.outputs.keys_secret }}
 
 
 runs:
   using: composite
   steps:
     - name: Mask sensitive inputs
+      id: mask_and_validate
       shell: bash
       run: |
-        if [ -n '${{ inputs.gpg_key }}' ]; then
+        if [[ -n '${{ inputs.pass }}' && -n '${{ inputs.gpg_key }}' ]]; then
           echo "::add-mask::${{ inputs.gpg_key }}"
-        fi
-        if [ -n '${{ inputs.pass }}' ]; then
           echo "::add-mask::${{ inputs.pass }}"
+        elif [[ -z '${{ inputs.gpg_key }}' ]]; then
+          echo "::error:: inputs.gpg_key is missing!"  >&2
+          exit1
         fi
-
-    - name: Validate inputs and environment
-      shell: bash
-      run: |
-        set -euo pipefail
         
         if [ -z "${GNUPGHOME:-}" ] || [ ! -d "${GNUPGHOME}" ]; then
           echo "::error::GNUPGHOME not set or does not exist: ${GNUPGHOME:-'(empty)'}" >&2
           exit 1
         fi
-        
-        if [ -z '${{ inputs.gpg_key }}' ]; then
-          echo "::error::gpg_key input is required" >&2
-          exit 1
-        fi
 
     - name: Get Key Type
       id: keytype
+      if: inputs.type == 'auto'
       shell: bash
       env:
         GPG_KEY: '${{ inputs.gpg_key }}'
@@ -77,48 +79,22 @@ runs:
           exit 1
         fi
 
-    - name: Import GPG keys from secrets
-      id: import
-      shell: bash
+    - name: Import Protected Key
+      id: import_protected
+      if: steps.mask_and_validate.outputs.seckey != ''
+      uses: ./gpg-import/gpg-import-protected
       env:
-        GPG_PRIV: '${{ steps.keytype.outputs.seckey }}'
-        PASS: '${{ inputs.pass }}'
-        GPG_PUB: '${{ steps.keytype.outputs.pubkey }}'
-      run: |
-        set -euo pipefail
-        
-        # Source helper library
-        source "${{ github.action_path }}/../lib/gpg-helpers.sh"
-        
-        trap 'unset PASS GPG_PRIV 2>/dev/null || true' EXIT
-        
-        # ===== Import Private Key =====
-        if [ -n "$GPG_PRIV" ]; then
-          if echo "$GPG_PRIV" | gpg --no-tty --batch --pinentry-mode loopback \
-             --passphrase "$PASS" --import 2>&1 | grep -qE "imported|unchanged"; then
-            echo "::notice::Private key imported successfully from secret"
-          else
-            echo "::error::Failed to import private key from secret" >&2
-            exit 1
-          fi
-        fi
-        
-        # ===== Import Public Key =====
-        if [ -n "$GPG_PUB" ]; then
-          if echo "$GPG_PUB" | gpg --no-tty --batch --import 2>&1 | grep -qE "imported|unchanged"; then
-            echo "::notice::Public key imported successfully from secret"
-          else
-            echo "::error::Failed to import public key from secret" >&2
-            exit 1
-          fi
-        fi
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+      with:
+        gpg_key: '${{ inputs.gpg_key }}'
+        pass: '${{ inputs.pass }}'
+        type: 'inline'
 
-        # ===== Count Keys =====
-        read -r KEY_COUNT_TOTAL KEY_COUNT_PUB KEY_COUNT_SEC <<< "$(gpg_count_keys)"
-        gpg_log_key_stats "$KEY_COUNT_TOTAL" "$KEY_COUNT_PUB" "$KEY_COUNT_SEC"
-        
-        # ===== Outputs =====
-        echo "fingerprint=$(gpg_get_fingerprint)" >> "$GITHUB_OUTPUT"
-        echo "keys_public=$KEY_COUNT_PUB" >> "$GITHUB_OUTPUT"
-        echo "keys_secret=$KEY_COUNT_SEC" >> "$GITHUB_OUTPUT"
-        echo "keys_total=$KEY_COUNT_TOTAL" >> "$GITHUB_OUTPUT"
+    - name: Import Unprotected Key
+      id: import_unprotected
+      if: steps.mask_and_validate.outputs.pubkey != ''
+      uses: ./gpg-import/gpg-import-no-protection
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }} || ${{ github.workspace }}/.gnupg
+      with:
+        gpg_key: '${{ inputs.gpg_key }}'
