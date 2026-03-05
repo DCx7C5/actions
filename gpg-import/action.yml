@@ -77,7 +77,7 @@ runs:
       uses: DCx7C5/actions/ssl-decrypt@v1
       with:
         enc_input: ${{ steps.validate.outputs.gpg_key }}
-        passphrase: '${{ inputs.pass }}'
+        passphrase: ${{ inputs.pass }}
         type: ${{ steps.validate.outputs.is_file == 'true' && 'file' || 'inline' }}
         encoding: ${{ steps.validate.outputs.is_ssl_enc_binary_key == 'true' && 'binary' || 'text' }}
         cleanup: 'true'

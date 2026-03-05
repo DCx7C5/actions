@@ -94,10 +94,10 @@ runs:
       if: (inputs.type == 'auto' && steps.keytype.outputs.key_type == 'secret') || inputs.type == 'secret' || inputs.type == 'private'
       uses: ./gpg-import/gpg-import-protected
       with:
-        gpg_key: "${{ inputs.gpg_key }}"
-        pass: '${{ inputs.pass }}'
+        gpg_key: ${{ inputs.gpg_key }}
+        pass: ${{ inputs.pass }}
         type: 'inline'
-        gpg_home: "${{ inputs.gpg_home }}"
+        gpg_home: ${{ inputs.gpg_home }}
 
     - name: Import Unprotected Key
       id: import_unprotected

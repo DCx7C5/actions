@@ -72,10 +72,9 @@ runs:
         GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         
         key_input="${{ inputs.gpg_key }}"
-        passphrase='${{ inputs.pass }}'
         
         # Import with passphrase via fd 0
-        printf '%s\n' "$passphrase" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import "$key_input"
+        printf '%s\n' '${{ inputs.pass }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import "$key_input"
 
         # Extract key information
         fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
@@ -110,7 +109,6 @@ runs:
         GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         
         key_input="${{ inputs.gpg_key }}"
-        passphrase='${{ inputs.pass }}'
         
         # Create temporary file for inline key
         key_tmp="$(mktemp)"
@@ -119,7 +117,7 @@ runs:
         
         # Import with passphrase via fd 0
         # Use single quotes to prevent variable expansion in passphrase
-        printf '%s\n' "$passphrase" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import "$key_tmp"
+        printf '%s\n' '${{ inputs.pass }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import "$key_tmp"
         
         # Extract key information
         fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
