@@ -167,23 +167,6 @@ runs:
 
         echo "::notice::Creating signed tag with passphrase: $TAG"
 
-        # Get keygrip for passphrase preset
-        if [ -n "$FINGERPRINT" ]; then
-          KEY_GRIP=$(gpg --batch --with-colons --with-keygrip --list-secret-keys "$FINGERPRINT" 2>/dev/null | awk -F: '/^grp:/ {print $10; exit}')
-        else
-          KEY_GRIP=$(gpg --batch --with-colons --with-keygrip --list-secret-keys 2>/dev/null | awk -F: '/^grp:/ {print $10; exit}')
-        fi
-        echo "::notice::Extracted keygrip: $KEY_GRIP"
-        if [ -z "$KEY_GRIP" ]; then
-          echo "::error::Could not find GPG key grip" >&2
-          exit 1
-        fi
-
-        echo "::debug::Presetting passphrase for keygrip: $KEY_GRIP"
-
-        # Preset passphrase in gpg-agent cache using literal string
-        printf '%s' "$PASS" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
-
         # Build git tag command
         TAG_ARGS=(-a "$TAG")
 
