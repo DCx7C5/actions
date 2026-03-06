@@ -31,6 +31,11 @@ inputs:
     description: "Path to GNUPGHOME directory (where keys are stored)"
     required: false
     default: ''
+  gpg_key:
+    description: "GPG key (inline, optional, only needed if passphrase is provided) - will be masked in logs"
+    required: false
+    default: ''
+
 
 outputs:
   tag:
@@ -178,7 +183,7 @@ runs:
         fi
 
         echo "::debug::Presetting passphrase for keygrip: $KEY_GRIP"
-        echo "$PASS" | gpg --batch --no-tty --import --armor < <(echo "$GPG_KEY")
+        echo "$PASS" | gpg --batch --no-tty --import --armor < <(echo "${{ inputs.gpg_key }}")
 
         # Preset passphrase in gpg-agent cache using literal string
         printf '%s' "$PASS" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
