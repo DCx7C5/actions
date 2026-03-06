@@ -155,7 +155,6 @@ runs:
         FINGERPRINT: '${{ inputs.fingerprint }}'
         COMMIT_MSG: '${{ inputs.commit_msg }}'
         PASS: '${{ inputs.pass }}'
-        GPG_TTY: $(tty)
       run: |
         set -euo pipefail
 
@@ -180,10 +179,11 @@ runs:
         else
           echo "::notice::Using default GPG key"
         fi
-        echo "GITCOMMITTER_DATE=$(git log -n1 --pretty=%aD)" >> "$GITHUB_ENV"
 
-        # Create signed tag (passphrase is now cached in gpg-agent)
-        if printf '%s' "$PASS" | git tag "${TAG_ARGS[@]}" -s --no-edit; then
+        unset GPG_TTY || true
+
+        # Create signed tag - passphrase via stdin to gpg wrapper (--passphrase-fd 0)
+        if printf '%s' "$PASS" | GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
           echo "::notice::Signed tag created successfully: $TAG"
         else
           echo "::error::Failed to create signed tag" >&2

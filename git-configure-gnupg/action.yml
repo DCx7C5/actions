@@ -104,7 +104,7 @@ runs:
         cat > "$GPG_WRAPPER" <<'EOF'
         #!/usr/bin/env bash
         set -euo pipefail
-        exec gpg --pinentry-mode loopback --passphrase-fd 0 "$@"
+        exec gpg --batch --no-tty --pinentry-mode loopback --passphrase-fd 0 "$@"
         EOF
         chmod 700 "$GPG_WRAPPER"
 
