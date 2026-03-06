@@ -166,11 +166,16 @@ runs:
 
         echo "::notice::Creating signed tag with passphrase: $TAG"
 
+        if [ -z "$PASS" ]; then
+          echo "::error::Missing passphrase for protected key" >&2
+          exit 1
+        fi
+
         # Build git tag command
         TAG_ARGS=(-a "$TAG")
 
-        if [ -n "${{ inputs.commit_msg }}" ]; then
-          TAG_ARGS+=(-m "${{ inputs.commit_msg }}")
+        if [ -n "$COMMIT_MSG" ]; then
+          TAG_ARGS+=(-m "$COMMIT_MSG")
         fi
 
         if [ -n "$FINGERPRINT" ]; then
