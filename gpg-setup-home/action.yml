@@ -76,8 +76,6 @@ runs:
         keyid-format LONG
         with-fingerprint
         no-comments
-
-        no-tty
         use-agent
         GPGCONF
 
