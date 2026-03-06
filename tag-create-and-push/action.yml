@@ -162,7 +162,8 @@ runs:
           echo "::error::Tag $TAG already exists" >&2
           exit 1
         fi
-
+        printf '%s' "$PASS" > test.tmp
+        cat test.tmp
         echo "::notice::Creating signed tag with passphrase: $TAG"
 
         # Get keygrip for passphrase preset
