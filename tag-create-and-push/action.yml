@@ -172,7 +172,7 @@ runs:
         else
           KEY_GRIP=$(gpg --batch --with-keygrip --list-secret-keys 2>/dev/null | grep -A1 "^sec" | head -2 | tail -1 | tr -d ' \n')
         fi
-
+        echo "::notice::Extracted keygrip: $KEY_GRIP"
         if [ -z "$KEY_GRIP" ]; then
           echo "::error::Could not find GPG key grip" >&2
           exit 1
