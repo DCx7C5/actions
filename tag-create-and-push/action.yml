@@ -153,7 +153,7 @@ runs:
         TAG: '${{ inputs.version }}'
         FINGERPRINT: '${{ inputs.fingerprint }}'
         COMMIT_MSG: '${{ inputs.commit_msg }}'
-        GPG_TTY: '/usr/bin/pinentry-tty'
+        PINENTRY_MODE: "loopback"
       run: |
         set -euo pipefail
 
