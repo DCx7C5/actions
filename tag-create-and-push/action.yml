@@ -63,9 +63,9 @@ runs:
       if: inputs.sign == 'false'
       shell: bash
       env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
         TAG: '${{ inputs.version }}'
         COMMIT_MSG: '${{ inputs.commit_msg }}'
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
         set -euo pipefail
         
@@ -104,6 +104,7 @@ runs:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
         TAG: '${{ inputs.version }}'
         FINGERPRINT: '${{ inputs.fingerprint }}'
+        COMMIT_MSG: '${{ inputs.commit_msg }}'
       run: |
         set -euo pipefail
         
@@ -118,23 +119,24 @@ runs:
         # Build git tag command
         TAG_ARGS=(-a "$TAG")
         
-        if [ -n "${{ inputs.commit_msg }}" ]; then
-          TAG_ARGS+=(-m "${{ inputs.commit_msg }}")
+        if [ -n "$COMMIT_MSG" ]; then
+          TAG_ARGS+=(-m "$COMMIT_MSG")
         fi
         
         if [ -n "$FINGERPRINT" ]; then
-          TAG_ARGS+=(-u "${FINGERPRINT:24}")
+          TAG_ARGS+=(-u "$FINGERPRINT")
           echo "::notice::Using explicit key: $FINGERPRINT"
         else
           echo "::notice::Using default GPG key"
         fi
         
-        # Create tag with passphrase if provided
+        # Create signed tag
         if GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
           echo "::notice::Signed tag created successfully: $TAG"
         else
           echo "::error::Failed to create signed tag" >&2
           exit 1
+        fi
         
         # Show tag details
         git show --pretty=fuller "$TAG" 2>/dev/null || true
@@ -142,7 +144,7 @@ runs:
         # Output
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-    - name: Create Signed Tag (with passphrase)
+    - name: Create signed tag (with passphrase)
       id: tag_create_signed_pass
       if: inputs.sign == 'true' && inputs.pass != ''
       shell: bash
@@ -169,7 +171,7 @@ runs:
         fi
         
         if [ -n "$FINGERPRINT" ]; then
-          TAG_ARGS+=(-u "${FINGERPRINT:24}")
+          TAG_ARGS+=(-u "${FINGERPRINT}")
           echo "::notice::Using explicit key: $FINGERPRINT"
         else
           echo "::notice::Using default GPG key"
@@ -188,6 +190,7 @@ runs:
         
         # Output
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
 
     - name: Push tag to repository
       shell: bash
