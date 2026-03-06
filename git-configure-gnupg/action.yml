@@ -97,10 +97,9 @@ runs:
         GPG_MAIL: ${{ steps.parse_gpg.outputs.gpg_mail }}
         FINGERPRINT: ${{ steps.parse_gpg.outputs.fingerprint }}
         GH_TOKEN: ${{ inputs.token || env.GH_TOKEN }}
-        GPG_TTY: $(tty)
       run: |
         set -euo pipefail
-
+        
         GPG_WRAPPER="$GNUPGHOME/gpg-loopback.sh"
         cat > "$GPG_WRAPPER" <<'EOF'
         #!/usr/bin/env bash

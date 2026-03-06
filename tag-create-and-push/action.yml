@@ -159,6 +159,7 @@ runs:
         FINGERPRINT: '${{ inputs.fingerprint }}'
         COMMIT_MSG: '${{ inputs.commit_msg }}'
         PASS: '${{ inputs.pass }}'
+        GPG_TTY: $(tty)
       run: |
         set -euo pipefail
 
