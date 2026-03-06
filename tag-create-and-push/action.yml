@@ -166,9 +166,9 @@ runs:
         
         # Get keygrip for passphrase preset
         if [ -n "$FINGERPRINT" ]; then
-          KEY_GRIP=$(gpg --batch --with-keygrip --list-secret-keys "$FINGERPRINT" 2>/dev/null | grep -A1 "^sec" | tail -1 | awk '{print $3}')
+          KEY_GRIP=$(gpg --batch --with-keygrip --list-secret-keys "$FINGERPRINT" 2>/dev/null | grep -A1 "^sec" | tail -1 | tr -d ' \n')
         else
-          KEY_GRIP=$(gpg --batch --with-keygrip --list-secret-keys 2>/dev/null | grep -A1 "^sec" | head -2 | tail -1 | awk '{print $3}')
+          KEY_GRIP=$(gpg --batch --with-keygrip --list-secret-keys 2>/dev/null | grep -A1 "^sec" | head -2 | tail -1 | tr -d ' \n')
         fi
         
         if [ -z "$KEY_GRIP" ]; then
