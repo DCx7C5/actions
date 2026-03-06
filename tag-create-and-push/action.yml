@@ -106,7 +106,6 @@ runs:
         FINGERPRINT: '${{ inputs.fingerprint }}'
       run: |
         set -euo pipefail
-        trap 'unset PASS 2>/dev/null || true' EXIT
         
         # Check if tag already exists
         if git rev-parse "$TAG" >/dev/null 2>&1; then
@@ -131,7 +130,7 @@ runs:
         fi
         
         # Create tag with passphrase if provided
-        if git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
+        if GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
           echo "::notice::Signed tag created successfully: $TAG"
         else
           echo "::error::Failed to create signed tag" >&2

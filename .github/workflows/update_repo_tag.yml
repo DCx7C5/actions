@@ -29,7 +29,7 @@ jobs:
 
       - name: Get latest tag
         id: tag_latest
-        uses: DCx7C5/actions/tag-get-latest@v1
+        uses: ./tag-get-latest
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
 
@@ -73,7 +73,7 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
-          fingerprint: ${{ steps.gpg_import.outputs.fingerprint }}
+          sign: 'true'
           version: "v1"
           commit_msg: "Release v1"
 
