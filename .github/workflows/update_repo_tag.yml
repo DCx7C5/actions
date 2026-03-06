@@ -10,8 +10,6 @@ on:
 permissions:
   contents: write
 
-env:
-  GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
 
 jobs:
   update-tag-and-release:
