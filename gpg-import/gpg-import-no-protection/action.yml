@@ -42,8 +42,6 @@ runs:
       run: |
         set -euo pipefail
         
-        export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
-        
         if [[ -n "${{ inputs.gpg_key }}" ]]; then
           echo "::add-mask::${{ inputs.gpg_key }}"
         fi
