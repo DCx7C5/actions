@@ -152,6 +152,7 @@ runs:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
         TAG: '${{ inputs.version }}'
         FINGERPRINT: '${{ inputs.fingerprint }}'
+        COMMIT_MSG: '${{ inputs.commit_msg }}'
       run: |
         set -euo pipefail
         
@@ -163,6 +164,23 @@ runs:
         
         echo "::notice::Creating signed tag with passphrase: $TAG"
         
+        # Get keygrip for passphrase preset
+        if [ -n "$FINGERPRINT" ]; then
+          KEY_GRIP=$(gpg --batch --with-keygrip --list-secret-keys "$FINGERPRINT" 2>/dev/null | grep -A1 "^sec" | tail -1 | awk '{print $3}')
+        else
+          KEY_GRIP=$(gpg --batch --with-keygrip --list-secret-keys 2>/dev/null | grep -A1 "^sec" | head -2 | tail -1 | awk '{print $3}')
+        fi
+        
+        if [ -z "$KEY_GRIP" ]; then
+          echo "::error::Could not find GPG key grip" >&2
+          exit 1
+        fi
+        
+        echo "::debug::Presetting passphrase for keygrip: $KEY_GRIP"
+        
+        # Preset passphrase in gpg-agent cache using literal string
+        printf '${{ inputs.pass }}' | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
+        
         # Build git tag command
         TAG_ARGS=(-a "$TAG")
         
@@ -171,14 +189,14 @@ runs:
         fi
         
         if [ -n "$FINGERPRINT" ]; then
-          TAG_ARGS+=(-u "${FINGERPRINT}")
+          TAG_ARGS+=(-u "$FINGERPRINT")
           echo "::notice::Using explicit key: $FINGERPRINT"
         else
           echo "::notice::Using default GPG key"
         fi
         
-        # Use loopback mode to provide passphrase to gpg
-        if printf '${{ inputs.pass }}' | GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
+        # Create signed tag (passphrase is now cached in gpg-agent)
+        if GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
           echo "::notice::Signed tag created successfully: $TAG"
         else
           echo "::error::Failed to create signed tag" >&2
