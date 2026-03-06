@@ -174,7 +174,6 @@ runs:
         echo "::debug::Passphrase length: ${#PASS} characters"
         KEY_GRIPS=$(gpg --batch --with-colons --with-keygrip --list-secret-keys | awk -F: '/^grp:/ {print $10}')
         
-
         # Für jeden Keygrip die Passphrase cachen:
         while read -r KEY_GRIP; do
           printf '%s' "$PASS" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
