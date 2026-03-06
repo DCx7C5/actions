@@ -58,78 +58,9 @@ runs:
         
         echo "::notice::Target tag: $VERSION"
 
-    - name: Create & sign annotated tag
-      id: tag_create
-      shell: bash
-      env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
-        TAG: '${{ inputs.version }}'
-        FINGERPRINT: '${{ inputs.fingerprint }}'
-        PASS: '${{ inputs.pass }}'
-        COMMIT_MSG: '${{ inputs.commit_msg }}'
-        GPG_PINENTRY_MODE: loopback
-      run: |
-        set -euo pipefail
-        trap 'unset PASS 2>/dev/null || true' EXIT
-        
-        # Check if tag already exists
-        if git rev-parse "$TAG" >/dev/null 2>&1; then
-          echo "::error::Tag $TAG already exists" >&2
-          exit 1
-        fi
-        
-        echo "::notice::Creating signed tag: $TAG"
-        
-        # Build git tag command
-        TAG_ARGS=(-a "$TAG")
-        
-        if [ -n "$COMMIT_MSG" ]; then
-          TAG_ARGS+=(-m "$COMMIT_MSG")
-        fi
-        
-        if [ "${{ inputs.sign }}" != "true" ]; then
-          echo "::notice::Signing is disabled, creating unsigned tag"
-          TAG_ARGS=("${TAG_ARGS[@]/-a/-l}")
-        else
-          echo "::notice::Signing is enabled, creating signed tag"
-          TAG_ARGS+=(-s)
-        fi
-                
-        
-        
-        if [ -n "$FINGERPRINT" ]; then
-          TAG_ARGS+=(-u "${FINGERPRINT:24:40}")
-          echo "::notice::Using explicit key: $FINGERPRINT"
-        else
-          echo "::notice::Using default GPG key"
-        fi
-        
-        # Create tag with passphrase if provided
-        if [ -n "$PASS" ]; then
-          # Use loopback mode to provide passphrase to gpg
-          if echo "$PASS" | GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" --no-edit 2>&1; then
-            echo "::notice::Signed tag created successfully: $TAG"
-          else
-            echo "::error::Failed to create signed tag" >&2
-            exit 1
-          fi
-        else
-          if git tag "${TAG_ARGS[@]}" --no-edit 2>&1; then
-            echo "::notice::Signed tag created successfully: $TAG"
-          else
-            echo "::error::Failed to create signed tag" >&2
-            exit 1
-          fi
-        fi
-        
-        # Show tag details
-        git show --pretty=fuller "$TAG" 2>/dev/null || true
-        
-        # Output
-        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-
     - name: Create unsigned tag
       id: tag_create_unsigned
+      if: inputs.sign == 'false'
       shell: bash
       env:
         TAG: '${{ inputs.version }}'
@@ -165,8 +96,9 @@ runs:
         # Output
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
     
-    - name: Create signed tag
+    - name: Create signed tag (no passphrase)
       id: tag_create_signed
+      if: inputs.sign == 'true' && inputs.pass == ''
       shell: bash
       env:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
@@ -199,21 +131,57 @@ runs:
         fi
         
         # Create tag with passphrase if provided
-        if [ -n "$PASS" ]; then
-          # Use loopback mode to provide passphrase to gpg
-          if echo "$PASS" | GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
-            echo "::notice::Signed tag created successfully: $TAG"
-          else
-            echo "::error::Failed to create signed tag" >&2
-            exit 1
-          fi
+        if git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
+          echo "::notice::Signed tag created successfully: $TAG"
         else
-          if git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
-            echo "::notice::Signed tag created successfully: $TAG"
-          else
-            echo "::error::Failed to create signed tag" >&2
-            exit 1
-          fi
+          echo "::error::Failed to create signed tag" >&2
+          exit 1
+        
+        # Show tag details
+        git show --pretty=fuller "$TAG" 2>/dev/null || true
+        
+        # Output
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+    - name: Create Signed Tag (with passphrase)
+      id: tag_create_signed_pass
+      if: inputs.sign == 'true' && inputs.pass != ''
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+        TAG: '${{ inputs.version }}'
+        FINGERPRINT: '${{ inputs.fingerprint }}'
+      run: |
+        set -euo pipefail
+        
+        # Check if tag already exists
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "::error::Tag $TAG already exists" >&2
+          exit 1
+        fi
+        
+        echo "::notice::Creating signed tag with passphrase: $TAG"
+        
+        # Build git tag command
+        TAG_ARGS=(-a "$TAG")
+        
+        if [ -n "${{ inputs.commit_msg }}" ]; then
+          TAG_ARGS+=(-m "${{ inputs.commit_msg }}")
+        fi
+        
+        if [ -n "$FINGERPRINT" ]; then
+          TAG_ARGS+=(-u "${FINGERPRINT:24}")
+          echo "::notice::Using explicit key: $FINGERPRINT"
+        else
+          echo "::notice::Using default GPG key"
+        fi
+        
+        # Use loopback mode to provide passphrase to gpg
+        if printf '${{ inputs.pass }}' | GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
+          echo "::notice::Signed tag created successfully: $TAG"
+        else
+          echo "::error::Failed to create signed tag" >&2
+          exit 1
         fi
         
         # Show tag details
@@ -225,7 +193,7 @@ runs:
     - name: Push tag to repository
       shell: bash
       env:
-        TAG: '${{ inputs.version }}'
+        TAG: '${{ steps.tag_create_signed.outputs.tag || steps.tag_create_signed_pass.outputs.tag || steps.tag_create_unsigned.outputs.tag }}'
       run: |
         set -euo pipefail
         

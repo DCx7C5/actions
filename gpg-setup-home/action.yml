@@ -76,10 +76,10 @@ runs:
         keyid-format LONG
         with-fingerprint
         no-comments
-        
-        # Trust model & security
-        trust-model pgp
-        require-cross-certification
+
+        no-tty
+        batch
+        use-agent
         GPGCONF
 
         # Set proper permissions on config file
@@ -107,6 +107,7 @@ runs:
         allow-loopback-pinentry
         pinentry-program /usr/bin/pinentry-tty
         GPGCONF
-        gpg-connect-agent reloadagent /bye
         chmod 600 "$GNUPGHOME/gpg-agent.conf"
+        gpgconf --kill gpg-agent || true
+        gpgconf --launch gpg-agent
         echo "::notice::Configured gpg-agent for non-interactive signing"
