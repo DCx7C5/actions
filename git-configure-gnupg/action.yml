@@ -101,11 +101,11 @@ runs:
         set -euo pipefail
         
         GPG_WRAPPER="$GNUPGHOME/gpg-loopback.sh"
-        cat > "$GPG_WRAPPER" <<'EOF'
-        #!/usr/bin/env bash
-        set -euo pipefail
-        exec gpg --batch --no-tty --pinentry-mode loopback --passphrase-fd 0 "$@"
-        EOF
+        {
+          echo '#!/usr/bin/env bash'
+          echo 'set -euo pipefail'
+          echo 'exec gpg --batch --no-tty --pinentry-mode loopback --passphrase-fd 0 "$@"'
+        } > "$GPG_WRAPPER"
         chmod 700 "$GPG_WRAPPER"
 
         git config --global user.name "$GPG_NAME"
