@@ -172,21 +172,12 @@ runs:
         fi
 
         echo "::debug::Passphrase length: ${#PASS} characters"
+        KEY_GRIPS=$(gpg --batch --with-colons --with-keygrip --list-secret-keys | awk -F: '/^grp:/ {print $10}')
         
-        # Get keygrip for caching passphrase in agent
-        if [ -n "$FINGERPRINT" ]; then
-          KEY_GRIP=$(gpg --batch --with-colons --with-keygrip --list-secret-keys "$FINGERPRINT" 2>/dev/null | awk -F: '/^grp:/ {print $10; exit}')
-        else
-          KEY_GRIP=$(gpg --batch --with-colons --with-keygrip --list-secret-keys 2>/dev/null | awk -F: '/^grp:/ {print $10; exit}')
-        fi
-
-        if [ -z "$KEY_GRIP" ]; then
-          echo "::error::Could not find GPG key grip for caching passphrase" >&2
-          exit 1
-        fi
-
-        echo "::debug::Key grip: $KEY_GRIP"
-
+        # Für jeden Keygrip die Passphrase cachen:
+        while read -r KEY_GRIP; do
+          printf '%s' "$PASS" | gpg-preset-passphrase --preset "$KEY_GRIP"
+        done <<< "$KEY_GRIPS"
         # Find gpg-preset-passphrase
         GPG_PRESET=""
         for CANDIDATE in "$(command -v gpg-preset-passphrase 2>/dev/null || true)" \
