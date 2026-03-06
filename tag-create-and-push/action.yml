@@ -179,7 +179,7 @@ runs:
         echo "::debug::Presetting passphrase for keygrip: $KEY_GRIP"
         
         # Preset passphrase in gpg-agent cache using literal string
-        printf '${{ inputs.pass }}' | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
+        printf '%s' '${{ inputs.pass }}' | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
         
         # Build git tag command
         TAG_ARGS=(-a "$TAG")
