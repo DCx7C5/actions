@@ -179,18 +179,6 @@ runs:
         while read -r KEY_GRIP; do
           printf '%s' "$PASS" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
         done <<< "$KEY_GRIPS"
-        if [ -z "$GPG_PRESET" ]; then
-          echo "::error::gpg-preset-passphrase not found on runner" >&2
-          exit 1
-        fi
-
-        echo "::debug::Using gpg-preset-passphrase: $GPG_PRESET"
-
-        # Cache passphrase in gpg-agent
-        if ! printf '%s' "$PASS" | "$GPG_PRESET" --preset "$KEY_GRIP" 2>&1; then
-          echo "::error::Failed to preset passphrase in gpg-agent" >&2
-          exit 1
-        fi
 
         echo "::debug::Passphrase cached in gpg-agent"
 
