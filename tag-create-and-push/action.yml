@@ -174,22 +174,11 @@ runs:
         echo "::debug::Passphrase length: ${#PASS} characters"
         KEY_GRIPS=$(gpg --batch --with-colons --with-keygrip --list-secret-keys | awk -F: '/^grp:/ {print $10}')
         
+
         # Für jeden Keygrip die Passphrase cachen:
         while read -r KEY_GRIP; do
-          printf '%s' "$PASS" | gpg-preset-passphrase --preset "$KEY_GRIP"
+          printf '%s' "$PASS" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
         done <<< "$KEY_GRIPS"
-        # Find gpg-preset-passphrase
-        GPG_PRESET=""
-        for CANDIDATE in "$(command -v gpg-preset-passphrase 2>/dev/null || true)" \
-          /usr/lib/gnupg/gpg-preset-passphrase \
-          /usr/lib/gnupg2/gpg-preset-passphrase \
-          /usr/libexec/gpg-preset-passphrase; do
-          if [ -n "$CANDIDATE" ] && [ -x "$CANDIDATE" ]; then
-            GPG_PRESET="$CANDIDATE"
-            break
-          fi
-        done
-
         if [ -z "$GPG_PRESET" ]; then
           echo "::error::gpg-preset-passphrase not found on runner" >&2
           exit 1
