@@ -180,7 +180,7 @@ runs:
         echo "::debug::Presetting passphrase for keygrip: $KEY_GRIP"
 
         # Preset passphrase in gpg-agent cache using literal string
-        echo '${{ inputs.pass }}' | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
+        echo -n '${{ inputs.pass }}' | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
 
         # Build git tag command
         TAG_ARGS=(-a "$TAG")
@@ -198,7 +198,7 @@ runs:
         echo "GITCOMMITTER_DATE=$(git log -n1 --pretty=%aD)" >> "$GITHUB_ENV"
 
         # Create signed tag (passphrase is now cached in gpg-agent)
-        if echo '${{ inputs.pass }}' | git tag "${TAG_ARGS[@]}" -s --no-edit; then
+        if echo -n '${{ inputs.pass }}' | git tag "${TAG_ARGS[@]}" -s --no-edit; then
           echo "::notice::Signed tag created successfully: $TAG"
         else
           echo "::error::Failed to create signed tag" >&2
