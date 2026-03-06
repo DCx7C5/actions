@@ -102,6 +102,7 @@ runs:
         default-cache-ttl 600
         max-cache-ttl 7200
         allow-loopback-pinentry
+        allow-preset-passphrase
         pinentry-program /usr/bin/pinentry-tty
         GPGCONF
         chmod 600 "$GNUPGHOME/gpg-agent.conf"
