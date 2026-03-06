@@ -9,13 +9,16 @@ branding:
 
 inputs:
   gpg_key:
-    required: false
-    default: ''
+    required: true
     description: "GPG key (inline for 'secret', or file path for 'file', or fingerprint/identifier for 'keyserver')"
-  pass:
+  gpg_pass:
     required: false
     default: ''
     description: "Passphrase/password for decryption (GPG or SSL)"
+  ssl_pass:
+    required: false
+    default: ''
+    description: "Passphrase for SSL decryption (if gpg_pass is not used for SSL-encrypted input)"
   keyserver_url:
     required: false
     default: 'hkps://keys.openpgp.org'
@@ -61,23 +64,30 @@ runs:
         if [ -n "${{ inputs.gpg_key }}" ]; then
           echo "::add-mask::${{ inputs.gpg_key }}"
         fi
-        if [ -n '${{ inputs.pass }}' ]; then
-          echo "::add-mask::${{ inputs.pass }}"
+        if [ -n '${{ inputs.gpg_pass }}' ]; then
+          echo '::add-mask::${{ inputs.gpg_pass }}'
+        fi
+        if [ -n '${{ inputs.ssl_pass }}' ]; then
+          echo '::add-mask::${{ inputs.ssl_pass }}'
         fi
 
     - name: Validate GPG Key input
       id: validate
       uses: ./gpg-import/gpg-validate-import
+      env:
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
       with:
         gpg_key: ${{ inputs.gpg_key }}
 
     - name: Decrypt SSL-encrypted key (if applicable)
       id: decrypt_ssl
       if: steps.validate.outputs.is_ssl_enc_and_armored_key == 'true' || steps.validate.outputs.is_ssl_enc_binary_key == 'true'
-      uses: DCx7C5/actions/ssl-decrypt@v1
+      uses: ./ssl-decrypt
+      env:
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
       with:
         enc_input: ${{ steps.validate.outputs.gpg_key }}
-        passphrase: ${{ inputs.pass }}
+        passphrase: ${{ inputs.ssl_pass || inputs.gpg_pass }}
         type: ${{ steps.validate.outputs.is_file == 'true' && 'file' || 'inline' }}
         encoding: ${{ steps.validate.outputs.is_ssl_enc_binary_key == 'true' && 'binary' || 'text' }}
         cleanup: 'true'
@@ -86,30 +96,33 @@ runs:
       id: inline_import
       if: steps.validate.outputs.is_secret == 'true'
       uses: ./gpg-import/gpg-import-inline
+      env:
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
       with:
         gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
-        pass: ${{ inputs.pass }}
-        gpg_home: ${{ inputs.gpg_home }}
+        pass: ${{ inputs.gpg_pass }}
         type: 'auto'
 
     - name: Import from file
       id: file_import
       if: steps.validate.outputs.is_file == 'true'
       uses: ./gpg-import/gpg-import-file
+      env:
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
       with:
         gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
-        pass: ${{ inputs.pass }}
+        pass: ${{ inputs.gpg_pass }}
         delete_after_import: ${{ inputs.delete_after_import }}
-        gpg_home: ${{ inputs.gpg_home }}
 
     - name: Import from keyserver
       id: keyserver_import
       if: steps.validate.outputs.is_fingerprint == 'true'
       uses: ./gpg-import/gpg-import-keyserver
+      env:
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
       with:
         fingerprint: ${{ steps.validate.outputs.gpg_key }}
         keyserver_url: ${{ inputs.keyserver_url }}
-        gpg_home: "${{ inputs.gpg_home }}"
 
     - name: Aggregate outputs
       id: dispatch
@@ -129,7 +142,9 @@ runs:
 
     - name: Set Owner Trust (if private key imported)
       if: (inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true') && steps.validate.outputs.is_publickey == 'true'
-      uses: DCx7C5/actions/gpg-set-ownertrust@v1
+      uses: ./gpg-set-ownertrust
+      env:
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
       with:
         fingerprint: ${{ steps.dispatch.outputs.fingerprint }}
-        gpg_home: "${{ inputs.gpg_home }}"
+

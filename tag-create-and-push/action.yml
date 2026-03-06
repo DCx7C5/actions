@@ -11,10 +11,10 @@ inputs:
   version:
     description: "The new version to use (e.g. v1.2.3 or 1.2.3)"
     required: true
-  gpg_home:
-    description: "Path to GNUPGHOME directory (where keys are stored)"
+  commit_msg:
+    description: "Commit message for the annotated tag"
     required: false
-    default: ''
+    default: "Release ${{ inputs.version }}"
   fingerprint:
     description: "GPG key fingerprint or email to use for signing the tag (optional)"
     required: false
@@ -23,11 +23,14 @@ inputs:
     description: "Passphrase for the GPG key (if needed, optional) - will be masked in logs"
     required: false
     default: ""
-  commit_msg:
-    description: "Commit message for the annotated tag"
+  sign:
+    description: "Whether to sign the tag with GPG (default: true)"
     required: false
-    default: "Release ${{ inputs.version }}"
-
+    default: 'true'
+  gpg_home:
+    description: "Path to GNUPGHOME directory (where keys are stored)"
+    required: false
+    default: ''
 
 outputs:
   tag:
@@ -38,17 +41,14 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Mask sensitive values
-      shell: bash
-      run: |
-        if [ -n '${{ inputs.pass }}' ]; then
-          echo "::add-mask::${{ inputs.pass }}"
-        fi
-
-    - name: Validate inputs
+    - name: Mask & Validate inputs
+      id: mask_and_validate
       shell: bash
       run: |
         set -euo pipefail
+        if [ -n '${{ inputs.pass }}' ]; then
+          echo '::add-mask::${{ inputs.pass }}'
+        fi
         
         VERSION='${{ inputs.version }}'
         if [ -z "$VERSION" ]; then
@@ -70,7 +70,6 @@ runs:
         GPG_PINENTRY_MODE: loopback
       run: |
         set -euo pipefail
-        export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         trap 'unset PASS 2>/dev/null || true' EXIT
         
         # Check if tag already exists
@@ -82,10 +81,24 @@ runs:
         echo "::notice::Creating signed tag: $TAG"
         
         # Build git tag command
-        TAG_ARGS=(-a "$TAG" -m "$COMMIT_MSG" -s)
+        TAG_ARGS=(-a "$TAG")
+        
+        if [ -n "$COMMIT_MSG" ]; then
+          TAG_ARGS+=(-m "$COMMIT_MSG")
+        fi
+        
+        if [ "${{ inputs.sign }}" != "true" ]; then
+          echo "::notice::Signing is disabled, creating unsigned tag"
+          TAG_ARGS=("${TAG_ARGS[@]/-a/-l}")
+        else
+          echo "::notice::Signing is enabled, creating signed tag"
+          TAG_ARGS+=(-s)
+        fi
+                
+        
         
         if [ -n "$FINGERPRINT" ]; then
-          TAG_ARGS+=(-u "$FINGERPRINT")
+          TAG_ARGS+=(-u "${FINGERPRINT:24:40}")
           echo "::notice::Using explicit key: $FINGERPRINT"
         else
           echo "::notice::Using default GPG key"
@@ -115,12 +128,106 @@ runs:
         # Output
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-    - name: Push tag to repository
+    - name: Create unsigned tag
+      id: tag_create_unsigned
       shell: bash
+      env:
+        TAG: '${{ inputs.version }}'
+        COMMIT_MSG: '${{ inputs.commit_msg }}'
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
         set -euo pipefail
         
-        TAG='${{ inputs.version }}'
+        # Check if tag already exists
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "::error::Tag $TAG already exists" >&2
+          exit 1
+        fi
+        
+        echo "::notice::Creating unsigned tag: $TAG"
+        
+        TAG_ARGS=(-l "$TAG")
+        
+        if [ -n "$COMMIT_MSG" ]; then
+          TAG_ARGS+=(-m "$COMMIT_MSG")
+        fi
+        
+        if GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" --no-edit 2>&1; then
+          echo "::notice::Unsigned tag created successfully: $TAG"
+        else
+          echo "::error::Failed to create unsigned tag" >&2
+          exit 1
+        fi
+        
+        # Show tag details
+        git show --pretty=fuller "$TAG" 2>/dev/null || true
+        
+        # Output
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+    
+    - name: Create signed tag
+      id: tag_create_signed
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+        TAG: '${{ inputs.version }}'
+        FINGERPRINT: '${{ inputs.fingerprint }}'
+      run: |
+        set -euo pipefail
+        trap 'unset PASS 2>/dev/null || true' EXIT
+        
+        # Check if tag already exists
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "::error::Tag $TAG already exists" >&2
+          exit 1
+        fi
+        
+        echo "::notice::Creating signed tag: $TAG"
+        
+        # Build git tag command
+        TAG_ARGS=(-a "$TAG")
+        
+        if [ -n "${{ inputs.commit_msg }}" ]; then
+          TAG_ARGS+=(-m "${{ inputs.commit_msg }}")
+        fi
+        
+        if [ -n "$FINGERPRINT" ]; then
+          TAG_ARGS+=(-u "${FINGERPRINT:24}")
+          echo "::notice::Using explicit key: $FINGERPRINT"
+        else
+          echo "::notice::Using default GPG key"
+        fi
+        
+        # Create tag with passphrase if provided
+        if [ -n "$PASS" ]; then
+          # Use loopback mode to provide passphrase to gpg
+          if echo "$PASS" | GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
+            echo "::notice::Signed tag created successfully: $TAG"
+          else
+            echo "::error::Failed to create signed tag" >&2
+            exit 1
+          fi
+        else
+          if git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
+            echo "::notice::Signed tag created successfully: $TAG"
+          else
+            echo "::error::Failed to create signed tag" >&2
+            exit 1
+          fi
+        fi
+        
+        # Show tag details
+        git show --pretty=fuller "$TAG" 2>/dev/null || true
+        
+        # Output
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+    - name: Push tag to repository
+      shell: bash
+      env:
+        TAG: '${{ inputs.version }}'
+      run: |
+        set -euo pipefail
         
         if ! git push origin "$TAG"; then
           echo "::error::Failed to push tag to repository" >&2

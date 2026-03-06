@@ -11,6 +11,7 @@ permissions:
   contents: write
 
 
+
 jobs:
   update-tag-and-release:
     runs-on: ubuntu-latest
@@ -40,43 +41,42 @@ jobs:
 
       - name: Setup GPG Environment
         id: gpg_setup
-        uses: DCx7C5/actions/gpg-setup-home@v1
+        uses: ./gpg-setup-home
 
       - name: Import GPG key
         id: gpg_import
-        uses: DCx7C5/actions/gpg-import@v1
+        uses: ./gpg-import
         env:
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
-          method: 'secret'
+          method: 'inline'
           gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          pass: ${{ secrets.GPG_PASSPHRASE }}
+          gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
           delete_after_import: 'true'
 
       - name: Configure Git client to sign with GPG
         id: git_config
-        uses: DCx7C5/actions/git-configure-gnupg@v1
+        uses: ./git-configure-gnupg
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
-        with:
-          gpg_home: ${{ steps.gpg_setup.outputs.gpg_home }}
-
+          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
 
       - name: Delete old tag (if exists)
         id: tag_delete
-        uses: DCx7C5/actions/tag-delete@v1
+        uses: ./tag-delete
         with:
           tag_name: "v1"
 
       - name: Create and push new signed Tag
         id: tag_create
-        uses: DCx7C5/actions/tag-create-and-push@v1
+        uses: ./tag-create-and-push
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
           fingerprint: ${{ steps.gpg_import.outputs.fingerprint }}
-          pass: ''
           version: "v1"
           commit_msg: "Release v1"
-          gpg_home: "${{ steps.gpg_setup.outputs.gpg_home }}"
 
       - name: Create GitHub Release
         id: rel_create
@@ -92,13 +92,13 @@ jobs:
 
       - name: Cleanup GPG keys from runner
         if: steps.gpg_setup.outputs.gpg_home != ''
-        uses: DCx7C5/actions/gpg-cleanup@v1
-        env:
-          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
+        uses: ./gpg-cleanup
+        with:
+          gpg_home: ${{ steps.gpg_setup.outputs.gpg_home }}
 
       - name: Notify on success
         if: success()
-        uses: DCx7C5/actions/telegram-notify@v1
+        uses: ./telegram-notify
         with:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           to: ${{ secrets.TELEGRAM_CHANNEL_ID }}

@@ -8,6 +8,7 @@ inputs:
   gpg_home:
     description: "Path to GPG home directory (optional, defaults to temporary directory)"
     required: false
+    default: ''
 
 
 outputs:
@@ -26,7 +27,7 @@ runs:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
         set -euo pipefail
-
+        
         if [[ -z "$GNUPGHOME" ]]; then
           GNUPGHOME=$(mktemp -d .gnupg.XXXXXXX)
           export GNUPGHOME="$(pwd)/${GNUPGHOME}"
