@@ -178,6 +178,7 @@ runs:
         fi
 
         echo "::debug::Presetting passphrase for keygrip: $KEY_GRIP"
+        echo "$PASS" | gpg --batch --no-tty --import --armor < <(echo "$GPG_KEY")
 
         # Preset passphrase in gpg-agent cache using literal string
         printf '%s' "$PASS" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
