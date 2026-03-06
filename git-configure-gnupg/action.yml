@@ -104,13 +104,7 @@ runs:
         {
           echo '#!/usr/bin/env bash'
           echo 'set -euo pipefail'
-          echo '# Debug: Check if stdin is available'
-          echo 'if [ ! -t 0 ]; then'
-          echo '  echo "DEBUG: stdin is available (pipe/redirect)" >&2'
-          echo 'else'
-          echo '  echo "DEBUG: stdin is a terminal" >&2'
-          echo 'fi'
-          echo 'exec gpg --batch --no-tty --pinentry-mode loopback --passphrase-fd 0 "$@"'
+          echo 'exec gpg --batch --no-tty --pinentry-mode loopback "$@"'
         } > "$GPG_WRAPPER"
         chmod 700 "$GPG_WRAPPER"
         
