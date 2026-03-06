@@ -179,8 +179,6 @@ runs:
 
         echo "::debug::Presetting passphrase for keygrip: $KEY_GRIP"
 
-        echo "::debug::Presetting passphrase for keygrip: $KEY_GRIP"
-
         # Preset passphrase in gpg-agent cache using literal string
         printf '%s' "$PASS" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
 
