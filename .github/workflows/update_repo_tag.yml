@@ -77,7 +77,6 @@ jobs:
           version: "v1"
           commit_msg: "Release v1"
           pass: ${{ secrets.GPG_PASSPHRASE }}
-          gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Create GitHub Release
         id: rel_create
