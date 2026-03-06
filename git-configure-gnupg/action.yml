@@ -106,7 +106,6 @@ runs:
         git config --global commit.gpgsign true
         git config --global tag.gpgsign true
         git config --global tag.forceSignAnnotated true
-        git config --global gpg.program "$GPG_WRAPPER"
 
         command -v gh >/dev/null 2>&1 && \
           gh config set -h github.com git_protocol https
