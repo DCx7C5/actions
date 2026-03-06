@@ -99,15 +99,24 @@ runs:
         GH_TOKEN: ${{ inputs.token || env.GH_TOKEN }}
       run: |
         set -euo pipefail
+
+        GPG_WRAPPER="$GNUPGHOME/gpg-loopback.sh"
+        cat > "$GPG_WRAPPER" <<'EOF'
+        #!/usr/bin/env bash
+        set -euo pipefail
+        exec gpg --batch --no-tty --pinentry-mode loopback --passphrase-fd 0 "$@"
+        EOF
+        chmod 700 "$GPG_WRAPPER"
+
         git config --global user.name "$GPG_NAME"
         git config --global user.email "$GPG_MAIL"
         git config --global user.signingkey "$FINGERPRINT"
         git config --global commit.gpgsign true
         git config --global tag.gpgsign true
         git config --global tag.forceSignAnnotated true
-        git config --global gpg.program gpg
-        
+        git config --global gpg.program "$GPG_WRAPPER"
+
         command -v gh >/dev/null 2>&1 && \
           gh config set -h github.com git_protocol https
-        
+
         echo "Configured git with GPG key: $FINGERPRINT (${GPG_NAME} <${GPG_MAIL}>)"

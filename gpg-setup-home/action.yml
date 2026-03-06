@@ -67,6 +67,7 @@ runs:
         # Explicitly disable legacy/weak ciphers
         disable-cipher-algo 3DES IDEA CAST5 BLOWFISH
         pinentry-mode loopback
+        no-tty
         
         # Keyserver (secure HKPS)
         keyserver hkps://keys.openpgp.org
@@ -77,6 +78,7 @@ runs:
         with-fingerprint
         no-comments
         use-agent
+        # batch
         GPGCONF
 
         # Set proper permissions on config file
@@ -103,10 +105,8 @@ runs:
         max-cache-ttl 7200
         allow-loopback-pinentry
         allow-preset-passphrase
-        pinentry-program /usr/bin/pinentry-tty
         GPGCONF
         chmod 600 "$GNUPGHOME/gpg-agent.conf"
         gpgconf --kill gpg-agent || true
         gpgconf --launch gpg-agent
-        echo "gpg_tty=$(which pinentry-tty)" >> "$GITHUB_ENV"
         echo "::notice::Configured gpg-agent for non-interactive signing"
