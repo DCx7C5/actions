@@ -108,4 +108,5 @@ runs:
         chmod 600 "$GNUPGHOME/gpg-agent.conf"
         gpgconf --kill gpg-agent || true
         gpgconf --launch gpg-agent
+        echo "gpg_tty=$(which pinentry-tty)" >> "$GITHUB_ENV"
         echo "::notice::Configured gpg-agent for non-interactive signing"

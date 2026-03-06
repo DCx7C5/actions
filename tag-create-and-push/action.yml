@@ -35,7 +35,7 @@ inputs:
 outputs:
   tag:
     description: "The created tag name"
-    value: ${{ steps.tag_create.outputs.tag }}
+    value: ${{ steps.tag_create_signed.outputs.tag || steps.tag_create_signed_pass.outputs.tag || steps.tag_create_unsigned.outputs.tag }}
 
 
 runs:
@@ -153,48 +153,49 @@ runs:
         TAG: '${{ inputs.version }}'
         FINGERPRINT: '${{ inputs.fingerprint }}'
         COMMIT_MSG: '${{ inputs.commit_msg }}'
+        GPG_TTY: '/usr/bin/pinentry-tty'
       run: |
         set -euo pipefail
-        
+
         # Check if tag already exists
         if git rev-parse "$TAG" >/dev/null 2>&1; then
           echo "::error::Tag $TAG already exists" >&2
           exit 1
         fi
-        
+
         echo "::notice::Creating signed tag with passphrase: $TAG"
-        
+
         # Get keygrip for passphrase preset
         if [ -n "$FINGERPRINT" ]; then
           KEY_GRIP=$(gpg --batch --with-keygrip --list-secret-keys "$FINGERPRINT" 2>/dev/null | grep -A1 "^sec" | tail -1 | tr -d ' \n')
         else
           KEY_GRIP=$(gpg --batch --with-keygrip --list-secret-keys 2>/dev/null | grep -A1 "^sec" | head -2 | tail -1 | tr -d ' \n')
         fi
-        
+
         if [ -z "$KEY_GRIP" ]; then
           echo "::error::Could not find GPG key grip" >&2
           exit 1
         fi
-        
+
         echo "::debug::Presetting passphrase for keygrip: $KEY_GRIP"
-        
+
         # Preset passphrase in gpg-agent cache using literal string
         printf '%s' '${{ inputs.pass }}' | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
-        
+
         # Build git tag command
         TAG_ARGS=(-a "$TAG")
-        
+
         if [ -n "${{ inputs.commit_msg }}" ]; then
           TAG_ARGS+=(-m "${{ inputs.commit_msg }}")
         fi
-        
+
         if [ -n "$FINGERPRINT" ]; then
           TAG_ARGS+=(-u "$FINGERPRINT")
           echo "::notice::Using explicit key: $FINGERPRINT"
         else
           echo "::notice::Using default GPG key"
         fi
-        
+
         # Create signed tag (passphrase is now cached in gpg-agent)
         if GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
           echo "::notice::Signed tag created successfully: $TAG"
@@ -202,10 +203,10 @@ runs:
           echo "::error::Failed to create signed tag" >&2
           exit 1
         fi
-        
+
         # Show tag details
         git show --pretty=fuller "$TAG" 2>/dev/null || true
-        
+
         # Output
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
