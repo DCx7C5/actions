@@ -171,6 +171,49 @@ runs:
           exit 1
         fi
 
+        echo "::debug::Passphrase length: ${#PASS} characters"
+        
+        # Get keygrip for caching passphrase in agent
+        if [ -n "$FINGERPRINT" ]; then
+          KEY_GRIP=$(gpg --batch --with-colons --with-keygrip --list-secret-keys "$FINGERPRINT" 2>/dev/null | awk -F: '/^grp:/ {print $10; exit}')
+        else
+          KEY_GRIP=$(gpg --batch --with-colons --with-keygrip --list-secret-keys 2>/dev/null | awk -F: '/^grp:/ {print $10; exit}')
+        fi
+
+        if [ -z "$KEY_GRIP" ]; then
+          echo "::error::Could not find GPG key grip for caching passphrase" >&2
+          exit 1
+        fi
+
+        echo "::debug::Key grip: $KEY_GRIP"
+
+        # Find gpg-preset-passphrase
+        GPG_PRESET=""
+        for CANDIDATE in "$(command -v gpg-preset-passphrase 2>/dev/null || true)" \
+          /usr/lib/gnupg/gpg-preset-passphrase \
+          /usr/lib/gnupg2/gpg-preset-passphrase \
+          /usr/libexec/gpg-preset-passphrase; do
+          if [ -n "$CANDIDATE" ] && [ -x "$CANDIDATE" ]; then
+            GPG_PRESET="$CANDIDATE"
+            break
+          fi
+        done
+
+        if [ -z "$GPG_PRESET" ]; then
+          echo "::error::gpg-preset-passphrase not found on runner" >&2
+          exit 1
+        fi
+
+        echo "::debug::Using gpg-preset-passphrase: $GPG_PRESET"
+
+        # Cache passphrase in gpg-agent
+        if ! printf '%s' "$PASS" | "$GPG_PRESET" --preset "$KEY_GRIP" 2>&1; then
+          echo "::error::Failed to preset passphrase in gpg-agent" >&2
+          exit 1
+        fi
+
+        echo "::debug::Passphrase cached in gpg-agent"
+
         # Build git tag command
         TAG_ARGS=(-a "$TAG")
 
@@ -187,8 +230,9 @@ runs:
 
         unset GPG_TTY || true
 
-        # Create signed tag - passphrase via stdin to gpg wrapper (--passphrase-fd 0)
-        if printf '%s' "$PASS" | GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
+        # Create signed tag - passphrase is now cached in agent
+        echo "::debug::Running: git tag -s ..."
+        if GIT_COMMITTER_DATE="$(git log -n1 --pretty=%aD)" git tag "${TAG_ARGS[@]}" -s --no-edit 2>&1; then
           echo "::notice::Signed tag created successfully: $TAG"
         else
           echo "::error::Failed to create signed tag" >&2
