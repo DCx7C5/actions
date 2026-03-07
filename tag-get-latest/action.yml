@@ -7,6 +7,15 @@ inputs:
     description: "The repository we search for the latest tag"
     required: false
     default: ${{ github.repository }}
+  exit_if_not_found:
+    description: "Whether to fail the action if no tag is found (default: false)"
+    required: false
+    default: 'false'
+  exit_if_up_to_date:
+    description: "Whether to fail the action if the latest tag is the same as the current tag (default: false)"
+    required: false
+    default: 'false'
+
 
 outputs:
   tag_name:
@@ -28,3 +37,8 @@ runs:
           https://api.github.com/repos/$REPOSITORY/releases/latest)
         TAG=$(echo "$RESPONSE" | jq -r .tag_name)
         echo "tag_name=$TAG" >> "$GITHUB_OUTPUT"
+
+    - name: Fail if latest tag is already up to date
+      if: steps.tag_latest.outputs.tag_name != 'v1'
+      shell: bash
+      run: exit 0
