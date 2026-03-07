@@ -1,0 +1,58 @@
+name: "Build AUR Package"
+description: "Build an AUR package using a secure Arch Linux container with GPG and ccache support"
+author: "DCx7C5"
+
+
+inputs:
+  pkg_name:
+    required: true
+    description: "Name of the package to build (should match the directory name containing the PKGBUILD)"
+  sign_pkg:
+    required: false
+    default: 'true'
+    description: "Whether to sign the package with GPG (default: true)"
+  gpg_key_id:
+    required: false
+    default: ''
+    description: "GPG key ID or fingerprint to use for signing (if needed)"
+  gpg_passhphrase:
+    required: false
+    default: ''
+    description: "Passphrase for GPG key (if needed)"
+  gpg_home:
+    required: false
+    default: ''
+    description: "Path to GPG home directory (optional, defaults to GNUPGHOME environment variable)"
+  github_token:
+    required: false
+    default: ''
+    description: "GitHub token for API access (defaults to github.token)"
+
+
+runs:
+  using: composite
+  steps:
+    - id: build_pkg_signed
+      if: inputs.sign_pkg == 'true'
+      uses: ./arch-run-cmd
+      env:
+        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+      with:
+        gpg_passhphrase: ${{ inputs.gpg_passhphrase }}
+        run_with_sudo: 'true'
+        enable_ccache: 'true'
+        preset_cache: 'true'
+        gpg_key_id: ${{ inputs.gpg_key_id }}
+        run: makepkg -sr --sign -C -c --noconfirm --noprogressbar
+
+    - id: build_pkg_unsigned
+      if: inputs.sign_pkg != 'true'
+      uses: ./arch-run-cmd
+      env:
+        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
+      with:
+        run_with_sudo: 'true'
+        enable_ccache: 'true'
+        preset_cache: 'false'
+        run: makepkg -sr -C -c --noconfirm --noprogressbar
