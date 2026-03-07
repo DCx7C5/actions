@@ -6,56 +6,74 @@ inputs:
   command:
     description: "Command/script to execute inside container"
     required: true
-  working-directory:
-    description: "Working directory inside container (default: github.workspace)"
+  working_directory:
+    description: "Working directory inside container"
     required: false
-    default: "${{ github.workspace }}"
-  packager:
-    description: "GPG Packager identity (required for AUR signing)"
-    required: false
-    default: "GitHub Actions <actions@localhost>"
-  gpg-home:
+    default: ''
+  gpg_home:
     description: "GPG home directory (usually in workspace)"
     required: false
-  ccache-dir:
+    default: ''
+  ccache_dir:
     description: "ccache directory for build caching"
     required: false
     default: "${{ github.workspace }}/.ccache"
-  enable-ccache:
+  enable_ccache:
     description: "Enable ccache for faster incremental builds"
     required: false
     default: "true"
-  mount-src:
-    description: "Host path to mount (e.g., /tmp/my-data)"
+  github_token:
+    description: "GitHub token for API access (defaults to github.token)"
     required: false
-    default: ""
-  mount-dst:
-    description: "Container mount point (e.g., /mnt/data)"
+    default: ''
+  gpg_key_id:
+    description: "GPG key ID or fingerprint to use for signing (if needed, will be passed via environment variable)"
     required: false
-    default: "/mnt/build"
+    default: ''
+  gpg_passhphrase:
+    description: "Passphrase for GPG key (if needed, will be passed via environment variable)"
+    required: false
+    default: ''
+  preset_cache:
+    description: "Whether to preset GPG passphrase in gpg-agent cache before running the command (default: true)"
+    required: false
+    default: "true"
+  run_with_sudo:
+    description: "Whether to run the command with sudo inside the container (default: false)"
+    required: false
+    default: "false"
+
 
 runs:
   using: docker
   image: Dockerfile
   env:
-    # Security: Disable interactive features in CI
     CI: "true"
     GITHUB_ACTIONS: "true"
-    # Build optimization
-    MAKEFLAGS: "-j${{ runner.cpu-count }}"
-    CCACHE_DIR: "${{ inputs.ccache-dir }}"
+    GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || github.token }}"
+    MAKEFLAGS: "-j${{ runner.cpu_count }}"
+    CCACHE_DIR: "${{ inputs.ccache_dir }}"
+    GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
     CCACHE_MAXSIZE: "2G"
     CCACHE_COMPRESS: "1"
     CCACHE_COMPRESSLEVEL: "6"
-    # GPG configuration
-    GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
-    PACKAGER: "${{ inputs.packager }}"
-    # Disable telemetry in container
     DISABLE_TELEMETRY: "1"
     PYTHONDONTWRITEBYTECODE: "1"
-    # Mount points
-    MOUNT_SRC: "${{ inputs.mount-src }}"
-    MOUNT_DST: "${{ inputs.mount-dst }}"
+    RUN_WITH_SUDO: "${{ inputs.run_with_sudo }}"
+  pre-entrypoint: |
+    set -euo pipefail
+    
+    if [[ -d "$GNUPGHOME" && -n "${{ inputs.gpg_key_id }}" && -n '${{ inputs.gpg_passhphrase }}' && "${{ inputs.preset_cache }}" == 'true' ]]; then
+      KEYGRIPS=$(gpg --batch --with-colons --list-secret-keys "${{ inputs.gpg_key_id }}" 2>/dev/null | awk -F: '/^grp:/ {print $10}')
+      
+      while read -r GRIP; do
+        printf '%s' '${{ inputs.gpg_passhphrase }}' | /usr/lib/gnupg/gpg-preset-passphrase --preset "$GRIP" 2>/dev/null || true
+      done <<< "$KEYGRIPS"
+      echo "::notice::Preset GPG passphrase in gpg-agent cache"
+    fi
+
+  post-entrypoint: ${{ github.action_path }}/post-entrypoint.sh
   args:
-    - "${{ inputs.working-directory }}"
+    - "${{ inputs.working_directory || github.workspace }}"
+    - "${{ inputs.gpg_home || env.GNUPGHOME || '.gnupg' }}"
     - "${{ inputs.command }}"

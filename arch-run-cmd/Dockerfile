@@ -72,8 +72,7 @@ RUN cat <<EOF >> /rootfs/etc/bash.bashrc
 alias ls="ls --color=auto "
 export LANG=C.UTF-8
 export TERM=xterm-256color
-export GNUPGHOME=/home/builder/.gnupg
-export MAKEFLAGS="-j\$(nproc)"
+export MAKEFLAGS="-j$(nproc)"
 export CCACHE_DIR=/home/builder/.ccache
 force_color_prompt=yes
 export PS1='\[\033[1;32m\]\u\[\033[1;37m\]@\[\033[1;36m\]\h\[\033[00m\]:\[\033[1;34m\]\w\[\033[00m\]\$ '
@@ -92,7 +91,7 @@ RUN cat <<'MAKEPKG' >> /rootfs/etc/makepkg.conf
 
 # ===== Container Optimization =====
 MAKEFLAGS="-j$(nproc)"
-CCACHE_DIR="/home/builder/.ccache"
+CCACHE_DIR="/github/workspace/.ccache"
 CCACHE_MAXSIZE="1G"
 
 # Aggressive size optimization
@@ -116,14 +115,13 @@ ENV USER=${USER} \
     LANG=C.UTF-8 \
     TERM=xterm-256color \
     MAKEFLAGS="-j4" \
-    GNUPGHOME=/home/${USER}/.gnupg \
     CCACHE_DIR=/home/${USER}/.ccache \
     PATH=/home/${USER}/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     SHELL=/bin/bash
 
 COPY --from=bootstrap /rootfs/ /
 
-WORKDIR /home/${USER}
+WORKDIR /github/workspace
 
 USER ${USER}
 
