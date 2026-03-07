@@ -74,12 +74,11 @@ jobs:
         id: rel_create
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1"
-          name: "v1"
-          body: "Release v1 - Updated tag to point to latest commit on main branch"
+          tag_name: "${{ steps.tag_create.outputs.tag_name }}"
+          name: "${{ steps.tag_create.outputs.tag_name }}"
+          body: "Release ${{ steps.tag_create.outputs.tag_name }} - Updated tag to point to latest commit on main branch"
           draft: false
           prerelease: false
-          generate_release_notes: ''
           fail_on_unmatched_files: true
 
       - name: Cleanup GPG keys from runner
@@ -90,29 +89,10 @@ jobs:
 
       - name: Notify on success
         if: success()
-        uses: ./telegram-notify
+        uses: ./tg-notify-release
         with:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           to: ${{ secrets.TELEGRAM_CHANNEL_ID }}
-          parse_mode: 'HTML'
-          message: |
-            <b>✅ New Signed Release Published!</b>
-
-            <b>📦 Release Details:</b>
-            - <b>Repository:</b> <code>${{ github.repository }}</code>
-            - <b>Version:</b> <code>v1</code>
-            - <b>Commit:</b> <code>${{ github.sha }}</code>
-            - <b>Branch:</b> <code>${{ github.ref_name }}</code>
-            - <b>Actor:</b> <code>${{ github.actor }}</code>
-
-            <b>🔐 Signing:</b>
-            - <b>GPG Fingerprint:</b> <code>${{ steps.gpg_import.outputs.fingerprint }}</code>
-            - <b>Total Keys Available:</b> <code>${{ steps.gpg_import.outputs.keys_total }}</code>
-
-            <b>🏷️ Tag & Release:</b>
-            - <b>Tag Created:</b> <code>${{ steps.tag_create.outputs.tag }}</code>
-            - <b>Release Name:</b> <code>v1</code>
-
-            <b>🔗 Links:</b>
-            <a href="https://github.com/${{ github.repository }}/releases/tag/v1">View Release</a> | <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">View Commit</a>
-  
+          fingerprint: ${{ steps.gpg_import.outputs.fingerprint }}
+          tag_name: ${{ steps.tag_create.outputs.tag }}
+          release_name: ${{ steps.tag_create.outputs.tag }}
