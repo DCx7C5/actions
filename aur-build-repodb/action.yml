@@ -1,0 +1,32 @@
+name: "Build Repository Database"
+author: "DCx7C5"
+
+
+inputs:
+  repo_name:
+    required: true
+    description: "Repository name (e.g: dystopian)"
+  gpg_passphrase:
+    required: true
+    description: "Passphrase for GPG key"
+  github_token:
+    required: false
+    default: ''
+    description: "GitHub token for API access (defaults to github.token)"
+
+
+runs:
+  using: composite
+  steps:
+    - id: aur_build_repo
+      uses: ./arch-run-cmd
+      env:
+        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+      with:
+        run_with_sudo: 'false'
+        enable_ccache: 'false'
+        preset_cache: 'true'
+        gpg_passhphrase: ${{ inputs.gpg_passphrase }}
+        run: |
+          repo-add --sign --new --remove ${{ inputs.repo_name }}.db.tar.gz *.pkg.tar.zst
