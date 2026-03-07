@@ -177,7 +177,7 @@ runs:
         echo "::debug::Passphrase length: ${#PASS} characters"
         if [[ -z "${{ inputs.gpg_grp }}" ]]; then
           echo "::debug::No gpg_grp input provided, using all secret keys in GNUPGHOME"
-          KEY_GRIPS=$(gpg --batch --with-colons --with-keygrip --list-secret-keys | awk -F: '/^grp:/ {print $10}')
+          KEY_GRIPS=$(gpg --batch --with-colons --list-secret-keys | awk -F: '/^grp:/ {print $10}')
           while read -r KEY_GRIP; do
             printf '%s' "$PASS" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
           done <<< "$KEY_GRIPS"
@@ -215,7 +215,6 @@ runs:
 
         # Output
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-
 
     - name: Push tag to repository
       shell: bash
