@@ -31,6 +31,10 @@ inputs:
     description: "Path to GNUPGHOME directory (where keys are stored)"
     required: false
     default: ''
+  gpg_grp:
+    description: ""
+    required: false
+    default: ''
 
 
 outputs:
@@ -166,21 +170,17 @@ runs:
 
         echo "::notice::Creating signed tag with passphrase: $TAG"
 
-        if [ -z "$PASS" ]; then
-          echo "::error::Missing passphrase for protected key" >&2
-          exit 1
-        fi
-
         echo "::debug::Passphrase length: ${#PASS} characters"
-        KEY_GRIPS=$(gpg --batch --with-colons --with-keygrip --list-secret-keys | awk -F: '/^grp:/ {print $10}')
+        if [[ -z "${{ inputs.gpg_grp }} " ]]; then
+          echo "::debug::No gpg_grp input provided, using all secret keys in GNUPGHOME"
+          KEY_GRIPS=$(gpg --batch --with-colons --with-keygrip --list-secret-keys | awk -F: '/^grp:/ {print $10}')
+          while read -r KEY_GRIP; do
+            printf '%s' "$PASS" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
+          done <<< "$KEY_GRIPS"
+        else
+          printf '%s' "$PASS" | /usr/lib/gnupg/gpg-preset-passphrase --preset "${{ inputs.gpg_grp }}"
+        fi
         
-        # Für jeden Keygrip die Passphrase cachen:
-        while read -r KEY_GRIP; do
-          printf '%s' "$PASS" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEY_GRIP"
-        done <<< "$KEY_GRIPS"
-
-        echo "::debug::Passphrase cached in gpg-agent"
-
         # Build git tag command
         TAG_ARGS=(-a "$TAG")
 
