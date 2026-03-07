@@ -38,7 +38,7 @@ inputs:
 
 
 outputs:
-  tag:
+  tag_name:
     description: "The created tag name"
     value: ${{ steps.tag_create_signed.outputs.tag || steps.tag_create_signed_pass.outputs.tag || steps.tag_create_unsigned.outputs.tag }}
 
