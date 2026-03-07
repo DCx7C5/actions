@@ -6,10 +6,16 @@ branding:
   icon: "git-branch"
   color: "purple"
 
+
 inputs:
   tag_name:
     required: true
     description: "The tag name/version to delete"
+  delete_release:
+    required: false
+    default: 'false'
+    description: "Whether to also delete the associated release (if it exists) - requires gh CLI and appropriate permissions"
+
 
 outputs:
   deleted:
@@ -25,6 +31,43 @@ outputs:
 runs:
   using: composite
   steps:
+
+    - name: Delete release
+      id: rel_delete
+      if: inputs.delete_release == 'true'
+      shell: bash
+      env:
+        RELEASE_TAG: ${{ inputs.tag_name }}
+        GH_TOKEN: ${{ inputs.github_token || env.GITHUB_TOKEN || github.token }}
+      run: |
+        set -euo pipefail
+
+        # Validate input
+        if [ -z "$RELEASE_TAG" ]; then
+          echo "::error::release_tag input is required and cannot be empty"
+          exit 1
+        fi
+
+        # Get the release ID for the given tag
+        RELEASE_ID=$(gh release view "$RELEASE_TAG" --json id --jq '.id' 2>/dev/null || echo "")
+
+        if [ -n "$RELEASE_ID" ]; then
+          echo "::notice::Deleting release for tag '$RELEASE_TAG' (ID: $RELEASE_ID)"
+
+          if gh release delete "$RELEASE_TAG" --yes 2>&1; then
+            echo "::notice::Release '$RELEASE_TAG' deleted successfully"
+            echo "deleted=true" >> "$GITHUB_OUTPUT"
+            echo "release_id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Failed to delete release '$RELEASE_TAG'"
+            exit 1
+          fi
+        else
+          echo "::warning::Release for tag '$RELEASE_TAG' not found - nothing to delete"
+          echo "deleted=false" >> "$GITHUB_OUTPUT"
+          echo "release_id=" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Delete tag
       id: tag_delete
       shell: bash

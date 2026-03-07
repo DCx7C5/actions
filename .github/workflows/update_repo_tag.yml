@@ -60,17 +60,12 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
 
-      - name: Delete old release (if exists)
-        id: release_delete
-        uses: ./rel-delete
-        with:
-          release_tag: 'v1'
-
-      - name: Delete old tag (if exists)
+      - name: Delete old tag & release (if exists)
         id: tag_delete
         uses: ./tag-delete
         with:
           tag_name: "v1"
+          delete_release: 'true'
 
       - name: Create and push new signed Tag
         id: tag_create
