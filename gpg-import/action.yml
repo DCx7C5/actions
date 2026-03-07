@@ -51,6 +51,10 @@ inputs:
     required: false
     default: 'true'
     description: "Uses passphrase caching with gpg-agent for the import if set (provide a non-empty value to enable, e.g., 'true')"
+  github_token:
+    required: false
+    default: ''
+    description: "GitHub token for configuring Git client with GPG signing (optional, only needed if configure_git is true and authentication is required)"
 
 
 outputs:
@@ -185,7 +189,7 @@ runs:
       uses: ./git-configure-gnupg
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
-        GH_TOKEN: ${{ env.GH_TOKEN || secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN }}
 
     - name: Preset passphrase with gpg-agent
       if: inputs.preset_pass == 'true' && (steps.validate.outputs.is_secretkey == 'true' || steps.validate.outputs.is_ssl_enc_key == 'true')
@@ -194,3 +198,4 @@ runs:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
         pass: ${{ inputs.gpg_pass }}
+        forget: 'false'
