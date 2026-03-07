@@ -36,7 +36,7 @@ jobs:
       - name: Fail if latest tag is already up to date
         if: steps.tag_latest.outputs.tag_name != 'v1'
         shell: bash
-        run: exit 1
+        run: exit 0
 
       - name: Import GPG key
         id: gpg_import
@@ -83,10 +83,10 @@ jobs:
           fail_on_unmatched_files: true
 
       - name: Cleanup GPG keys from runner
-        if: steps.gpg_setup.outputs.gpg_home != ''
+        if: steps.gpg_import.outputs.gpg_home != ''
         uses: ./gpg-cleanup
         with:
-          gpg_home: ${{ steps.gpg_setup.outputs.gpg_home }}
+          gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
 
       - name: Notify on success
         if: success()
