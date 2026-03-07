@@ -1,0 +1,129 @@
+name: "Git Find Changed Files"
+description: "Finds changed, added, and deleted files in a git repository"
+author: "DCx7C5"
+
+inputs:
+  base_ref:
+    required: false
+    default: 'HEAD~1'
+    description: "Base git reference to compare against (e.g., 'HEAD~1', 'main', commit SHA)"
+  head_ref:
+    required: false
+    default: 'HEAD'
+    description: "Head git reference to compare (defaults to HEAD)"
+  exclude:
+    required: false
+    default: ''
+    description: "Comma-separated or new line separated list of file patterns to exclude from the changed files list (e.g. 'docs/*,tests/*')"
+  filter_path:
+    required: false
+    default: ''
+    description: "Only include files matching this path pattern (e.g., 'src/**')"
+
+
+outputs:
+  changed_files:
+    description: "Space-separated list of all changed files"
+    value: ${{ steps.find_changes.outputs.changed_files }}
+  added_files:
+    description: "Space-separated list of added files"
+    value: ${{ steps.find_changes.outputs.added_files }}
+  modified_files:
+    description: "Space-separated list of modified files"
+    value: ${{ steps.find_changes.outputs.modified_files }}
+  deleted_files:
+    description: "Space-separated list of deleted files"
+    value: ${{ steps.find_changes.outputs.deleted_files }}
+  all_files:
+    description: "Space-separated list of all changed, added, and modified files (excluding deleted)"
+    value: ${{ steps.find_changes.outputs.all_files }}
+  changed_dirs:
+    description: "Space-separated list of unique directories containing changes"
+    value: ${{ steps.find_changes.outputs.changed_dirs }}
+  deleted_dirs:
+    description: "Space-separated list of unique directories containing deleted files"
+    value: ${{ steps.find_changes.outputs.deleted_dirs }}
+  added_dirs:
+    description: "Space-separated list of unique directories containing added files"
+    value: ${{ steps.find_changes.outputs.added_dirs }}
+  has_changes:
+    description: "Boolean indicating if there are any changes"
+    value: ${{ steps.find_changes.outputs.has_changes }}
+
+
+runs:
+  using: composite
+  steps:
+    - id: find_changes
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        echo "Finding changes between ${{ inputs.base_ref }} and ${{ inputs.head_ref }}..."
+        
+        # Get added files (A)
+        added_files=$(git diff --name-only --diff-filter=A ${{ inputs.base_ref }}..${{ inputs.head_ref }} | tr '\n' ' ' || echo '')
+        
+        # Get modified files (M)
+        modified_files=$(git diff --name-only --diff-filter=M ${{ inputs.base_ref }}..${{ inputs.head_ref }} | tr '\n' ' ' || echo '')
+        
+        # Get deleted files (D)
+        deleted_files=$(git diff --name-only --diff-filter=D ${{ inputs.base_ref }}..${{ inputs.head_ref }} | tr '\n' ' ' || echo '')
+        
+        # Get all changed files (A, M, D)
+        changed_files=$(git diff --name-only --diff-filter=AMD ${{ inputs.base_ref }}..${{ inputs.head_ref }} | tr '\n' ' ' || echo '')
+        
+        # Get all files excluding deleted (A, M)
+        all_files=$(git diff --name-only --diff-filter=AM ${{ inputs.base_ref }}..${{ inputs.head_ref }} | tr '\n' ' ' || echo '')
+        
+        # Apply filter path if specified
+        if [ -n "${{ inputs.filter_path }}" ]; then
+          added_files=$(echo "$added_files" | tr ' ' '\n' | grep -E "${{ inputs.filter_path }}" | tr '\n' ' ' || echo '')
+          modified_files=$(echo "$modified_files" | tr ' ' '\n' | grep -E "${{ inputs.filter_path }}" | tr '\n' ' ' || echo '')
+          deleted_files=$(echo "$deleted_files" | tr ' ' '\n' | grep -E "${{ inputs.filter_path }}" | tr '\n' ' ' || echo '')
+          changed_files=$(echo "$changed_files" | tr ' ' '\n' | grep -E "${{ inputs.filter_path }}" | tr '\n' ' ' || echo '')
+          all_files=$(echo "$all_files" | tr ' ' '\n' | grep -E "${{ inputs.filter_path }}" | tr '\n' ' ' || echo '')
+        fi
+        
+        # Apply exclusions if specified
+        if [ -n "${{ inputs.exclude }}" ]; then
+          exclude_patterns=$(echo "${{ inputs.exclude }}" | tr ',' '\n' | tr ' ' '\n' | grep -v '^$')
+          for pattern in $exclude_patterns; do
+            added_files=$(echo "$added_files" | tr ' ' '\n' | grep -vE "$pattern" | tr '\n' ' ' || echo '')
+            modified_files=$(echo "$modified_files" | tr ' ' '\n' | grep -vE "$pattern" | tr '\n' ' ' || echo '')
+            deleted_files=$(echo "$deleted_files" | tr ' ' '\n' | grep -vE "$pattern" | tr '\n' ' ' || echo '')
+            changed_files=$(echo "$changed_files" | tr ' ' '\n' | grep -vE "$pattern" | tr '\n' ' ' || echo '')
+            all_files=$(echo "$all_files" | tr ' ' '\n' | grep -vE "$pattern" | tr '\n' ' ' || echo '')
+          done
+        fi
+        
+        # Get unique directories
+        changed_dirs=$(echo "$all_files" | tr ' ' '\n' | xargs -I {} dirname {} 2>/dev/null | sort -u | tr '\n' ' ' || echo '')
+        deleted_dirs=$(echo "$deleted_files" | tr ' ' '\n' | xargs -I {} dirname {} 2>/dev/null | sort -u | tr '\n' ' ' || echo '')
+        added_dirs=$(echo "$added_files" | tr ' ' '\n' | xargs -I {} dirname {} 2>/dev/null | sort -u | tr '\n' ' ' || echo '')
+        
+        
+        # Check if there are any changes
+        has_changes="false"
+        if [ -n "$changed_files" ]; then
+          has_changes="true"
+        fi
+        
+        # Output results
+        echo "added_files=$added_files" >> $GITHUB_OUTPUT
+        echo "modified_files=$modified_files" >> $GITHUB_OUTPUT
+        echo "deleted_files=$deleted_files" >> $GITHUB_OUTPUT
+        echo "changed_files=$changed_files" >> $GITHUB_OUTPUT
+        echo "all_files=$all_files" >> $GITHUB_OUTPUT
+        echo "changed_dirs=$changed_dirs" >> $GITHUB_OUTPUT
+        echo "has_changes=$has_changes" >> $GITHUB_OUTPUT
+        echo "deleted_dirs=$deleted_dirs" >> $GITHUB_OUTPUT
+        echo "added_dirs=$added_dirs" >> $GITHUB_OUTPUT
+        
+        echo "::group::Summary"
+        echo "Added files: $added_files"
+        echo "Modified files: $modified_files"
+        echo "Deleted files: $deleted_files"
+        echo "Changed directories: $changed_dirs"
+        echo "Has changes: $has_changes"
+        echo "::endgroup::"
