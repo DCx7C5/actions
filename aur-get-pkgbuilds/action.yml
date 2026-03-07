@@ -1,0 +1,43 @@
+name: "Get all PKGBUILD files from AUR"
+description: "Fetches all PKGBUILD files from the AUR repository and outputs them as a JSON array"
+author: "DCx7C5"
+
+inputs:
+  matrix:
+    required: false
+    default: 'false'
+    description: "JSON array of directories to search for PKGBUILD files (defaults to current directory)"
+
+
+outputs:
+  pkgbuilds:
+    description: "List of all PKGBUILD files from the AUR repository"
+    value: ${{ steps.get_pkgbuilds.outputs.pkgbuilds }}
+  matrix:
+    description: "JSON array of PKGBUILD directories formatted for GitHub Actions matrix"
+    value: ${{ steps.get_pkgbuilds.outputs.matrix }}
+
+
+runs:
+  using: composite
+  steps:
+    - name: Get PKGBUILD files from AUR
+      id: get_pkgbuilds
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        PKGBUILD_DIRS=$(find . -type f -name "PKGBUILD" -exec dirname {} \;)
+        
+        # Save all pkgbuild directories the output variable pkgbuilds
+        {
+          echo "pkgbuilds<<<EOF"
+          echo "$PKGBUILD_DIRS"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        
+        if [[ "${{ inputs.matrix }}" ~= ^true$ ]]; then
+          echo "::notice::PKGBUILD directories (matrix format):"
+          MATRIX_JSON=$(jq -Rn --arg dirs "$PKGBUILD_DIRS" '[$dirs | split("\n") | map(select(length > 0)) | map({dir: .})]')
+          echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+        fi
