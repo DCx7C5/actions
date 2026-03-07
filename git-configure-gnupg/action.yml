@@ -95,7 +95,12 @@ runs:
         echo "gpg_name=$GPG_NAME" >> "$GITHUB_OUTPUT"
         echo "gpg_mail=$GPG_MAIL" >> "$GITHUB_OUTPUT"
         echo "gpg_empty=$GPG_EMPTY" >> "$GITHUB_OUTPUT"
-        echo "key_grips=$KEY_GRIPS" >> "$GITHUB_OUTPUT"
+        {
+          echo "key_grips<<EOF"
+          echo "$KEY_GRIPS"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        
 
     - name: Configure git for GPG signing
       id: gitconfig
