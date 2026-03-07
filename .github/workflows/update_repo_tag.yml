@@ -43,13 +43,13 @@ jobs:
         uses: ./gpg-import
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
-          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
           method: 'inline'
           gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
           delete_after_import: 'true'
           configure_git: 'true'
+          setup_home: 'true'
 
       - name: Delete old tag & release (if exists)
         id: tag_delete
@@ -63,7 +63,7 @@ jobs:
         uses: ./tag-create-and-push
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
-          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
+          GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
         with:
           sign: 'true'
           version: "v1"

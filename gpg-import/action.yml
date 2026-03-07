@@ -62,6 +62,9 @@ outputs:
   keys_secret:
     description: "Number of secret keys"
     value: ${{ steps.dispatch.outputs.keys_secret }}
+  gpg_home:
+    description: "Path to the GPG home directory used for the import (if setup_home is true)"
+    value: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
 
 
 runs:
