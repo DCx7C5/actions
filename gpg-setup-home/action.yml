@@ -30,7 +30,7 @@ runs:
         
         if [[ -z "$GNUPGHOME" ]]; then
           GNUPGHOME=$(mktemp -d "${{ github.workspace }}/.gnupg.XXXXXXX")
-          export GNUPGHOME="$(pwd)/${GNUPGHOME}"
+          export GNUPGHOME="$GNUPGHOME"
         else
           export GNUPGHOME="$GNUPGHOME"
         fi
