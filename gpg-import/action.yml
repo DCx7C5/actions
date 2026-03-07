@@ -148,3 +148,9 @@ runs:
       with:
         fingerprint: ${{ steps.dispatch.outputs.fingerprint }}
 
+    - name: Configure Git client to sign with GPG
+      id: git_config
+      uses: ./git-configure-gnupg
+      env:
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+        GH_TOKEN: ${{ env.GH_TOKEN || secrets.GITHUB_TOKEN }}

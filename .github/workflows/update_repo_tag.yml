@@ -46,19 +46,13 @@ jobs:
         id: gpg_import
         uses: ./gpg-import
         env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
           GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
         with:
           method: 'inline'
           gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
           delete_after_import: 'true'
-
-      - name: Configure Git client to sign with GPG
-        id: git_config
-        uses: ./git-configure-gnupg
-        env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
-          GNUPGHOME: ${{ steps.gpg_setup.outputs.gpg_home }}
 
       - name: Delete old tag & release (if exists)
         id: tag_delete
