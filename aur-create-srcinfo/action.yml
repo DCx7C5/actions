@@ -1,0 +1,27 @@
+name: "Create .SRCINFO file for AUR package"
+description: "Generates a .SRCINFO file for an AUR package using makepkg"
+author: "DCx7C5"
+
+
+inputs:
+  pkg_name:
+    required: true
+    description: "Name of the package to create .SRCINFO for (should match the directory name containing the PKGBUILD)"
+  gpg_home:
+    required: false
+    default: ''
+    description: "Path to GPG home directory (optional, defaults to GNUPGHOME environment variable)"
+
+
+runs:
+  using: composite
+  steps:
+    - id: create_srcinfo
+      uses: ./arch-run-cmd
+      env:
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+      with:
+        run_with_sudo: 'false'
+        enable_ccache: 'false'
+        preset_cache: 'false'
+        run: cd "${{ inputs.pkg_name }}" && makepkg --printsrcinfo > .SRCINFO
