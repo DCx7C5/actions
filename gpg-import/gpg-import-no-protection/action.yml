@@ -18,6 +18,9 @@ inputs:
 
 
 outputs:
+  gpg_key:
+    description: "The original gpg_key input value (for downstream steps)"
+    value: ${{ inputs.gpg_key }}
   fingerprint:
     description: "Fingerprint of the imported GPG key"
     value: ${{ steps.import.outputs.fingerprint }}
@@ -30,6 +33,9 @@ outputs:
   keys_secret:
     description: "Number of secret keys available after import"
     value: ${{ steps.import.outputs.keys_secret }}
+  key_grips:
+    description: "Keygrips of the imported GPG keys"
+    value: ${{ steps.import.outputs.key_grips }}
 
 
 runs:
@@ -47,9 +53,9 @@ runs:
           echo "::add-mask::${{ inputs.gpg_key }}"
         fi
         
-        if [[ -f "$GPG_KEY" ]]; then
+        if [[ -n "$GPG_KEY" && -f "$GPG_KEY" ]]; then
           gpg --batch --import "$GPG_KEY"
-        else
+        elif [[ -n "$GPG_KEY" && ! -f "$GPG_KEY" ]]; then
           printf '%s\n' "$GPG_KEY" | gpg --batch --import
         fi
         
@@ -57,10 +63,22 @@ runs:
         keys_total=$(gpg --batch --with-colons --list-keys | grep -c '^pub:' || echo 0)
         keys_public=$(gpg --batch --with-colons --list-public-keys | grep -c '^pub:' || echo 0)
         keys_secret=$(gpg --batch --with-colons --list-secret-keys | grep -c '^sec:' || echo 0)
-
+        key_grips=$(gpg --batch --with-colons --list-secret-keys ${fingerprint} | grep '^grp:' | cut -d: -f10)
+        
         {
           echo "fingerprint=${fingerprint}"
           echo "keys_total=${keys_total}"
           echo "keys_public=${keys_public}"
           echo "keys_secret=${keys_secret}"
+          echo "key_grips=${key_grips}"
         } >> "$GITHUB_OUTPUT"
+        # Output script
+        
+        echo "::group::Import Summary (Protected Key from Inline)"
+        echo "✅ GPG key imported successfully"
+        echo "  Fingerprint: ${fingerprint}"
+        echo "  Total keys: ${keys_total}"
+        echo "  Public keys: ${keys_public}"
+        echo "  Secret keys: ${keys_secret}"
+        echo "  Keygrips: $(echo "$key_grips" | wc -l)"
+        echo "::endgroup::"

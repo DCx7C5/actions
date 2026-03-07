@@ -47,6 +47,10 @@ inputs:
     required: false
     default: 'true'
     description: "Whether to set up a temporary GPG home directory for the import process (recommended for better security and isolation)"
+  preset_pass:
+    required: false
+    default: 'true'
+    description: "Uses passphrase caching with gpg-agent for the import if set (provide a non-empty value to enable, e.g., 'true')"
 
 
 outputs:
@@ -140,7 +144,7 @@ runs:
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
-        fingerprint: ${{ steps.validate.outputs.gpg_key }}
+        key_id: ${{ steps.validate.outputs.gpg_key }}
         keyserver_url: ${{ inputs.keyserver_url }}
 
     - name: Aggregate outputs

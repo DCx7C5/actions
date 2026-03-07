@@ -39,6 +39,9 @@ outputs:
   keys_secret:
     description: "Number of secret keys"
     value: ${{ steps.import_protected.outputs.keys_secret || steps.import_unprotected.outputs.keys_secret }}
+  key_grips:
+    description: "Keygrips of the imported GPG keys"
+    value: ${{ steps.import_protected.outputs.key_grips || steps.import_unprotected.outputs.key_grips }}
 
 
 runs:
@@ -55,19 +58,6 @@ runs:
           echo "::error:: inputs.gpg_key is missing!"  >&2
           exit 1
         fi
-        
-        # Validate or set GNUPGHOME - either from input or environment or default
-        if [[ -n "${{ inputs.gpg_home }}" ]]; then
-          # Input gpg_home was provided - create if not exists
-          export GNUPGHOME="${{ inputs.gpg_home }}"
-          mkdir -p "$GNUPGHOME"
-        elif [[ -z "${GNUPGHOME:-}" ]]; then
-          # No input and no env variable - use default
-          export GNUPGHOME="${GITHUB_WORKSPACE:-.}/.gnupg"
-          mkdir -p "$GNUPGHOME"
-        fi
-        
-        echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
 
     - name: Determine Key Type
       id: keytype
@@ -78,7 +68,7 @@ runs:
       run: |
         set -euo pipefail
         header=$(echo "$GPG_KEY" | head -n 1)
-        if [[ "$header" == *"BEGIN PGP PRIVATE KEY BLOCK"* ]] || [[ "$header" == *"BEGIN PGP SECRET KEY BLOCK"* ]]; then
+        if [[ "$header" == *"BEGIN PGP PRIVATE KEY BLOCK"* || "$header" == *"BEGIN PGP SECRET KEY BLOCK"* ]]; then
           echo "key_type=secret" >> "$GITHUB_OUTPUT"
         elif [[ "$header" == *"BEGIN PGP PUBLIC KEY BLOCK"* ]]; then
           echo "key_type=public" >> "$GITHUB_OUTPUT"

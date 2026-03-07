@@ -71,6 +71,7 @@ runs:
         keys_total=$(gpg --batch --with-colons --list-keys | grep -c '^pub:' || echo 0)
         keys_public=$(gpg --batch --with-colons --list-public-keys | grep -c '^pub:' || echo 0)
         keys_secret=$(gpg --batch --with-colons --list-secret-keys | grep -c '^sec:' || echo 0)
+        key_grips=$(gpg --batch --with-colons --list-secret-keys ${fingerprint} | grep '^grp:' | cut -d: -f10)
 
         # Output results
         {
@@ -78,6 +79,7 @@ runs:
           echo "keys_total=${keys_total}"
           echo "keys_public=${keys_public}"
           echo "keys_secret=${keys_secret}"
+          echo "key_grips=${key_grips}"
         } >> "$GITHUB_OUTPUT"
         
         # Output script
@@ -87,6 +89,7 @@ runs:
         echo "  Total keys: ${keys_total}"
         echo "  Public keys: ${keys_public}"
         echo "  Secret keys: ${keys_secret}"
+        echo "  Keygrips: $(echo "$key_grips" | wc -l)"
         echo "::endgroup::"
 
     - id: import_protected_inline
@@ -98,13 +101,14 @@ runs:
       run: |
         set -euo pipefail
         
-        printf '%s' '${{ inputs.pass }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import <(printf '%s' "${{ inputs.gpg_key }}")
+        printf '%s' '${{ inputs.pass }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import <(printf '%s' "$GPG_KEY_PATH")
         
         # Extract key information
         fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
         keys_total=$(gpg --batch --with-colons --list-keys | grep -c '^pub:' || echo 0)
         keys_public=$(gpg --batch --with-colons --list-public-keys | grep -c '^pub:' || echo 0)
         keys_secret=$(gpg --batch --with-colons --list-secret-keys | grep -c '^sec:' || echo 0)
+        key_grips=$(gpg --batch --with-colons --list-secret-keys ${fingerprint} | grep '^grp:' | cut -d: -f10)
 
         # Output results
         {
@@ -112,6 +116,7 @@ runs:
           echo "keys_total=${keys_total}"
           echo "keys_public=${keys_public}"
           echo "keys_secret=${keys_secret}"
+          echo "key_grips=${key_grips}"
         } >> "$GITHUB_OUTPUT"
         
         # Output script
@@ -121,4 +126,5 @@ runs:
         echo "  Total keys: ${keys_total}"
         echo "  Public keys: ${keys_public}"
         echo "  Secret keys: ${keys_secret}"
+        echo "  Keygrips: $(echo "$key_grips" | wc -l)"
         echo "::endgroup::"
