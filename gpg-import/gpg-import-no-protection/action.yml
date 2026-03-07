@@ -63,16 +63,20 @@ runs:
         keys_total=$(gpg --batch --with-colons --list-keys | grep -c '^pub:' || echo 0)
         keys_public=$(gpg --batch --with-colons --list-public-keys | grep -c '^pub:' || echo 0)
         keys_secret=$(gpg --batch --with-colons --list-secret-keys | grep -c '^sec:' || echo 0)
-        key_grips=$(gpg --batch --with-colons --list-secret-keys ${fingerprint} | grep '^grp:' | cut -d: -f10)
+        key_grips=$(gpg --batch --with-colons --list-secret-keys ${fingerprint} | awk -F: '/^grp:/ {print $10}' || true)
         
         {
           echo "fingerprint=${fingerprint}"
           echo "keys_total=${keys_total}"
           echo "keys_public=${keys_public}"
           echo "keys_secret=${keys_secret}"
-          echo "key_grips=${key_grips}"
         } >> "$GITHUB_OUTPUT"
-        # Output script
+        
+        {
+          echo "key_grips<<EOF"
+          echo "$key_grips"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
         
         echo "::group::Import Summary (Protected Key from Inline)"
         echo "✅ GPG key imported successfully"

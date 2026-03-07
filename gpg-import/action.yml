@@ -69,7 +69,9 @@ outputs:
   gpg_home:
     description: "Path to the GPG home directory used for the import (if setup_home is true)"
     value: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
-
+  key_grips:
+    description: "Keygrips of the imported GPG keys (if available)"
+    value: ${{ steps.dispatch.outputs.key_grips || '' }}
 
 runs:
   using: composite
@@ -157,11 +159,12 @@ runs:
         PUB='${{ steps.inline_import.outputs.keys_public || steps.file_import.outputs.keys_public || steps.keyserver_import.outputs.keys_public }}'
         SEC='${{ steps.inline_import.outputs.keys_secret || steps.file_import.outputs.keys_secret || steps.keyserver_import.outputs.keys_secret }}'
         TOT='${{ steps.inline_import.outputs.keys_total || steps.file_import.outputs.keys_total || steps.keyserver_import.outputs.keys_total }}'
-        
+        GRPS='${{ steps.inline_import.outputs.key_grips || steps.file_import.outputs.key_grips || steps.keyserver_import.outputs.key_grips }}'
         echo "fingerprint=$FP" >> "$GITHUB_OUTPUT"
         echo "keys_public=$PUB" >> "$GITHUB_OUTPUT"
         echo "keys_secret=$SEC" >> "$GITHUB_OUTPUT"
         echo "keys_total=$TOT" >> "$GITHUB_OUTPUT"
+        echo "key_grips=$GRPS" >> "$GITHUB_OUTPUT"
 
     - name: Set Owner Trust (if private key imported)
       if: (inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true') && steps.validate.outputs.is_publickey == 'true'

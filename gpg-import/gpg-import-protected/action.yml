@@ -33,7 +33,9 @@ outputs:
   keys_secret:
     description: "Number of secret keys available after import"
     value: ${{ steps.import_protected_file.outputs.keys_secret || steps.import_protected_inline.outputs.keys_secret }}
-
+  key_grips:
+    description: "Keygrips of the imported GPG keys"
+    value: ${{ steps.import_protected_file.outputs.key_grips || steps.import_protected_inline.outputs.key_grips }}
 
 
 runs:
@@ -71,7 +73,7 @@ runs:
         keys_total=$(gpg --batch --with-colons --list-keys | grep -c '^pub:' || echo 0)
         keys_public=$(gpg --batch --with-colons --list-public-keys | grep -c '^pub:' || echo 0)
         keys_secret=$(gpg --batch --with-colons --list-secret-keys | grep -c '^sec:' || echo 0)
-        key_grips=$(gpg --batch --with-colons --list-secret-keys ${fingerprint} | grep '^grp:' | cut -d: -f10)
+        key_grips=$(gpg --batch --with-colons --list-secret-keys ${fingerprint} | awk -F: '/^grp:/ {print $10}' || true)
 
         # Output results
         {
@@ -79,7 +81,12 @@ runs:
           echo "keys_total=${keys_total}"
           echo "keys_public=${keys_public}"
           echo "keys_secret=${keys_secret}"
-          echo "key_grips=${key_grips}"
+        } >> "$GITHUB_OUTPUT"
+        
+        {
+          echo "key_grips<<EOF"
+          echo "$key_grips"
+          echo "EOF"
         } >> "$GITHUB_OUTPUT"
         
         # Output script
@@ -108,7 +115,7 @@ runs:
         keys_total=$(gpg --batch --with-colons --list-keys | grep -c '^pub:' || echo 0)
         keys_public=$(gpg --batch --with-colons --list-public-keys | grep -c '^pub:' || echo 0)
         keys_secret=$(gpg --batch --with-colons --list-secret-keys | grep -c '^sec:' || echo 0)
-        key_grips=$(gpg --batch --with-colons --list-secret-keys ${fingerprint} | grep '^grp:' | cut -d: -f10)
+        key_grips=$(gpg --batch --with-colons --list-secret-keys ${fingerprint} | awk -F: '/^grp:/ {print $10}' || true)
 
         # Output results
         {
@@ -116,7 +123,12 @@ runs:
           echo "keys_total=${keys_total}"
           echo "keys_public=${keys_public}"
           echo "keys_secret=${keys_secret}"
-          echo "key_grips=${key_grips}"
+        } >> "$GITHUB_OUTPUT"
+        
+        {
+          echo "key_grips<<EOF"
+          echo "$key_grips"
+          echo "EOF"
         } >> "$GITHUB_OUTPUT"
         
         # Output script
