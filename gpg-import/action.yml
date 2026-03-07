@@ -43,6 +43,10 @@ inputs:
     required: false
     default: 'true'
     description: "Whether to configure Git client to use imported GPG key for signing (only applies if a private key is imported)"
+  setup_home:
+    required: false
+    default: 'true'
+    description: "Whether to set up a temporary GPG home directory for the import process (recommended for better security and isolation)"
 
 
 outputs:
@@ -76,11 +80,18 @@ runs:
           echo '::add-mask::${{ inputs.ssl_pass }}'
         fi
 
+    - name: Setup GPG Environment
+      if: inputs.setup_home == 'true'
+      id: gpg_setup
+      uses: ./gpg-setup-home
+      with:
+        gpg_home: ${{ inputs.gpg_home }}
+
     - name: Validate GPG Key input
       id: validate
       uses: ./gpg-import/gpg-validate-import
       env:
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
         gpg_key: ${{ inputs.gpg_key }}
 
@@ -89,7 +100,7 @@ runs:
       if: steps.validate.outputs.is_ssl_enc_and_armored_key == 'true' || steps.validate.outputs.is_ssl_enc_binary_key == 'true'
       uses: ./ssl-decrypt
       env:
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
         enc_input: ${{ steps.validate.outputs.gpg_key }}
         passphrase: ${{ inputs.ssl_pass || inputs.gpg_pass }}
@@ -102,7 +113,7 @@ runs:
       if: steps.validate.outputs.is_secret == 'true'
       uses: ./gpg-import/gpg-import-inline
       env:
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
         gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.gpg_pass }}
@@ -113,7 +124,7 @@ runs:
       if: steps.validate.outputs.is_file == 'true'
       uses: ./gpg-import/gpg-import-file
       env:
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
         gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.gpg_pass }}
@@ -124,7 +135,7 @@ runs:
       if: steps.validate.outputs.is_fingerprint == 'true'
       uses: ./gpg-import/gpg-import-keyserver
       env:
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
         fingerprint: ${{ steps.validate.outputs.gpg_key }}
         keyserver_url: ${{ inputs.keyserver_url }}
@@ -149,7 +160,7 @@ runs:
       if: (inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true') && steps.validate.outputs.is_publickey == 'true'
       uses: ./gpg-set-ownertrust
       env:
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
         fingerprint: ${{ steps.dispatch.outputs.fingerprint }}
 
@@ -158,5 +169,5 @@ runs:
       if: inputs.configure_git == 'true'
       uses: ./git-configure-gnupg
       env:
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
         GH_TOKEN: ${{ env.GH_TOKEN || secrets.GITHUB_TOKEN }}

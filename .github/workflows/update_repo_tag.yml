@@ -38,10 +38,6 @@ jobs:
         shell: bash
         run: exit 1
 
-      - name: Setup GPG Environment
-        id: gpg_setup
-        uses: ./gpg-setup-home
-
       - name: Import GPG key
         id: gpg_import
         uses: ./gpg-import
