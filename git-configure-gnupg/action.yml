@@ -4,8 +4,8 @@ author: "DCx7C5"
 
 
 inputs:
-  fingerprint:
-    description: "Fingerprint of the GPG key to use for signing (optional, will use default key if not provided)"
+  key_id:
+    description: "KeyID or Fingerprint of the GPG key to use for signing (optional, will use default key if not provided)"
     required: false
     default: ''
   gpg_home:
@@ -28,6 +28,9 @@ outputs:
   email:
     description: "Email associated with the GPG key used for signing"
     value: ${{ steps.parse_gpg.outputs.gpg_mail }}
+  key_grips:
+    description: "Keygrips of the GPG key used for signing (if available)"
+    value: ${{ steps.parse_gpg.outputs.key_grips }}
 
 
 runs:
@@ -35,9 +38,9 @@ runs:
   steps:
     - name: Mask sensitive inputs
       shell: bash
-      if: inputs.fingerprint != ''
+      if: inputs.key_id != ''
       run: |
-        echo "::add-mask::${{ inputs.fingerprint }}"
+        echo "::add-mask::${{ inputs.key_id }}"
         echo "::add-mask::$FINGERPRINT"
         echo "::add-mask::$INPUT_FINGERPRINT"
 
@@ -45,7 +48,7 @@ runs:
       id: parse_gpg
       shell: bash
       env:
-        INPUT_FINGERPRINT: ${{ inputs.fingerprint }}
+        INPUT_FINGERPRINT: ${{ inputs.key_id }}
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
         set -euo pipefail
@@ -82,10 +85,17 @@ runs:
           fi
         fi
         
+        if [[ -n "$FINGERPRINT" ]]; then
+          KEY_GRIPS=$(gpg --with-colons --list-secret-keys "$FINGERPRINT" 2>/dev/null | awk -F: '/^grp:/ {print $10}')
+        else
+          KEY_GRIPS=$(gpg --with-colons --list-secret-keys 2>/dev/null | awk -F: '/^grp:/ {print $10}')
+        fi
+        
         echo "fingerprint=$FINGERPRINT" >> "$GITHUB_OUTPUT"
         echo "gpg_name=$GPG_NAME" >> "$GITHUB_OUTPUT"
         echo "gpg_mail=$GPG_MAIL" >> "$GITHUB_OUTPUT"
         echo "gpg_empty=$GPG_EMPTY" >> "$GITHUB_OUTPUT"
+        echo "key_grips=$KEY_GRIPS" >> "$GITHUB_OUTPUT"
 
     - name: Configure git for GPG signing
       id: gitconfig
@@ -123,4 +133,4 @@ runs:
         command -v gh >/dev/null 2>&1 && \
           gh config set -h github.com git_protocol https
 
-        echo "Configured git with GPG key: $FINGERPRINT (${GPG_NAME} <${GPG_MAIL}>)"
+        echo "::notice::Configured git with GPG key: $FINGERPRINT (${GPG_NAME} <${GPG_MAIL}>)"
