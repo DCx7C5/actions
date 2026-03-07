@@ -164,7 +164,12 @@ runs:
         echo "keys_public=$PUB" >> "$GITHUB_OUTPUT"
         echo "keys_secret=$SEC" >> "$GITHUB_OUTPUT"
         echo "keys_total=$TOT" >> "$GITHUB_OUTPUT"
-        echo "key_grips=$GRPS" >> "$GITHUB_OUTPUT"
+        
+        {
+            echo "key_grips<<EOF"
+            echo "$GRPS"
+            echo "EOF"
+        } >> "$GITHUB_OUTPUT"
 
     - name: Set Owner Trust (if private key imported)
       if: (inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true') && steps.validate.outputs.is_publickey == 'true'

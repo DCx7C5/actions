@@ -50,6 +50,7 @@ jobs:
           delete_after_import: 'true'
           configure_git: 'true'
           setup_home: 'true'
+          preset_pass: 'true'
 
       - name: Delete old tag & release (if exists)
         id: tag_delete
