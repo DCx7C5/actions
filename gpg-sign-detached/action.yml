@@ -2,6 +2,7 @@ name: "Create detached file signatures"
 description: "Create detached OpenPGP signatures for files (using gpg)"
 author: "DCx7C5"
 
+
 inputs:
   files:
     required: false
@@ -15,6 +16,7 @@ inputs:
     required: false
     description: "Workspace directory (default: ${{ github.workspace }})"
     default: ${{ github.workspace }}
+
 
 runs:
   using: composite
