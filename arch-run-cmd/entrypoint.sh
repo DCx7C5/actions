@@ -6,14 +6,23 @@ set -euo pipefail
 trap 'echo "ERROR: Script failed on line $LINENO (command: $BASH_COMMAND)" >&2; exit 1' ERR
 
 WORK_DIR="$1"
-GNUPGHOME="$2"
-COMMAND="${3:-}"
-START_TIME=$(date +%s)
+GNUPGHOME="${2:-$WORK_DIR/.gnupg}"
 
 if [[ -d "$WORK_DIR" && "$GNUPGHOME" == ".gnupg" ]]; then
   export GNUPGHOME="$WORK_DIR/.gnupg"
+elif [[ -d "$WORK_DIR" && -d "$GNUPGHOME" ]]; then
+  export GNUPGHOME="$GNUPGHOME"
+else
+  export GNUPGHOME="$WORK_DIR/.gnupg"
 fi
 
+shift 2
+COMMAND="$*"
+
+cd "$WORK_DIR" || {
+  echo "ERROR: Cannot change to work directory: $WORK_DIR" >&2
+  exit 1
+}
 
 # ============================================================================
 # Environment Detection & Setup
@@ -23,13 +32,13 @@ export LANG=C.UTF-8
 export TERM=xterm-256color
 export MAKEFLAGS="${MAKEFLAGS:--j$(nproc)}"
 export PACKAGER="${PACKAGER:-Unknown Packager <packager@example.com>}"
+export GPGSIGN_KEY="${GPGSIGN_KEY:-}"
 
-# Detect GitHub Actions environment
 IS_GITHUB_ACTIONS="${GITHUB_ACTIONS:-false}"
 IS_CI="${CI:-false}"
 
 # Makepkg-specific optimization
-export CCACHE_DIR="/home/${USER}/.ccache"
+export CCACHE_DIR="${WORK_DIR}/.ccache"
 export CCACHE_MAXSIZE="2G"
 
 # In GitHub Actions, be less verbose (save logs, faster)
@@ -37,11 +46,6 @@ if [ "$IS_GITHUB_ACTIONS" = "true" ]; then
   export VERBOSE=0
   export QUIET=1
 fi
-
-# ============================================================================
-# Input Validation
-# ============================================================================
-
 
 # For GitHub Actions: reduce startup verbosity
 if [ "$IS_GITHUB_ACTIONS" != "true" ] && [ $# -eq 0 ]; then
@@ -56,9 +60,6 @@ if ! [ -d "$WORK_DIR" ]; then
   }
 fi
 
-# ============================================================================
-# GPG & Keyring Setup for AUR Signing (Secure for CI)
-# ============================================================================
 # Only show setup messages if not in automated CI
 if [ "$IS_GITHUB_ACTIONS" != "true" ]; then
   echo "::notice::==> Initializing GPG environment at: $GNUPGHOME"
@@ -106,73 +107,26 @@ fi
 # ============================================================================
 # Command Execution with CI-Aware Logging and Timeout Support
 # ============================================================================
-if [ -n "$COMMAND" ]; then
-  if [ "$IS_GITHUB_ACTIONS" != "true" ]; then
-    echo "==> Executing: $COMMAND"
+_RUN_WITH_SUDO="${RUN_WITH_SUDO:-false}"
+ENV_VARS=(
+  "GNUPGHOME=$GNUPGHOME"
+  "LANG=$LANG"
+  "TERM=$TERM"
+)
+
+[[ -n "$MAKEFLAGS" ]] && ENV_VARS+=("MAKEFLAGS=$MAKEFLAGS")
+[[ -n "$PACKAGER" ]] && ENV_VARS+=("PACKAGER=$PACKAGER")
+[[ -n "$GPGSIGN_KEY" ]] && ENV_VARS+=("GPGSIGN_KEY=$GPGSIGN_KEY")
+
+if [[ -n "$COMMAND" ]]; then
+  if [ "$_RUN_WITH_SUDO" = "true" ]; then
+    exec sudo -u builder env "${ENV_VARS[@]}" bash -c "$COMMAND"
   else
-    echo "::group::Build Command Execution"
+    exec bash -c "$COMMAND"
   fi
-
-  # Prepare timeout command if needed
-  TIMEOUT_CMD=""
-  if [ "${CONTAINER_TIMEOUT:-0}" -gt 0 ]; then
-    TIMEOUT_CMD="timeout ${CONTAINER_TIMEOUT}"
-  fi
-
-  # Execute command with failure handling
-  EXIT_CODE=0
-  RUN_WITH_SUDO="${RUN_WITH_SUDO:-false}"
-
-  shift 2
-  if ! eval "${TIMEOUT_CMD} sudo -u build --preserve-env=PACKAGER --preserve-env=GNUPGHOME $*"; then
-
-    EXIT_CODE=$?
-
-    # Handle timeout specifically
-    if [ $EXIT_CODE -eq 124 ]; then
-      echo "::error::Build command exceeded timeout of ${CONTAINER_TIMEOUT}s" >&2
-    else
-      echo "::error::Build failed with exit code $EXIT_CODE" >&2
-    fi
-
-    if [ "$IS_GITHUB_ACTIONS" = "true" ]; then
-      echo "::endgroup::"
-    fi
-
-    # Only keep shell alive in interactive mode if requested
-    if [ "$IS_CI" != "true" ] && [ "$KEEP_CONTAINER" = "true" ]; then
-      echo "==> Keeping container alive for debugging - use 'docker exec -it <id> bash' to inspect"
-      exec bash -l
-    else
-      exit $EXIT_CODE
-    fi
-  fi
-
-  if [ "$IS_GITHUB_ACTIONS" = "true" ]; then
-    echo "::endgroup::"
-  fi
-
-  # Calculate duration
-  END_TIME=$(date +%s)
-  DURATION=$((END_TIME - START_TIME))
-
-  if [ "$IS_GITHUB_ACTIONS" = "true" ]; then
-    echo "::notice::Build completed successfully in ${DURATION}s"
-  else
-    echo "::notice::==> Command completed successfully in ${DURATION}s"
-    if [ "$KEEP_CONTAINER" = "true" ]; then
-      echo "::notice::==> Keeping container alive - use 'docker exec -it <id> bash' for further interaction"
-      exec bash -l
-    fi
-  fi
-
-  exit 0
 else
-  # Interactive mode
   if [ "$IS_GITHUB_ACTIONS" != "true" ]; then
-    echo "::notice::==> Starting interactive shell..."
-    echo "::notice::    Tip: Run 'makepkg -si' to build and install AUR packages"
+    echo "::notice::No command provided, starting interactive shell..."
   fi
-
   exec bash -l
 fi
