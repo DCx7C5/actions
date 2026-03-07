@@ -14,15 +14,15 @@ inputs:
   commit_msg:
     description: "Commit message for the annotated tag"
     required: false
-    default: "Release ${{ inputs.version }}"
+    default: ''
   fingerprint:
     description: "GPG key fingerprint or email to use for signing the tag (optional)"
     required: false
-    default: ""
+    default: ''
   pass:
     description: "Passphrase for the GPG key (if needed, optional) - will be masked in logs"
     required: false
-    default: ""
+    default: ''
   sign:
     description: "Whether to sign the tag with GPG (default: true)"
     required: false
