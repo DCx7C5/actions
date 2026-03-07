@@ -1,0 +1,26 @@
+name: "Run updpkgsums to update PKGBUILD checksums"
+description: "Runs updpkgsums on all PKGBUILD files to update their checksums"
+author: "DCx7C5"
+
+
+inputs:
+  pkg_name:
+    required: true
+    description: "Name of the package to update"
+  gpg_home:
+    required: false
+    default: ''
+    description: "Path to GPG home directory (optional, defaults to GNUPGHOME environment variable)"
+
+
+runs:
+  using: composite
+  steps:
+    - id: run_updpkgsums
+      uses: ./arch-run-cmd
+      with:
+        run_with_sudo: 'false'
+        enable_ccache: 'false'
+        preset_cache: 'false'
+        run: |
+          cd "${{ inputs.pkg_name }}" && updpkgsums
