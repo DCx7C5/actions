@@ -68,7 +68,6 @@ jobs:
         with:
           sign: 'true'
           version: "v1"
-          commit_msg: "Release v1"
           pass: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Create GitHub Release
