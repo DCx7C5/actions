@@ -82,7 +82,7 @@ runs:
         
         # Output script
         echo "::group::Import Summary (Protected Key from File)"
-        echo "✓ Protected GPG key imported successfully"
+        echo "✅ Protected GPG key imported successfully"
         echo "  Fingerprint: ${fingerprint}"
         echo "  Total keys: ${keys_total}"
         echo "  Public keys: ${keys_public}"
@@ -116,7 +116,7 @@ runs:
         
         # Output script
         echo "::group::Import Summary (Protected Key from Inline)"
-        echo "✓ Protected GPG key imported successfully"
+        echo "✅ Protected GPG key imported successfully"
         echo "  Fingerprint: ${fingerprint}"
         echo "  Total keys: ${keys_total}"
         echo "  Public keys: ${keys_public}"

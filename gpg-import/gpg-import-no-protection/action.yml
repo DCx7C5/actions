@@ -39,6 +39,7 @@ runs:
       shell: bash
       env:
         GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
+        GPG_KEY: "${{ inputs.gpg_key }}"
       run: |
         set -euo pipefail
         
@@ -46,12 +47,10 @@ runs:
           echo "::add-mask::${{ inputs.gpg_key }}"
         fi
         
-        key_input="${{ inputs.gpg_key }}"
-
-        if [[ -f "$key_input" ]]; then
-          gpg --batch --import "$key_input"
+        if [[ -f "$GPG_KEY" ]]; then
+          gpg --batch --import "$GPG_KEY"
         else
-          printf '%s\n' "$key_input" | gpg --batch --import
+          printf '%s\n' "$GPG_KEY" | gpg --batch --import
         fi
         
         fingerprint=$(gpg --batch --with-colons --list-keys | grep '^fpr:' | head -1 | cut -d: -f10)
