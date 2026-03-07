@@ -3,7 +3,7 @@ description: "Minimal, secure Arch Linux container for AUR builds with GPG & cca
 author: "DCx7c5"
 
 inputs:
-  command:
+  run:
     description: "Command/script to execute inside container"
     required: true
   working_directory:
@@ -76,4 +76,4 @@ runs:
   args:
     - "${{ inputs.working_directory || github.workspace }}"
     - "${{ inputs.gpg_home || env.GNUPGHOME || '.gnupg' }}"
-    - "${{ inputs.command }}"
+    - "${{ inputs.run }}"
