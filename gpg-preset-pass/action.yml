@@ -1,0 +1,78 @@
+name: "Preset GPG passphrase in gpg-agent cache for subsequent steps"
+description: "Pre-cache GPG passphrase in gpg-agent cache for subsequent steps that require signing or decryption, to avoid passphrase prompts and enable non-interactive use of GPG keys in CI workflows"
+author: "DCx7C5"
+
+
+inputs:
+  key_id:
+    required: false
+    default: ''
+    description: "Key ID or fingerprint of the GPG key to preset passphrase for (if not set, passphrase will be preset for all keys in GNUPGHOME)"
+  pass:
+    required: true
+    description: "Passphrase for the GPG key to cache in gpg-agent (will be masked in logs)"
+  grp:
+    required: false
+    default: ''
+    description: "Keygrip of the GPG key to preset passphrase for (if not set, passphrase will be preset for all keys in GNUPGHOME)"
+  gpg_home:
+    required: false
+    default: ''
+    description: "Path to GPG Home Directory (optional, can also be set via GNUPGHOME env variable)"
+  forget:
+    required: false
+    default: ''
+    description: "Makes the opposite, deletes cache again."
+
+
+runs:
+  using: composite
+  steps:
+    - name: Mask sensitive inputs
+      id: mask_inputs
+      shell: bash
+      run: |
+        if [ -n '${{ inputs.gpg_pass }}' ]; then
+          echo '::add-mask::${{ inputs.gpg_pass }}'
+        fi
+            
+        if [ -n '${{ inputs.gpg_grp }}' ]; then
+          echo "::add-mask::${{ inputs.gpg_grp }}"
+        fi
+
+    - name: Pre-cache GPG passphrase in gpg-agent
+      id: precache_passphrase
+      if: inputs.forget != 'true'
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+      run: |
+        set -euo pipefail
+          
+        if [[ -z "${{ inputs.gpg_grp }}" && -z "${{ inputs.key_id }}" ]]; then
+          KEYGRIPS=$(gpg --with-colons --list-secret-keys | awk -F: '/^grp:/ {print $10}')
+        elif [[ -z "${{ inputs.gpg_grp }}" && -n "${{ inputs.key_id }}" ]]; then
+          KEYGRIPS=$(gpg --with-colons --list-secret-keys "${{ inputs.key_id }}" | awk -F: '/^grp:/ {print $10}')
+        elif [[ -n "${{ inputs.gpg_grp }}" ]]; then
+          KEYGRIPS="${{ inputs.gpg_grp }}"
+        fi  
+        
+        while IFS= read -r KEYGRIP; do
+          echo "${{ inputs.pass }}" | /usr/lib/gnupg/gpg-preset-passphrase --preset "${KEYGRIP}" || true
+        done <<< "$KEYGRIPS"
+        
+        echo "::notice::GPG passphrase pre-cached successfully in gpg-agent cache"
+
+    - name: Forget Pre-Cached passphrase input
+      id: forget_precached
+      if: inputs.forget == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        KEYGRIPS=$(gpg --with-colons --list-secret-keys | awk -F: '/^grp:/ {print $10}')
+        while IFS= read -r KEYGRIP; do
+          /usr/lib/gnupg/gpg-preset-passphrase --forget "${KEYGRIP}" || true
+        done <<< "$KEYGRIPS"
+        
+        echo "::notice::GPG passphrase deleted successfully in gpg-agent cache"

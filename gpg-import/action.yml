@@ -186,3 +186,11 @@ runs:
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
         GH_TOKEN: ${{ env.GH_TOKEN || secrets.GITHUB_TOKEN }}
+
+    - name: Preset passphrase with gpg-agent
+      if: inputs.preset_pass == 'true' && (steps.validate.outputs.is_secretkey == 'true' || steps.validate.outputs.is_ssl_enc_key == 'true')
+      uses: ./gpg-preset-pass
+      env:
+        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
+      with:
+        pass: ${{ inputs.gpg_pass }}
