@@ -14,6 +14,11 @@ inputs:
     required: false
     default: ${{ github.token }}
     description: "GitHub token for API access (defaults to github.token)"
+  delete_tag:
+    required: false
+    default: 'false'
+    description: "Whether to also delete the Git tag associated with the release (if true, will attempt to delete the tag as well)"
+
 
 outputs:
   deleted:
@@ -60,3 +65,63 @@ runs:
           echo "deleted=false" >> "$GITHUB_OUTPUT"
           echo "release_id=" >> "$GITHUB_OUTPUT"
         fi
+
+    - name: Delete tag
+      if: inputs.delete_tag == 'true'
+      id: tag_delete
+      shell: bash
+      env:
+        TAG_NAME: ${{ inputs.tag_name }}
+      run: |
+        set -euo pipefail
+
+        # Validate input
+        if [ -z "$TAG_NAME" ]; then
+          echo "::error::tag_name input is required and cannot be empty"
+          exit 1
+        fi
+
+        TAG_EXISTS=false
+        PUSH_SUCCESS=false
+
+        # Check if tag exists locally
+        if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+          TAG_EXISTS=true
+          echo "::notice::Tag '$TAG_NAME' found locally - deleting..."
+
+          if git tag --delete "$TAG_NAME"; then
+            echo "::notice::Local tag '$TAG_NAME' deleted successfully"
+          else
+            echo "::error::Failed to delete local tag '$TAG_NAME'"
+            exit 1
+          fi
+        else
+          echo "::notice::Tag '$TAG_NAME' does not exist locally"
+        fi
+
+        # Try to delete from remote (don't fail if tag doesn't exist remotely)
+        if git push origin --delete "$TAG_NAME" 2>&1; then
+          echo "::notice::Remote tag '$TAG_NAME' deleted successfully"
+          PUSH_SUCCESS=true
+        else
+          # Don't fail here - remote deletion is best-effort
+          if [ "$TAG_EXISTS" = true ]; then
+            echo "::warning::Local tag was deleted but remote deletion failed (tag may not exist on remote)"
+            PUSH_SUCCESS=false
+          else
+            echo "::notice::Tag '$TAG_NAME' does not exist remotely - nothing to delete"
+            PUSH_SUCCESS=false
+          fi
+        fi
+
+        # Set outputs - Action succeeds if ANYTHING was deleted
+        if [ "$TAG_EXISTS" = true ] || [ "$PUSH_SUCCESS" = true ]; then
+          echo "deleted=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::Tag deletion completed successfully"
+        else
+          echo "deleted=false" >> "$GITHUB_OUTPUT"
+          echo "::notice::Tag '$TAG_NAME' did not exist locally or remotely - no action taken"
+        fi
+
+        echo "tag_existed=$TAG_EXISTS" >> "$GITHUB_OUTPUT"
+        echo "pushed=$PUSH_SUCCESS" >> "$GITHUB_OUTPUT"
