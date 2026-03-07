@@ -171,7 +171,7 @@ runs:
         echo "::notice::Creating signed tag with passphrase: $TAG"
 
         echo "::debug::Passphrase length: ${#PASS} characters"
-        if [[ -z "${{ inputs.gpg_grp }} " ]]; then
+        if [[ -z "${{ inputs.gpg_grp }}" ]]; then
           echo "::debug::No gpg_grp input provided, using all secret keys in GNUPGHOME"
           KEY_GRIPS=$(gpg --batch --with-colons --with-keygrip --list-secret-keys | awk -F: '/^grp:/ {print $10}')
           while read -r KEY_GRIP; do
