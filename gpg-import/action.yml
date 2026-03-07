@@ -39,6 +39,11 @@ inputs:
     required: false
     default: 'auto'
     description: "Type of GPG key to import (auto, private, public) - auto-detects based on content or input method"
+  configure_git:
+    required: false
+    default: 'true'
+    description: "Whether to configure Git client to use imported GPG key for signing (only applies if a private key is imported)"
+
 
 outputs:
   fingerprint:
@@ -150,6 +155,7 @@ runs:
 
     - name: Configure Git client to sign with GPG
       id: git_config
+      if: inputs.configure_git == 'true'
       uses: ./git-configure-gnupg
       env:
         GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
