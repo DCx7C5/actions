@@ -29,7 +29,7 @@ runs:
         set -euo pipefail
         
         if [[ -z "$GNUPGHOME" ]]; then
-          GNUPGHOME=$(mktemp -d .gnupg.XXXXXXX)
+          GNUPGHOME=$(mktemp -d "${{ github.workspace }}/.gnupg.XXXXXXX")
           export GNUPGHOME="$(pwd)/${GNUPGHOME}"
         else
           export GNUPGHOME="$GNUPGHOME"
