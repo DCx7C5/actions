@@ -1,0 +1,69 @@
+name: "Telegram Notify Action (Secure)"
+description: "Send Telegram messages from GitHub Actions with security hardening"
+author: "DCx7C5"
+
+inputs:
+  token:
+    description: "Telegram Bot Token"
+    required: true
+  to:
+    description: "Chat ID (user, group or channel)"
+    required: true
+  repository:
+    description: "GitHub repository (optional, defaults to current repository)"
+    required: false
+    default: '${{ github.repository }}'
+  commit:
+    description: "Git commit SHA (optional, defaults to current commit)"
+    required: false
+    default: '${{ github.sha }}'
+  branch:
+    description: "Git branch name (optional, defaults to current branch)"
+    required: false
+    default: '${{ github.ref_name }}'
+  actor:
+    description: "GitHub actor (optional, defaults to current actor)"
+    required: false
+    default: '${{ github.actor }}'
+  fingerprint:
+    description: "GPG fingerprint (optional, can be auto-detected)"
+    required: true
+    default: ''
+  tag_name:
+    description: "Git tag name (optional, can be auto-detected)"
+    required: true
+    default: ''
+  release_name:
+    description: "GitHub release name (optional, can be auto-detected)"
+    required: true
+    default: ''
+
+
+runs:
+  using: composite
+  steps:
+    - id: notify_release
+      uses: ./tg-notify
+      with:
+        to: '${{ inputs.to }}'
+        token: '${{ inputs.token }}'
+        parse_mode: 'HTML'
+        message: |
+          <b>✅ New Signed Release Published!</b>
+          
+          <b>📦 Release Details:</b>
+          - <b>Repository:</b> <code>${{ inputs.repository }}</code>
+          - <b>Version:</b> <code></code>
+          - <b>Commit:</b> <code>${{ inputs.commit }}</code>
+          - <b>Branch:</b> <code>${{ inputs.branch }}</code>
+          - <b>Actor:</b> <code>${{ inputs.actor }}</code>
+          
+          <b>🔐 Signing:</b>
+          - <b>GPG Fingerprint:</b> <code>${{ inputs.fingerprint }}</code>
+          
+          <b>🏷️ Tag & Release:</b>
+          - <b>Tag Created:</b> <code>${{ inputs.tag_name }}</code>
+          - <b>Release Name:</b> <code>$</code>
+          
+          <b>🔗 Links:</b>
+          <a href="https://github.com/${{ inputs.repository }}/releases/tag/v1">View Release</a> | <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">View Commit</a>
