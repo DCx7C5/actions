@@ -32,7 +32,7 @@ inputs:
     required: false
     default: ''
   gpg_grp:
-    description: ""
+    description: "Keygrip of the GPG key to preset passphrase for (if passphrase is provided). If not set, passphrase will be preset for all keys in GNUPGHOME"
     required: false
     default: ''
 
