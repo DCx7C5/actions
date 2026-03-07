@@ -1,0 +1,117 @@
+name: "Delete GitHub Repository"
+description: "Deletes a GitHub repository via GitHub API"
+author: "DCx7C5"
+
+branding:
+  icon: "trash-2"
+  color: "red"
+
+
+inputs:
+  repository:
+    required: true
+    description: "Repository to delete (format: 'owner/repo' or just 'repo' for current owner)"
+  github_token:
+    required: false
+    default: ''
+    description: "GitHub token with repo deletion permissions (requires 'delete_repo' scope)"
+  confirm:
+    required: false
+    default: 'false'
+    description: "Confirmation flag - must be set to 'true' to actually delete the repository (safety check)"
+  owner:
+    required: false
+    default: ${{ github.repository_owner }}
+    description: "Repository owner (defaults to current repository owner)"
+
+
+outputs:
+  deleted:
+    description: "Whether the repository was successfully deleted"
+    value: ${{ steps.delete_repo.outputs.deleted }}
+  repository_full_name:
+    description: "Full name of the deleted repository (owner/repo)"
+    value: ${{ steps.delete_repo.outputs.repository_full_name }}
+
+
+runs:
+  using: composite
+  steps:
+    - name: Validate inputs
+      id: validate
+      shell: bash
+      env:
+        REPOSITORY: ${{ inputs.repository }}
+        CONFIRM: ${{ inputs.confirm }}
+        OWNER: ${{ inputs.owner }}
+      run: |
+        set -euo pipefail
+        
+        # Check confirmation
+        if [ "$CONFIRM" != "true" ]; then
+          echo "::error::Repository deletion requires explicit confirmation. Set 'confirm: true' to proceed."
+          exit 1
+        fi
+        
+        # Validate repository format
+        if [ -z "$REPOSITORY" ]; then
+          echo "::error::repository input is required and cannot be empty"
+          exit 1
+        fi
+        
+        # Parse repository name
+        if [[ "$REPOSITORY" == *"/"* ]]; then
+          REPO_OWNER=$(echo "$REPOSITORY" | cut -d'/' -f1)
+          REPO_NAME=$(echo "$REPOSITORY" | cut -d'/' -f2)
+        else
+          REPO_OWNER="$OWNER"
+          REPO_NAME="$REPOSITORY"
+        fi
+        
+        if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ]; then
+          echo "::error::Invalid repository format. Use 'owner/repo' or set owner explicitly"
+          exit 1
+        fi
+        
+        echo "repo_owner=$REPO_OWNER" >> "$GITHUB_OUTPUT"
+        echo "repo_name=$REPO_NAME" >> "$GITHUB_OUTPUT"
+        echo "repo_full_name=${REPO_OWNER}/${REPO_NAME}" >> "$GITHUB_OUTPUT"
+        
+        echo "::notice::Repository to delete: $REPO_OWNER/$REPO_NAME"
+
+    - name: Delete repository
+      id: delete_repo
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token || env.GITHUB_TOKEN || github.token }}
+        REPO_OWNER: ${{ steps.validate.outputs.repo_owner }}
+        REPO_NAME: ${{ steps.validate.outputs.repo_name }}
+        REPO_FULL_NAME: ${{ steps.validate.outputs.repo_full_name }}
+      run: |
+        set -euo pipefail
+        
+        # Check if repository exists
+        if ! gh repo view "$REPO_FULL_NAME" >/dev/null 2>&1; then
+          echo "::warning::Repository '$REPO_FULL_NAME' does not exist or is not accessible"
+          echo "deleted=false" >> "$GITHUB_OUTPUT"
+          echo "repository_full_name=$REPO_FULL_NAME" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        
+        echo "::warning::⚠️  Deleting repository '$REPO_FULL_NAME'..."
+        
+        # Delete the repository
+        if gh repo delete "$REPO_FULL_NAME" --yes 2>&1; then
+          echo "::notice::✅ Repository '$REPO_FULL_NAME' deleted successfully"
+          echo "deleted=true" >> "$GITHUB_OUTPUT"
+          echo "repository_full_name=$REPO_FULL_NAME" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::❌ Failed to delete repository '$REPO_FULL_NAME'"
+          echo "::error::Possible reasons:"
+          echo "::error::  - Insufficient permissions (token needs 'delete_repo' scope)"
+          echo "::error::  - Repository is protected"
+          echo "::error::  - Repository does not exist"
+          echo "deleted=false" >> "$GITHUB_OUTPUT"
+          echo "repository_full_name=$REPO_FULL_NAME" >> "$GITHUB_OUTPUT"
+          exit 1
+        fi
