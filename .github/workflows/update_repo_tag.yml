@@ -53,6 +53,7 @@ jobs:
           gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
           delete_after_import: 'true'
+          configure_git: 'true'
 
       - name: Delete old tag & release (if exists)
         id: tag_delete

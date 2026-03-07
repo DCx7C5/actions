@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Error handling
-trap 'unset TELEGRAM_BOT_TOKEN' EXIT
+trap 'unset TELEGRAM_BOT_TOKEN || true' EXIT
 
 # Validate required environment variables
 if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
@@ -41,10 +41,10 @@ fi
 # Convert silent flag to JSON boolean
 DISABLE_NOTIFICATION=$([ "$TELEGRAM_SILENT" = "true" ] && echo "true" || echo "false")
 
-echo "Preparing to send Telegram message..."
-echo "Chat ID: $TELEGRAM_TO"
-echo "Parse mode: $TELEGRAM_PARSE_MODE"
-echo "Silent: $TELEGRAM_SILENT"
+echo "::notice::Preparing to send Telegram message..."
+echo "::notice::Chat ID: $TELEGRAM_TO"
+echo "::notice::Parse mode: $TELEGRAM_PARSE_MODE"
+echo "::notice::Silent: $TELEGRAM_SILENT"
 
 # Use jq for safe JSON construction (prevents injection)
 JSON_PAYLOAD=$(jq -n \
@@ -80,21 +80,21 @@ RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
 # Check HTTP status code
 if [ "$HTTP_STATUS" != "200" ]; then
   echo "::error::HTTP $HTTP_STATUS" >&2
-  echo "Response: $RESPONSE_BODY" >&2
+  echo "::error::Response: $RESPONSE_BODY" >&2
   exit 1
 fi
 
 # Parse JSON response
 if ! echo "$RESPONSE_BODY" | jq -e '.ok' > /dev/null 2>&1; then
   echo "::error::Telegram API error" >&2
-  echo "Response: $RESPONSE_BODY" >&2
+  echo "::error::Response: $RESPONSE_BODY" >&2
   exit 1
 fi
 
 # Extract message ID for verification
 MESSAGE_ID=$(echo "$RESPONSE_BODY" | jq -r '.result.message_id // empty' || true)
 if [ -n "$MESSAGE_ID" ]; then
-  echo "✓ Telegram message sent successfully! (Message ID: $MESSAGE_ID)"
+  echo "::notice::✓ Telegram message sent successfully! (Message ID: $MESSAGE_ID)"
 else
   echo "::error::No message ID in response" >&2
   exit 1
