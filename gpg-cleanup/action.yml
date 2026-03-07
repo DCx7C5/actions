@@ -25,6 +25,19 @@ runs:
         
         echo "::notice::Securely deleting all GPG keys from ${GNUPGHOME}"
         
+        if [ -z "${GNUPGHOME}" ]; then
+          echo "::error::GNUPGHOME is not set. Cannot perform GPG cleanup." >&2
+          exit 1
+        fi
+        
+        KEY_GRIPS=$(gpg --list-secret-keys --with-colons | awk -F: '/^grp:/ {print $10}' || true)
+        
+        if [[ -n "$KEY_GRIPS" ]]; then
+          while read -r GRIP; do
+            /usr/lib/gnupg/gpg-preset-passphrase --forget "$GRIP" 2>/dev/null || true
+          done <<< "$KEY_GRIPS"
+        fi
+                
         # Use find to securely delete all files in GNUPGHOME
         find "${GNUPGHOME}" -type f -exec shred --remove wipesync -fz -n 10 {} 2>/dev/null \;
         
@@ -33,4 +46,4 @@ runs:
           rmdir "${GNUPGHOME}"
         fi
         
-        echo "::notice::GPG cleanup complete"
+        echo "::notice::✅ GPG cleanup complete"
