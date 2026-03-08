@@ -1,0 +1,72 @@
+name: "Pull Changes from Git Repository"
+description: "Pull the latest changes from the Git repository in the current workspace"
+author: "DCx7C5"
+
+inputs:
+  strategy:
+    required: false
+    default: "rebase"
+    description: "Pull strategy: rebase or ff-only"
+  remote:
+    required: false
+    default: "origin"
+    description: "Remote name to pull from"
+  branch:
+    required: false
+    default: ""
+    description: "Branch to pull (defaults to current branch)"
+  allow_dirty:
+    required: false
+    default: "false"
+    description: "Allow pull with local uncommitted changes"
+
+runs:
+  using: composite
+  steps:
+    - id: pull_changes
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        strategy="${{ inputs.strategy }}"
+        remote_name="${{ inputs.remote }}"
+        branch_input="${{ inputs.branch }}"
+        allow_dirty="${{ inputs.allow_dirty }}"
+
+        if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+          echo "::error::Current workspace is not a Git repository."
+          exit 1
+        fi
+
+        if [[ "$allow_dirty" != "true" ]] && [[ -n "$(git status --porcelain)" ]]; then
+          echo "::error::Working tree has uncommitted changes. Commit/stash first or set allow_dirty=true."
+          exit 1
+        fi
+
+        if ! git remote get-url "$remote_name" >/dev/null 2>&1; then
+          echo "::error::Remote '$remote_name' is not configured."
+          exit 1
+        fi
+
+        if [[ -n "$branch_input" ]]; then
+          branch="$branch_input"
+        else
+          branch="$(git rev-parse --abbrev-ref HEAD)"
+          if [[ -z "$branch" || "$branch" == "HEAD" ]]; then
+            echo "::error::Detached HEAD detected. Provide inputs.branch explicitly."
+            exit 1
+          fi
+        fi
+
+        case "$strategy" in
+          rebase)
+            git pull --rebase "$remote_name" "$branch"
+            ;;
+          ff-only)
+            git pull --ff-only "$remote_name" "$branch"
+            ;;
+          *)
+            echo "::error::Invalid strategy '$strategy'. Allowed values: rebase, ff-only."
+            exit 1
+            ;;
+        esac
