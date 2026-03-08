@@ -1,0 +1,55 @@
+name: "Push changes to GitHub"
+description: "Push changes to GitHub repository using a secure GitHub Actions workflow with GPG signing and SSH authentication"
+author: "DCx7C5"
+
+
+inputs:
+  repository:
+    required: false
+    default: ${{ github.repository }}
+    description: "GitHub repository to push to (defaults to current repository)"
+  branch:
+    required: false
+    default: ${{ github.ref_name }}
+    description: "Branch to push to (defaults to current branch)"
+  ref:
+    required: false
+    default: 'HEAD'
+    description: "Git reference to push (defaults to HEAD)"
+  github_token:
+    required: false
+    default: ''
+    description: "GitHub token for authentication (defaults to github.token)"
+
+
+
+runs:
+  using: composite
+  steps:
+    - id: push_changes
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
+        REPO: ${{ inputs.repository }}
+        REF: ${{ inputs.ref }}
+      run: |
+        set -euo pipefail
+
+        if [[ -n "${GH_TOKEN:-}" ]]; then
+          echo "::add-mask::$GH_TOKEN"
+          remote_url="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+        else
+          remote_url="origin"
+        fi
+
+        # HEAD als Standard auf den aktuell ausgecheckten Branch pushen.
+        if [[ "$REF" == "HEAD" ]]; then
+          current_branch="$(git rev-parse --abbrev-ref HEAD)"
+          if [[ -z "$current_branch" || "$current_branch" == "HEAD" ]]; then
+            echo "Detached HEAD erkannt; bitte inputs.ref als vollständige Refspec setzen (z.B. HEAD:refs/heads/main)." >&2
+            exit 1
+          fi
+          git push "$remote_url" "HEAD:refs/heads/${current_branch}"
+        else
+          git push "$remote_url" "$REF"
+        fi
