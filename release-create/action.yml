@@ -1,0 +1,139 @@
+name: "Create Release"
+description: "Creates a GitHub Release for a specified tag, with options to customize the release name, body, and whether to generate release notes automatically based on merged pull requests"
+author: "DCx7C5"
+
+branding:
+  icon: "package"
+  color: "blue"
+
+
+inputs:
+  release_tag:
+    description: "The git tag to create the release for (e.g. v1.2.3)"
+    required: true
+  release_name:
+    description: "Title of the release (defaults to the tag name if not provided)"
+    required: false
+    default: ""
+  release_body:
+    description: "Custom release notes / description body (markdown supported)"
+    required: false
+    default: ""
+  generate_notes:
+    description: "Automatically generate release notes from merged PRs (GitHub default template)"
+    required: false
+    default: "false"
+  draft:
+    description: "Create the release as a draft (not visible to the public yet)"
+    required: false
+    default: "false"
+  prerelease:
+    description: "Mark the release as a prerelease"
+    required: false
+    default: "false"
+  assets:
+    description: "Newline-separated list of files/globs to upload as release assets (example: dist/*.zip\nbuild/myapp.tar.gz)"
+    required: false
+    default: ''
+  github_token:
+    description: "GitHub token with repo scope (defaults to GITHUB_TOKEN)"
+    required: false
+    default: ''
+  fail_if_exists:
+    description: "Fail the action if a release with this tag already exists"
+    required: false
+    default: "true"
+
+outputs:
+  created:
+    description: "If release was created true/false"
+    value: "${{ steps.create.outputs.created }}"
+  release_id:
+    description: "ID of the created release"
+    value: "${{ steps.create.outputs.release_id }}"
+  html_url:
+    description: ""
+    value: "${{ steps.create.outputs.html_url }}"
+  upload_url:
+    description: ""
+    value: "${{ steps.create.outputs.upload_url }}"
+
+
+runs:
+  using: composite
+  steps:
+    - name: Prepare release parameters
+      id: prepare
+      shell: bash
+      env:
+        TAG: ${{ inputs.release_tag }}
+        NAME: ${{ inputs.release_name }}
+        BODY: ${{ inputs.release_body }}
+        GEN_NOTES: ${{ inputs.generate_notes }}
+        DRAFT: ${{ inputs.draft }}
+        PRERELEASE: ${{ inputs.prerelease }}
+      run: |
+        # Set default release name = tag if empty
+        RELEASE_TITLE="${NAME:-$TAG}"
+        
+        # Build gh command flags
+        FLAGS="--title \"$RELEASE_TITLE\""
+        
+        if [ "$GEN_NOTES" = "true" ]; then
+          FLAGS="$FLAGS --generate-notes"
+        elif [ -n "$BODY" ]; then
+          FLAGS="$FLAGS --notes-file <(echo "$BODY")"
+        else
+          FLAGS="$FLAGS --notes \"\""
+        fi
+        
+        [ "$DRAFT" = "true" ] && FLAGS="$FLAGS --draft"
+        [ "$PRERELEASE" = "true" ] && FLAGS="$FLAGS --prerelease"
+        
+        echo "flags=$FLAGS" >> "$GITHUB_OUTPUT"
+        echo "title=$RELEASE_TITLE" >> "$GITHUB_OUTPUT"
+
+    - name: Create or verify release
+      id: create
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        TAG: ${{ inputs.release_tag }}
+        FLAGS: ${{ steps.prepare.outputs.flags }}
+        FAIL_IF_EXISTS: ${{ inputs.fail_if_exists }}
+      run: |
+        set -euo pipefail
+
+        echo "Creating release for tag: $TAG"
+
+        if gh release view "$TAG" >/dev/null 2>&1; then
+          echo "Release $TAG already exists."
+          if [ "$FAIL_IF_EXISTS" = "true" ]; then
+            echo "::error::Release with tag $TAG already exists."
+            exit 1
+          else
+            echo "Skipping creation (fail_if_exists=false)."
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            echo "release_id=$(gh release view "$TAG" --json id --jq .id)" >> "$GITHUB_OUTPUT"
+            echo "html_url=$(gh release view "$TAG" --json html_url --jq .html_url)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+        fi
+
+        # Create the release
+        gh release create "$TAG" $FLAGS || {
+          echo "::error::Failed to create release $TAG"
+          exit 1
+        }
+
+        echo "created=true" >> "$GITHUB_OUTPUT"
+        echo "release_id=$(gh release view "$TAG" --json id --jq .id)" >> "$GITHUB_OUTPUT"
+        echo "html_url=$(gh release view "$TAG" --json html_url --jq .html_url)" >> "$GITHUB_OUTPUT"
+        echo "upload_url=$(gh release view "$TAG" --json upload_url --jq .upload_url)" >> "$GITHUB_OUTPUT"
+
+    - name: Upload assets (if provided)
+      if: inputs.assets != ''
+      uses: DCx7C5/actions/upload-assets@v1
+      with:
+        release_tag: ${{ inputs.release_tag }}
+        assets: ${{ inputs.assets }}
