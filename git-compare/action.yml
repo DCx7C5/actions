@@ -1,0 +1,59 @@
+name: "Compare Git Branches"
+description: "Compare two Git branches and show the differences"
+author: "DCx7C5"
+
+
+inputs:
+  base_branch:
+    required: true
+    description: "The base branch to compare against"
+  compare_branch:
+    required: true
+    description: "The branch to compare with the base branch"
+  workspace_path:
+    required: false
+    default: '${{ github.workspace }}'
+    description: "Path to the Git repository (default: current directory)"
+  exclude_paths:
+    required: false
+    default: ''
+    description: "New line-separated list of paths to exclude from the comparison (e.g., 'dir1/\ndir2/file.txt')"
+
+
+runs:
+  using: composite
+  steps:
+    - id: find_differences
+      shell: bash
+      run: |
+        
+        # Find new directories with PKGBUILD
+        NEW_DIRS=$(git diff --name-only HEAD upstream/$REF | grep '^[^/]*/PKGBUILD$' | cut -d'/' -f1 | sort -u | while read dir; do
+          if [ ! -d "$dir" ] || ! git ls-tree HEAD "$dir" >/dev/null 2>&1; then
+            echo "$dir"
+          fi
+        done)
+        
+        # Find changed directories with PKGBUILD
+        CHANGED_DIRS=$(git diff --name-only HEAD upstream/$REF | grep '^[^/]*/PKGBUILD$' | cut -d'/' -f1 | sort -u | while read dir; do
+          if git ls-tree HEAD "$dir" >/dev/null 2>&1; then
+            echo "$dir"
+          fi
+        done)
+        
+        # Find removed directories with PKGBUILD
+        REMOVED_DIRS=$(git diff --diff-filter=D --name-only HEAD upstream/$REF | grep '^[^/]*/PKGBUILD$' | cut -d'/' -f1 | sort -u)
+        UNCHANGED_DIRS=$(git diff --diff-filter=M --name-only HEAD upstream/$REF | grep '^[^/]*/PKGBUILD$' | cut -d'/' -f1 | sort -u)
+        
+        # Output results
+        echo "new_dirs<<EOF" >> $GITHUB_OUTPUT
+        echo "$NEW_DIRS" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+        echo "changed_dirs<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGED_DIRS" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+        echo "removed_dirs<<EOF" >> $GITHUB_OUTPUT
+        echo "$REMOVED_DIRS" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
