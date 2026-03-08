@@ -1,0 +1,151 @@
+name: "Manage packages.json file"
+description: "Action to manage the packages.json file in the repository, allowing for adding, updating, and removing package entries"
+author: "DCx7C5"
+
+
+inputs:
+  path:
+    required: false
+    default: '.ci/packages.json'
+    description: "Path to the packages.json file to manage (default: 'packages.json')"
+  action:
+    required: false
+    default: 'get'
+    description: "Action to perform on the packages.json file (e.g.,'get', 'add', 'update', 'remove')"
+  package_name:
+    required: false
+    default: ''
+    description: "Name of the package to manage in the packages.json file"
+  key:
+    required: false
+    default: ''
+    description: "Key to add or update in the package entry (format: 'key=value')"
+  value:
+    required: false
+    default: ''
+    description: "Value to set for the specified key when adding or updating a package entry"
+
+
+outputs:
+  packages:
+    description: "List of all package names in the packages.json file (only for 'get' action without package_name)"
+    value: ${{ steps.get_all_packages.outputs.packages }}
+  upstream:
+    description: ""
+    value: ${{ steps.get_pkg_value.outputs.upstream }}
+  custom:
+    description: ""
+    value: ${{ steps.custom_output.outputs.custom }}
+  refactor:
+    description: ""
+    value: ${{ steps.refactored_output.outputs.refactor }}
+
+
+runs:
+  using: composite
+  steps:
+    - id: validate_inputs
+      shell: bash
+      env:
+        ACTION: ${{ inputs.action }}
+        PKG_NAME: ${{ inputs.package_name }}
+      run: |
+        set -euo pipefail
+        
+        valid_actions=("get" "add" "update" "remove")
+        
+        if [[ ! " ${valid_actions[*]} " =~ " ${ACTION} " ]]; then
+          echo "::error::Invalid action '${ACTION}'. Valid actions are: ${valid_actions[*]}"
+          exit 1
+        fi
+        
+        if [[ ! -f "$JSON_PATH" ]]; then
+          echo "::error::File '$JSON_PATH' does not exist."
+          exit 1
+        fi
+        
+        if [[ -n "${{ inputs.key }} && -z "${{ inputs.value }}" && "$ACTION" != 'remove' ]]; then
+          echo "::error::Both 'key' and 'value' inputs must be provided together for add/update actions."
+          exit 1
+        elif [[ -z "${{ inputs.key }}" && -n "${{ inputs.value }}" ]]; then
+          echo "::error::Both 'key' and 'value' inputs must be provided together for add/update actions."
+          exit 1
+        elif [[ -n "${{ inputs.key }}" && -n "${{ inputs.value }}" && ! "$ACTION" ~= ^add|update$ ]]; then
+          echo "::error::'key' and 'value' inputs are only valid for 'add' and 'update' actions."
+          exit 1
+        fi
+
+    - name: Get all package names
+      id: get_all_packages
+      if: inputs.action == 'get' && inputs.package_name == ''
+      shell: bash
+      env:
+        JSON_PATH: ${{ inputs.path }}
+      run: |
+        set -euo pipefail
+        echo "::notice::Contents of '$JSON_PATH':"
+        {
+          echo "packages<<EOF"
+          jq -r 'to_entries[] | .key' "$JSON_PATH"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Get package values
+      id: get_pkg_value
+      if: inputs.package_name != ''
+      shell: bash
+      env:
+        JSON_PATH: ${{ inputs.path }}
+        PKG_NAME: ${{ inputs.package_name }}
+      run: |
+        set -euo pipefail
+        
+        pkg=$(jq --arg pkg "$PKG_NAME" '.[$pkg] // empty' "$JSON_PATH")
+        
+        echo "upstream=$( jq -r '.upstream // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"      
+        echo "custom=$( jq -r '.custom // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
+        echo "refactor=$( jq -r '.refactor // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
+    
+    - name: Add or update package entry
+      id: add_update_pkg
+      if: inputs.action == 'add' || inputs.action == 'update'
+      shell: bash
+      env:
+        JSON_PATH: ${{ inputs.path }}
+        PKG_NAME: ${{ inputs.package_name }}
+        ACTION: ${{ inputs.action }}
+        KEY: ${{ inputs.key }}
+        VALUE: ${{ inputs.value }}
+      run: |
+        set -euo pipefail
+        
+        if [[ "$ACTION" == "add" ]]; then
+          jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
+            'if has($pkg) then . else . + {($pkg): {($key): $value}} end' \
+            "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
+        elif [[ "$ACTION" == "update" ]]; then
+          jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
+            'if has($pkg) then .[$pkg][$key] = $value else . end' \
+            "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
+        fi
+        
+        echo "::notice::Updated '$JSON_PATH' with package '$PKG_NAME' ($KEY=$VALUE) for action '$ACTION'"
+
+    - name: Remove package entry
+      id: remove_pkg
+      shell: bash
+      env:
+        JSON_PATH: ${{ inputs.path }}
+        PKG_NAME: ${{ inputs.package_name }}
+        ACTION: ${{ inputs.action }}
+        KEY: ${{ inputs.key }}
+      run: |
+        set -euo pipefail
+        
+        if [[ -z "$KEY" ]]; then
+          jq --arg pkg "$PKG_NAME" 'del(.[$pkg])' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
+          echo "::notice::Removed package '$PKG_NAME' from '$JSON_PATH'"
+        elif [[ -n "$KEY" ]]; then
+          jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
+            echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in '$JSON_PATH'"
+        fi
