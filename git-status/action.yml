@@ -1,0 +1,30 @@
+name: "Show Git Status"
+description: "Display the current Git status of the repository"
+author: "DCx7C5"
+
+
+inputs:
+  workspace_path:
+    required: false
+    default: '.'
+    description: "Path to the Git repository (default: current directory)"
+
+
+runs:
+  using: composite
+  steps:
+    - id: show_status
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        cd "${{ inputs.workspace_path }}"
+        
+        if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+          echo "::error::Current workspace is not a Git repository."
+          exit 1
+        fi
+        
+        echo "::notice::Git status for repository at '${{ inputs.workspace_path }}':"
+        git status --short
+        git log --oneline --graph --decorate HEAD~5
