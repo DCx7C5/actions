@@ -1,0 +1,43 @@
+name: "Upload Assets to GitHub Release"
+description: "Uploads specified assets to a GitHub Release associated with a given tag. If the release does not exist, it will be created first."
+author: "DCx7C5"
+
+
+inputs:
+  release_tag:
+    required: true
+    description: "The tag name/version of the release to which assets will be uploaded"
+  assets:
+    required: false
+    default: ''
+    description: "A newline-separated list of file paths to upload as assets to the release (optional)"
+  github_token:
+    required: false
+    default: ''
+    description: "GitHub token for API access (defaults to github.token)"
+
+
+runs:
+  using: composite
+  steps:
+    - id: upload_assets
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token || env.GITHUB_TOKEN || github.token }}
+        TAG: ${{ inputs.release_tag }}
+        ASSETS: ${{ inputs.assets }}
+      run: |
+        set -euo pipefail
+
+        echo "::group::Uploading assets..."
+        while IFS= read -r asset; do
+          [ -z "$asset" ] && continue
+          if [ -f "$asset" ]; then
+            echo "→ Uploading: $asset"
+            gh release upload "$TAG" "$asset" --clobber
+          else
+            echo "::warning::File not found, skipping: $asset"
+          fi
+        done <<< "$ASSETS"
+        echo "Assets upload completed."
+        echo "::groupend::"
