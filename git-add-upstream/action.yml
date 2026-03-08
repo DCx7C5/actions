@@ -1,0 +1,41 @@
+name: "Add upstream remote to Git repository"
+description: "Add an upstream remote to the Git repository in the current workspace"
+author: "DCx7C5"
+
+
+inputs:
+  remote_name:
+    required: false
+    default: 'upstream'
+    description: "Name of the remote to add (default: 'upstream')"
+  remote_url:
+    required: true
+    description: "URL of the upstream repository to add as a remote"
+  target_ref:
+    required: false
+    default: 'HEAD'
+    description: "Git reference to check out after adding the remote (default: 'HEAD')"
+
+
+runs:
+  using: composite
+  steps:
+    - id: add_upstream_remote
+      shell: bash
+      env:
+        REMOTE_NAME: ${{ inputs.remote_name }}
+        REMOTE_URL: ${{ inputs.remote_url }}
+      run: |
+        set -euo pipefail
+            
+        # Check if the remote already exists
+        if git remote | grep -q "^${REMOTE_NAME}$"; then
+          echo "::warning::Remote '${REMOTE_NAME}' already exists. Skipping addition."
+          exit 0
+        fi
+            
+        # Add the new remote
+        git remote add "${REMOTE_NAME}" "${REMOTE_URL}"
+            
+        echo "::notice::Remote '${REMOTE_NAME}' added with URL: ${REMOTE_URL}"
+        
