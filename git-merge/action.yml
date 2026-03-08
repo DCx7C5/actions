@@ -1,0 +1,82 @@
+name: "Merge Git Branch"
+description: "Merge a specified branch into the current branch with configurable strategy"
+author: "DCx7C5"
+
+
+inputs:
+  source:
+    required: true
+    description: "Source branch/ref to merge (e.g., 'origin/main', 'feature/xyz', 'v1.2.3')"
+  strategy:
+    required: false
+    default: "merge"
+    description: "Merge strategy: merge, ff-only, no-ff, squash"
+  message:
+    required: false
+    default: ""
+    description: "Custom merge commit message (for non-ff merges)"
+  allow_unrelated:
+    required: false
+    default: "false"
+    description: "Allow merging unrelated histories"
+
+
+runs:
+  using: composite
+  steps:
+    - id: merge
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        source="${{ inputs.source }}"
+        strategy="${{ inputs.strategy }}"
+        message="${{ inputs.message }}"
+        allow_unrelated="${{ inputs.allow_unrelated }}"
+
+        if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+          echo "::error::Current workspace is not a Git repository."
+          exit 1
+        fi
+
+        if [[ -n "$(git status --porcelain)" ]]; then
+          echo "::error::Working tree has uncommitted changes. Commit or stash first."
+          exit 1
+        fi
+
+        if ! git rev-parse --verify "$source" >/dev/null 2>&1; then
+          echo "::error::Source ref '$source' does not exist. Run git fetch first."
+          exit 1
+        fi
+
+        merge_opts=()
+        if [[ "$allow_unrelated" == "true" ]]; then
+          merge_opts+=(--allow-unrelated-histories)
+        fi
+
+        if [[ -n "$message" ]]; then
+          merge_opts+=(-m "$message")
+        fi
+
+        case "$strategy" in
+          merge)
+            git merge "${merge_opts[@]}" "$source"
+            ;;
+          ff-only)
+            git merge --ff-only "$source"
+            ;;
+          no-ff)
+            git merge --no-ff "${merge_opts[@]}" "$source"
+            ;;
+          squash)
+            git merge --squash "$source"
+            echo "::notice::Squash merge completed. Changes staged; commit manually."
+            ;;
+          *)
+            echo "::error::Invalid strategy '$strategy'. Allowed: merge, ff-only, no-ff, squash."
+            exit 1
+            ;;
+        esac
+
+        echo "::notice::Successfully merged '$source' using strategy '$strategy'."
+
