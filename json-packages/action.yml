@@ -67,7 +67,7 @@ runs:
           exit 1
         fi
         
-        if [[ -n "${{ inputs.key }} && -z "${{ inputs.value }}" && "$ACTION" != 'remove' ]]; then
+        if [[ -n "${{ inputs.key }} && -z "${{ inputs.value }}" && ! "$ACTION" ~= '^remove|get$' ]]; then
           echo "::error::Both 'key' and 'value' inputs must be provided together for add/update actions."
           exit 1
         elif [[ -z "${{ inputs.key }}" && -n "${{ inputs.value }}" ]]; then
@@ -155,3 +155,40 @@ runs:
         fi
         
         echo "success=true" >> "$GITHUB_OUTPUT"
+
+    - name: Get all packages with key == value
+      id: get_packages_by_key_value
+      if: inputs.action == 'get' && inputs.key != '' && inputs.value != '' && inputs.package_name == ''
+      shell: bash
+      env:
+        JSON_PATH: ${{ inputs.path }}
+        KEY: ${{ inputs.key }}
+        VALUE: ${{ inputs.value }}
+      run: |
+        set -euo pipefail
+            
+        echo "::notice::Finding packages in '$JSON_PATH' where '$KEY' == '$VALUE'"
+            
+        matching_packages=$(jq -r --arg key "$KEY" --arg value "$VALUE" 'to_entries[] | select(.value[$key] == $value) | .key' "$JSON_PATH")
+            
+        echo "packages<<EOF"
+        echo "$matching_packages"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+
+    - name: Get all packages with key present
+      id: get_packages_by_key
+      if: inputs.action == 'get' && inputs.key != '' && inputs.value == '' && inputs.package_name == ''
+      shell: bash
+      env:
+        JSON_PATH: ${{ inputs.path }}
+        KEY: ${{ inputs.key }}
+      run: |
+        set -euo pipefail
+            
+        echo "::notice::Finding packages in '$JSON_PATH' where key '$KEY' is present"
+            
+        matching_packages=$(jq -r --arg key "$KEY" 'to_entries[] | select(.value[$key] != null) | .key // empty' "$JSON_PATH")
+            
+        echo "packages<<EOF"
+        echo "$matching_packages"
+        echo "EOF" >> "$GITHUB_OUTPUT"
