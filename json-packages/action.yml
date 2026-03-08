@@ -6,7 +6,7 @@ author: "DCx7C5"
 inputs:
   path:
     required: false
-    default: '.ci/packages.json'
+    default: '${{ github.workspace }}/.ci/packages.json'
     description: "Path to the packages.json file to manage (default: 'packages.json')"
   action:
     required: false
