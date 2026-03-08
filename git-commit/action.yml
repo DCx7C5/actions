@@ -1,0 +1,166 @@
+name: "Create Git Commit"
+description: "Create a Git commit with specified message and options"
+author: "DCx7C5"
+
+
+inputs:
+  message:
+    required: true
+    description: "Commit message for the Git commit"
+  amend:
+    required: false
+    default: "false"
+    description: "Amend the previous commit instead of creating a new one (true/false)"
+  signoff:
+    required: false
+    default: "false"
+    description: "Add a Signed-off-by line to the commit message (true/false)"
+  gpg_sign:
+    required: false
+    default: "false"
+    description: "GPG sign the commit (true/false)"
+  gpg_keyid:
+    required: false
+    default: ""
+    description: "GPG key ID to use for signing the commit (if gpg_sign is true)"
+  gpg_passphrase:
+    required: false
+    default: ""
+    description: "Passphrase for the GPG key (if gpg_sign is true and key is passphrase-protected)"
+  pass_is_cached:
+    required: false
+    default: "false"
+    description: "Whether the GPG passphrase is already cached in the GPG agent (true/false)"
+
+
+outputs:
+  commit_sha:
+    description: "SHA of the created commit (empty if no commit was made)"
+    value: "${{ steps.final_outputs.outputs.commit_sha }}"
+  committed:
+    description: "Whether a commit was created (true/false)"
+    value: "${{ steps.final_outputs.outputs.committed }}"
+  amended:
+    description: "Whether the commit was an amendment of the previous commit (true/false)"
+    value: "${{ steps.final_outputs.outputs.amended }}"
+
+
+runs:
+  using: composite
+  steps:
+    - name: Prepare commit command
+      id: prepare
+      shell: bash
+      env:
+        AMEND: ${{ inputs.amend }}
+        ALLOW_EMPTY: ${{ inputs.allow_empty }}
+        NO_VERIFY: ${{ inputs.no_verify }}
+        SIGNOFF: ${{ inputs.signoff }}
+        GPG_SIGN: ${{ inputs.gpg_sign }}
+        GPG_KEYID: ${{ inputs.gpg_keyid }}
+        SKIP_NO_CHANGES: ${{ inputs.skip_if_no_changes }}
+      run: |
+        commit_args=()
+        
+        if [[ "$AMEND" == "true" ]]; then
+          if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
+            echo "::error::Cannot amend – no previous commit exists"
+            exit 1
+          fi
+          commit_args+=("--amend" "--no-edit")
+        fi
+        
+        [[ "$ALLOW_EMPTY" == "true" ]] && commit_args+=("--allow-empty")
+        [[ "$NO_VERIFY" == "true" ]] && commit_args+=("--no-verify")
+        [[ "$SIGNOFF" == "true" ]] && commit_args+=("--signoff")
+        
+        if [[ "$GPG_SIGN" == "true" ]]; then
+          KEY_ARG=""
+          [[ -n "${GPG_KEYID}" ]] && KEY_ARG="--local-user ${GPG_KEYID}"
+        
+          commit_args+=("--gpg-sign=${KEY_ARG}")
+        
+          if [[ -n "${{ inputs.gpg_passphrase }}" ]]; then
+            echo "${{ inputs.gpg_passphrase }}" | \
+              gpg --batch --pinentry-mode=loopback --passphrase-fd 0 \
+                  --sign --local-user "${GPG_KEYID:-default}" \
+                  --output /dev/null --yes || {
+              echo "::error::GPG passphrase or key invalid – cannot sign commit"
+              exit 1
+            }
+          else
+            echo "test" | gpg --batch --sign --output /dev/null || {
+              echo "::error::GPG signing requested but key requires passphrase (provide gpg_passphrase)"
+              exit 1
+            }
+          fi
+        fi
+        
+        echo "commit_args=${commit_args[*]}" >> "$GITHUB_OUTPUT"
+
+    - name: Check for staged changes
+      id: check_changes
+      if: inputs.skip_if_no_changes == 'true'
+      shell: bash
+      run: |
+        if git diff --cached --quiet; then
+          echo "No staged changes → skipping commit"
+          echo "committed=false" >> "$GITHUB_OUTPUT"
+          echo "::notice::No changes to commit – action completed without commit"
+          exit 0
+        else
+          echo "committed=pending" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Create the commit
+      id: commit
+      if: steps.check_changes.outputs.committed != 'false'
+      shell: bash
+      env:
+        COMMIT_ARGS: ${{ steps.prepare.outputs.commit_args }}
+        COMMIT_MSG: ${{ inputs.message }}
+        GPG_PASSPHRASE: ${{ inputs.gpg_passphrase }}
+      run: |
+        set -euo pipefail
+        
+        echo "Creating commit..."
+        
+        if [[ -n "${GPG_PASSPHRASE}" ]]; then
+          if [[ "${{ inputs.pass_is_cached }} == true ]];then
+            git commit ${COMMIT_ARGS} -m "${COMMIT_MSG}" --gpg-sign 2>&1 | tee commit.log || {
+              echo "::error::Commit failed (check GPG passphrase or key)"
+              cat commit.log
+              exit 1
+            }
+          else
+            echo "${GPG_PASSPHRASE}" | \
+              git commit ${COMMIT_ARGS} -m "${COMMIT_MSG}" --gpg-sign 2>&1 | tee commit.log || {
+              echo "::error::Commit failed (check GPG passphrase or key)"
+              cat commit.log
+              exit 1
+            }
+          fi
+          
+        else
+          git commit ${COMMIT_ARGS} -m "${COMMIT_MSG}" || {
+            echo "::error::Commit failed"
+            exit 1
+          }
+        fi
+        
+        COMMIT_SHA=$(git rev-parse HEAD)
+        echo "commit_sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+        echo "committed=true" >> "$GITHUB_OUTPUT"
+        echo "amended=${{ inputs.amend }}" >> "$GITHUB_OUTPUT"
+        
+        echo "Commit created:"
+        git log -1 --pretty=fuller
+
+    - name: Set final outputs
+      id: final_outputs
+      if: always()
+      shell: bash
+      run: |
+        echo "commit_sha=${{ steps.commit.outputs.commit_sha || '' }}" >> "$GITHUB_OUTPUT"
+        echo "committed=${{ steps.commit.outputs.committed || steps.check_changes.outputs.committed || 'false' }}" >> "$GITHUB_OUTPUT"
+        echo "amended=${{ inputs.amend }}" >> "$GITHUB_OUTPUT"
