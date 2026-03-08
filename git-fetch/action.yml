@@ -1,0 +1,87 @@
+name: "Fetch Git References"
+description: "Fetch references and objects from a remote repository"
+author: "DCx7C5"
+
+inputs:
+  remote:
+    required: false
+    default: "origin"
+    description: "Remote name to fetch from"
+  ref:
+    required: false
+    default: ""
+    description: "Specific ref to fetch (empty = fetch all refs)"
+  prune:
+    required: false
+    default: "false"
+    description: "Remove remote-tracking references that no longer exist on remote"
+  tags:
+    required: false
+    default: "auto"
+    description: "Fetch tags: auto, all, none"
+  depth:
+    required: false
+    default: ""
+    description: "Limit fetching to specified number of commits (shallow fetch)"
+
+runs:
+  using: composite
+  steps:
+    - id: fetch
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        remote_name="${{ inputs.remote }}"
+        ref_input="${{ inputs.ref }}"
+        prune="${{ inputs.prune }}"
+        tags="${{ inputs.tags }}"
+        depth="${{ inputs.depth }}"
+
+        if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+          echo "::error::Current workspace is not a Git repository."
+          exit 1
+        fi
+
+        if ! git remote get-url "$remote_name" >/dev/null 2>&1; then
+          echo "::error::Remote '$remote_name' is not configured."
+          exit 1
+        fi
+
+        fetch_opts=()
+
+        if [[ "$prune" == "true" ]]; then
+          fetch_opts+=(--prune)
+        fi
+
+        case "$tags" in
+          all)
+            fetch_opts+=(--tags)
+            ;;
+          none)
+            fetch_opts+=(--no-tags)
+            ;;
+          auto)
+            # Default Git behavior
+            ;;
+          *)
+            echo "::error::Invalid tags option '$tags'. Allowed: auto, all, none."
+            exit 1
+            ;;
+        esac
+
+        if [[ -n "$depth" ]]; then
+          if ! [[ "$depth" =~ ^[0-9]+$ ]]; then
+            echo "::error::depth must be a positive integer, got '$depth'."
+            exit 1
+          fi
+          fetch_opts+=(--depth="$depth")
+        fi
+
+        if [[ -n "$ref_input" ]]; then
+          git fetch "${fetch_opts[@]}" "$remote_name" "$ref_input"
+          echo "::notice::Fetched ref '$ref_input' from '$remote_name'."
+        else
+          git fetch "${fetch_opts[@]}" "$remote_name"
+          echo "::notice::Fetched all refs from '$remote_name'."
+        fi
