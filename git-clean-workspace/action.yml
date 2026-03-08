@@ -1,0 +1,30 @@
+name: "Clean Git Workspace"
+description: "Remove untracked files and directories from the Git workspace"
+author: "DCx7C5"
+
+branding:
+  icon: "trash"
+  color: "red"
+
+
+inputs:
+  workspace_path:
+    required: false
+    default: '.'
+    description: "Path to the Git workspace to clean (default: current directory)"
+
+
+runs:
+  using: composite
+  steps:
+    - id: clean_workspace
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        cd "${{ inputs.workspace_path }}"
+        
+        echo "::warning::Cleaning workspace (uncommitted changes will be lost!)"
+        git clean -fdx
+        git reset --hard HEAD
+        echo "::notice::Workspace cleaned."
