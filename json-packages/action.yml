@@ -39,6 +39,9 @@ outputs:
   refactor:
     description: ""
     value: ${{ steps.refactored_output.outputs.refactor }}
+  success:
+    description: "Whether the action was successful (true/false)"
+    value: ${{ steps.remove_pkg.outputs.success || steps.add_update_pkg.outputs.success }}
 
 
 runs:
@@ -105,7 +108,7 @@ runs:
         echo "upstream=$( jq -r '.upstream // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"      
         echo "custom=$( jq -r '.custom // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
         echo "refactor=$( jq -r '.refactor // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
-    
+
     - name: Add or update package entry
       id: add_update_pkg
       if: inputs.action == 'add' || inputs.action == 'update'
@@ -128,7 +131,7 @@ runs:
             'if has($pkg) then .[$pkg][$key] = $value else . end' \
             "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
         fi
-        
+        echo "success=true" >> "$GITHUB_OUTPUT"
         echo "::notice::Updated '$JSON_PATH' with package '$PKG_NAME' ($KEY=$VALUE) for action '$ACTION'"
 
     - name: Remove package entry
@@ -150,3 +153,5 @@ runs:
           jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
             echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in '$JSON_PATH'"
         fi
+        
+        echo "success=true" >> "$GITHUB_OUTPUT"
