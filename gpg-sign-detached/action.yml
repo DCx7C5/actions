@@ -16,15 +16,37 @@ inputs:
     required: false
     description: "Workspace directory (default: ${{ github.workspace }})"
     default: ${{ github.workspace }}
+  gpg_keyid:
+    required: false
+    description: "GPG key ID to use for signing (if not provided, gpg will use the default key)"
+    default: ""
+  gpg_passphrase:
+    required: false
+    description: "Passphrase for the GPG key (if the key is passphrase-protected and pass_precached is false)"
+    default: ""
+  gpg_pass_precached:
+    required: false
+    description: "Whether the GPG passphrase is already cached in the GPG agent (true/false)"
+    default: "false"
+
+
+outputs:
+  signed_files:
+    description: "Comma-separated list of created detached signature files"
+    value: ${{ steps.sign_files.outputs.signed_files }}
 
 
 runs:
   using: composite
   steps:
-    - name: "Create file signatures"
+    - name: Create file signatures
       id: sign_files
       shell: bash
       working-directory: ${{ inputs.workspace_dir }}
+      env:
+        SIG_EXT: ${{ inputs.sig_ext }}
+        PASS_PRECACHED: ${{ inputs.gpg_pass_precached }}
+        GPG_KEY: ${{ inputs.gpg_keyid }}
       run: |
         set -euo pipefail
         
@@ -49,22 +71,22 @@ runs:
             continue
           fi
         
-          sigfile="${file}.${{ inputs.sig_ext }}"
+          sigfile="${file}.${SIG_EXT}"
           gpg_cmd=(gpg --batch --yes --armor --detach-sign --output "$sigfile")
 
           if [ -n "$KEY_ID" ]; then
             gpg_cmd+=(--default-key "$KEY_ID")
           fi
 
-          if [ -n "$PASSPHRASE" ]; then
+          if [[ -n "$PASSPHRASE" && "$PASS_PRECACHED" == 'false' ]]; then
             gpg_cmd+=(--passphrase-fd 0 --pinentry-mode=loopback)
-            echo "$PASSPHRASE" | "${gpg_cmd[@]}" "$file"
+            printf '%s' "$PASSPHRASE" | "${gpg_cmd[@]}" "$file"
           else
             "${gpg_cmd[@]}" "$file"
           fi
 
           if [ -f "$sigfile" ]; then
-            echo "Created detached signature: $sigfile"
+            echo "::notice::Created detached signature: $sigfile"
             signed_list+=("$sigfile")
           else
             echo "::error::Failed to create signature for $file"
@@ -72,10 +94,19 @@ runs:
           fi
         done
         
-        echo "signed_files=$(IFS=, ; echo "${signed_list[*]}")" >> "$GITHUB_OUTPUT"
-
-    - name: Show created signatures
+        {
+          echo "signed_files<<EOF"
+          echo "${signed_list[*]}"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        
+    - name: Create step summary
+      if: always() && steps.sign_files.outputs.signed_files != ''
       shell: bash
       run: |
-        echo "Created signatures:"
-        ls -l "*.{{ inputs.sig_ext }}" || echo "No .${{ inputs.sig_ext }} files found"
+        set -euo pipefail
+        {
+          echo "signed_files<<EOF"
+          echo "${{ steps.sign_files.outputs.signed_files }}"
+          echo "EOF"
+        } >> "$GITHUB_STEP_SUMMARY"
