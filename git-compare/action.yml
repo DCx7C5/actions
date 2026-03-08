@@ -5,55 +5,109 @@ author: "DCx7C5"
 
 inputs:
   base_branch:
-    required: true
-    description: "The base branch to compare against"
+    description: "The base branch to compare against (default: currently checked-out branch)"
+    required: false
+    default: "${{ github.ref_name }}"
   compare_branch:
-    required: true
-    description: "The branch to compare with the base branch"
+    description: "The branch to compare with the base branch (default: upstream/main)"
+    required: false
+    default: "main"
+  remote_name:
+    description: "Name of the remote that contains the compare branch (default: upstream)"
+    required: false
+    default: "upstream"
   workspace_path:
+    description: "Path to the Git repository (default: github.workspace)"
     required: false
-    default: '${{ github.workspace }}'
-    description: "Path to the Git repository (default: current directory)"
+    default: "${{ github.workspace }}"
   exclude_paths:
+    description: "Newline-separated list of paths to exclude from comparison (not yet implemented in filtering)"
     required: false
-    default: ''
-    description: "New line-separated list of paths to exclude from the comparison (e.g., 'dir1/\ndir2/file.txt')"
+    default: ""
 
 
 runs:
   using: composite
   steps:
-    - id: find_differences
+    - name: Determine branches
+      id: branches
       shell: bash
+      working-directory: ${{ inputs.workspace_path }}
       run: |
-        
-        # Find new directories with PKGBUILD
-        NEW_DIRS=$(git diff --name-only HEAD upstream/$REF | grep '^[^/]*/PKGBUILD$' | cut -d'/' -f1 | sort -u | while read dir; do
-          if [ ! -d "$dir" ] || ! git ls-tree HEAD "$dir" >/dev/null 2>&1; then
-            echo "$dir"
+        BASE="${{ inputs.base_branch }}"
+        COMPARE="${{ inputs.remote_name }}/${{ inputs.compare_branch }}"
+
+        # Verify branches exist
+        if ! git rev-parse --verify "$BASE" >/dev/null 2>&1; then
+          echo "::error::Base branch '$BASE' does not exist"
+          exit 1
+        fi
+        if ! git rev-parse --verify "$COMPARE" >/dev/null 2>&1; then
+          echo "::error::Compare branch '$COMPARE' does not exist"
+          exit 1
+        fi
+
+        echo "base=$BASE" >> "$GITHUB_OUTPUT"
+        echo "compare=$COMPARE" >> "$GITHUB_OUTPUT"
+        echo "Comparing: $BASE vs $COMPARE"
+
+    - name: Find PKGBUILD-related differences
+      id: diff
+      shell: bash
+      working-directory: ${{ inputs.workspace_path }}
+      env:
+        BASE: ${{ steps.branches.outputs.base }}
+        COMPARE: ${{ steps.branches.outputs.compare }}
+      run: |
+        set -euo pipefail
+
+        # All directories that contain PKGBUILD in either branch
+        PKG_DIRS_BASE=$(git ls-tree -r --name-only "$BASE" | grep '/PKGBUILD$' | sed 's|/PKGBUILD$||' | sort -u)
+        PKG_DIRS_COMPARE=$(git ls-tree -r --name-only "$COMPARE" | grep '/PKGBUILD$' | sed 's|/PKGBUILD$||' | sort -u)
+
+        # New: exists in compare but not in base
+        NEW_DIRS=$(comm -13 <(echo "$PKG_DIRS_BASE") <(echo "$PKG_DIRS_COMPARE") | sort -u)
+
+        # Removed: exists in base but not in compare
+        REMOVED_DIRS=$(comm -23 <(echo "$PKG_DIRS_BASE") <(echo "$PKG_DIRS_COMPARE") | sort -u)
+
+        # Changed: PKGBUILD file differs between branches (and exists in both)
+        CHANGED_DIRS=""
+        for dir in $(comm -12 <(echo "$PKG_DIRS_BASE") <(echo "$PKG_DIRS_COMPARE")); do
+          if ! git diff --quiet "$BASE" "$COMPARE" -- "$dir/PKGBUILD"; then
+            CHANGED_DIRS="$CHANGED_DIRS$dir"$'\n'
           fi
-        done)
-        
-        # Find changed directories with PKGBUILD
-        CHANGED_DIRS=$(git diff --name-only HEAD upstream/$REF | grep '^[^/]*/PKGBUILD$' | cut -d'/' -f1 | sort -u | while read dir; do
-          if git ls-tree HEAD "$dir" >/dev/null 2>&1; then
-            echo "$dir"
-          fi
-        done)
-        
-        # Find removed directories with PKGBUILD
-        REMOVED_DIRS=$(git diff --diff-filter=D --name-only HEAD upstream/$REF | grep '^[^/]*/PKGBUILD$' | cut -d'/' -f1 | sort -u)
-        UNCHANGED_DIRS=$(git diff --diff-filter=M --name-only HEAD upstream/$REF | grep '^[^/]*/PKGBUILD$' | cut -d'/' -f1 | sort -u)
-        
-        # Output results
-        echo "new_dirs<<EOF" >> $GITHUB_OUTPUT
-        echo "$NEW_DIRS" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-        
-        echo "changed_dirs<<EOF" >> $GITHUB_OUTPUT
-        echo "$CHANGED_DIRS" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-        
-        echo "removed_dirs<<EOF" >> $GITHUB_OUTPUT
-        echo "$REMOVED_DIRS" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        done
+        CHANGED_DIRS=$(echo "$CHANGED_DIRS" | sort -u)
+
+        # Output multi-line values safely
+        {
+          echo "new_dirs<<EOF"
+          echo "$NEW_DIRS"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+        {
+          echo "changed_dirs<<EOF"
+          echo "$CHANGED_DIRS"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+        {
+          echo "removed_dirs<<EOF"
+          echo "$REMOVED_DIRS"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+        # Summary for logs
+        echo "New package directories    : $(echo "$NEW_DIRS" | wc -l)"
+        echo "Changed PKGBUILDs          : $(echo "$CHANGED_DIRS" | wc -l)"
+        echo "Removed package directories: $(echo "$REMOVED_DIRS" | wc -l)"
+
+    - name: Show full diff summary (optional - visible in logs)
+      if: always()
+      shell: bash
+      working-directory: ${{ inputs.workspace_path }}
+      run: |
+        echo "Diff summary between ${{ steps.branches.outputs.base }} and ${{ steps.branches.outputs.compare }}:"
+        git diff --name-status ${{ steps.branches.outputs.base }} ${{ steps.branches.outputs.compare }} -- '*/PKGBUILD'
