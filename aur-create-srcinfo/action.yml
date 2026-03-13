@@ -7,10 +7,10 @@ inputs:
   pkg_name:
     required: true
     description: "Name of the package to create .SRCINFO for (should match the directory name containing the PKGBUILD)"
-  gpg_home:
+  working_directory:
     required: false
-    default: ''
-    description: "Path to GPG home directory (optional, defaults to GNUPGHOME environment variable)"
+    default: "${{ github.workspace || '.' }}"
+    description: "Working directory to run makepkg in (default: the repository root or current directory if github.workspace is not set)"
 
 
 runs:
@@ -18,8 +18,7 @@ runs:
   steps:
     - id: create_srcinfo
       uses: ./arch-run-cmd
-      env:
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+      working-directory: "${{ inputs.working_directory }}"
       with:
         run_with_sudo: 'false'
         enable_ccache: 'false'
