@@ -7,10 +7,10 @@ inputs:
   pkg_name:
     required: true
     description: "Name of the package to build (should match the directory name containing the PKGBUILD)"
-  sign_pkg:
+  gpg_sign:
     required: false
-    default: 'true'
-    description: "Whether to sign the package with GPG (default: true)"
+    default: 'false'
+    description: "Whether to sign the package with GPG (default: false)"
   gpg_key_id:
     required: false
     default: ''
@@ -32,27 +32,23 @@ inputs:
 runs:
   using: composite
   steps:
-    - id: build_pkg_signed
-      if: inputs.sign_pkg == 'true'
+    - id: build_pkg
       uses: ./arch-run-cmd
-      env:
-        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
       with:
         gpg_passhphrase: ${{ inputs.gpg_passhphrase }}
         run_with_sudo: 'true'
         enable_ccache: 'true'
         preset_cache: 'true'
+        gpg_home: ${{ inputs.gpg_home || env.GNUPGHOME }}
+        github_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
         gpg_key_id: ${{ inputs.gpg_key_id }}
-        run: makepkg -sr --sign -C -c --noconfirm --noprogressbar
-
-    - id: build_pkg_unsigned
-      if: inputs.sign_pkg != 'true'
-      uses: ./arch-run-cmd
-      env:
-        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
-      with:
-        run_with_sudo: 'true'
-        enable_ccache: 'true'
-        preset_cache: 'false'
-        run: makepkg -sr -C -c --noconfirm --noprogressbar
+        run: |
+          if [[ -n "${{ inputs.gpg_passphrase }}" && "${{ inputs.gpg_sign }}" == 'true' ]]; then
+            echo "::notice::GPG signing is enabled with passphrase (will use passphrase for signing)"
+            makepkg -sr --sign -C -c --noconfirm --noprogressbar
+          else
+            echo "::notice::GPG signing is disabled (no key ID provided)"
+            makepkg -sr -C -c --noconfirm --noprogressbar
+          fi
+          
+          echo "::notice::Package build completed successfully"
