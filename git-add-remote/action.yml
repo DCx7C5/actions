@@ -11,16 +11,12 @@ inputs:
     required: false
     default: 'upstream'
     description: "Name of the remote to add (default: 'upstream')"
-  target_ref:
-    required: false
-    default: 'HEAD'
-    description: "Git reference to check out after adding the remote (default: 'HEAD')"
 
 
 runs:
   using: composite
   steps:
-    - id: add_upstream_remote
+    - id: add_remote
       shell: bash
       run: |
         set -euo pipefail
