@@ -27,7 +27,7 @@ fi
 # Clear any temporary sensitive files
 if [[ -d "/tmp" ]]; then
   echo "==> Cleaning up temporary files..."
-  shread -n 3 -s 4096 /dev/urandom > /dev/null 2>&1 || true
+  shred -n 10 -s 4096 /dev/urandom > /dev/null 2>&1 || true
   rm -f /tmp/gpg-* /tmp/*.key /tmp/*.asc 2>/dev/null || true
 fi
 
