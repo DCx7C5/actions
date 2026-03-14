@@ -1,0 +1,43 @@
+name: "Get latest version of an AUR package"
+description: "GitHub Action to get the latest version of an AUR package by parsing the PKGBUILD file from the AUR repository. It fetches the PKGBUILD file for the specified package, extracts the version information, and outputs it as a variable for use in subsequent steps."
+author: "DCx7C5"
+
+branding:
+  icon: "package"
+  color: "blue"
+
+
+inputs:
+  pkg_name:
+    description: "Name of the AUR package to get the version for"
+    required: true
+
+outputs:
+  pkg_ver:
+    description: "Latest version of the specified AUR package"
+    value: ${{ steps.get_version.outputs.pkg_ver }}
+  pkg_rel:
+    description: "Release number of the specified AUR package (if available)"
+    value: ${{ steps.get_version.outputs.pkg_rel }}
+
+
+
+runs:
+  using: composite
+  steps:
+    - id: get_version
+      shell: bash
+      working-directory: "${{ github.workspace || '.' }}"
+      run: |
+        set -euo pipefail
+        
+        PKG_NAME="${{ inputs.pkg_name }}"
+        cd "$PKG_NAME"
+        pkg_rel="$(sed -nE 's/^pkgrel=([^[:space:]#]+).*/\1/p' PKGBUILD | head -n1)"
+        if [[ -n "$pkg_rel" ]]; then
+          echo "pkg_rel=$pkg_rel" >> "$GITHUB_OUTPUT"
+        fi 
+        pkg_ver="$(sed -nE 's/^pkgver=([^[:space:]#]+).*/\1/p' PKGBUILD | head -n1)"
+        if [[ -n "$pkg_ver" ]]; then
+          echo "pkg_ver=$pkg_ver" >> "$GITHUB_OUTPUT"
+        fi
