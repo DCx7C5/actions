@@ -1,0 +1,100 @@
+name: "Add/Update/Delete package in PKGBUILDs repository"
+description: "GitHub Action to sync package changes from an upstream repository to this PKGBUILDs repository, with support for both custom and non-custom packages. It fetches changes from the specified upstream repository and ref, compares the package directories, and commits any differences with appropriate commit messages based on the change type (new/changed)."
+author: "DCx7C5"
+
+branding:
+  icon: "git-merge"
+  color: "blue"
+
+
+inputs:
+  pkg_name:
+    description: "Target package name in this repository"
+    required: true
+  dir_name:
+    description: "Source package directory in upstream repository (for non-custom packages) or target package directory in this repository (for custom packages)"
+    required: false
+    default: ${{ inputs.pkg_name }}
+  sync_type:
+    description: "Change type for commit message (add/update/delete)"
+    required: true
+    options:
+      description: "Allowed values for sync_type"
+      add:
+        description: "Process added packages"
+      update:
+        description: "Process updated packages"
+      delete:
+        description: "Process removed packages"
+  is_custom:
+    description: "Custom Package type (true/false) to determine sync behavior"
+    required: true
+    default: 'false'
+  remote_name:
+    required: true
+    description: "Name of the remote to add for the AUR repository (default: upstream)"
+    default: 'upstream'
+  remote_ref:
+    required: true
+    description: "Git reference to compare against (default: main)"
+  remote_repo:
+    required: true
+    description: "GitHub repository in the format <owner/repo> to use as the remote URL for fetching"
+
+outputs:
+  changed:
+    description: "Whether any package files were changed and committed"
+    value: ${{ steps.finalize.outputs.changed }}
+  commit_sha:
+    description: "Commit SHA if a commit was created"
+    value: ${{ steps.finalize.outputs.commit_sha }}
+
+
+runs: 
+  using: composite
+  steps:
+    - id: sync_custom_pkg
+      if: inputs.is_custom == 'true' && (inputs.sync_type == 'add' || inputs.sync_type == 'update')
+      uses: ./aur-sync-package/sync-custom-pkg
+      with:
+        pkg_name: ${{ inputs.pkg_name }}
+        dir_name: ${{ inputs.dir_name }}
+        remote_name: ${{ inputs.remote_name }}
+        remote_ref: ${{ inputs.remote_ref }}
+        remote_repo: ${{ inputs.remote_repo }}
+        sync_type: ${{ inputs.sync_type }}
+
+    - id: sync_pkg
+      if: inputs.is_custom == 'false' && (inputs.sync_type == 'add' || inputs.sync_type == 'update')
+      uses: ./aur-sync-package/sync-pkg
+      with:
+        pkg_name: ${{ inputs.pkg_name }}
+        remote_name: ${{ inputs.remote_name }}
+        remote_ref: ${{ inputs.remote_ref }}
+        sync_type: ${{ inputs.sync_type }}
+        remote_repo: ${{ inputs.remote_repo }}
+
+    - name: Add package custom type to packages.json
+      if: inputs.sync_type == 'add'
+      uses: ./json-packages
+      with:
+        action: 'add'
+        pkg_name: ${{ inputs.pkg_name }}
+        key: '{"dir":"${{ inputs.dir_name }}","custom":${{ inputs.is_custom }},"upstream":"${{ inputs.remote_repo }}"}'
+
+    - name: Finalize outputs
+      id: finalize
+      if: always()
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [[ "${{ inputs.sync_type }}" == "delete" ]]; then
+          echo "changed=${{ steps.commit_delete.outputs.committed || 'false' }}" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=${{ steps.commit_delete.outputs.commit_sha || '' }}" >> "$GITHUB_OUTPUT"
+        elif [[ "${{ inputs.is_custom }}" == "true" ]]; then
+          echo "changed=${{ steps.sync_custom_pkg.outputs.changed || 'false' }}" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=${{ steps.sync_custom_pkg.outputs.commit_sha || '' }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "changed=${{ steps.sync_pkg.outputs.changed || 'false' }}" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=${{ steps.sync_pkg.outputs.commit_sha || '' }}" >> "$GITHUB_OUTPUT"
+        fi
