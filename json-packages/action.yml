@@ -115,7 +115,7 @@ runs:
 
     - name: Add package entry if not exists
       id: add_pkg
-      if: inputs.action == 'add' && inputs.pkg_name != '' && inputs.key != ''
+      if: inputs.action == 'add' && inputs.pkg_name != '' && (inputs.key != '' || inputs.value != '')
       shell: bash
       env:
         JSON_PATH: ${{ inputs.path }}
@@ -129,8 +129,6 @@ runs:
           exit 1
         fi
 
-        # KEY_JSON must be the object value, e.g.
-        # {"custom":false,"dir":"test","upstream":"CachyOS/CachyOS-PKGBUILDS"}
         if ! jq -e 'type == "object"' <<< "$KEY_JSON" >/dev/null 2>&1; then
           echo "::error::inputs.key must be a valid JSON object."
           exit 1
