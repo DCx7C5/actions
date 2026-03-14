@@ -1,0 +1,164 @@
+name: "Get remote package changes from AUR"
+description: "Get the list of changed package files between the current branch and the AUR repository, and optionally output a matrix of changes for GitHub Actions"
+author: "DCx7C5"
+
+
+inputs:
+  repository:
+    required: true
+    description: "URL of the AUR repository to compare against (default: https://aur.archlinux.org/)"
+  repository_url:
+    required: false
+    description: "URL of the AUR repository to compare against (default: https://aur.archlinux.org/)"
+    default: "https://github.com/${{ inputs.repository }}"
+  remote_name:
+    required: false
+    description: "Name of the remote to add for the AUR repository (default: upstream)"
+    default: "upstream"
+  remote_ref:
+    required: false
+    description: "Git reference to compare against (default: main)"
+    default: "main"
+  exclude_paths:
+    required: false
+    description: "New-line separated list of paths to exclude from comparison (default: none)"
+    default: ""
+
+
+outputs:
+  new_dirs:
+    description: "New package directories (exist in compare but not in base)"
+    value: ${{ steps.get_new.outputs.new_dirs }}
+  new_dir_files_json:
+    description: "New package directories with their new files as JSON array of objects [{dir, files}]"
+    value: ${{ steps.get_new.outputs.new_dir_files_json }}
+  changed_dirs:
+    description: "Changed package directories (PKGBUILD differs between branches)"
+    value: ${{ steps.get_changes.outputs.changed_dirs }}
+  removed_dirs:
+    description: "Removed package directories (exist in base but not in compare)"
+    value: ${{ steps.get_removed.outputs.removed_dirs }}
+  removed_dir_files_json:
+    description: "Removed package directories with their removed files as JSON array of objects [{dir, files}]"
+    value: ${{ steps.get_removed.outputs.removed_dir_files_json }}
+  changed_files:
+    description: "Changed files between branches"
+    value: ${{ steps.get_changes.outputs.changed_files }}
+  changed_dir_files_json:
+    description: "Changed package directories with their changed files as JSON array of objects [{dir, files}]"
+    value: ${{ steps.get_changes.outputs.changed_dir_files_json }}
+
+
+runs:
+  using: composite
+  steps:
+    - name: Get removed package directories
+      id: get_removed
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        exclude_args=()
+        while IFS= read -r p || [[ -n "$p" ]]; do
+          # Trim optional surrounding whitespace per line.
+          p="${p#"${p%%[![:space:]]*}"}"
+          p="${p%"${p##*[![:space:]]}"}"
+          [[ -z "$p" ]] && continue
+          exclude_args+=(":(exclude)$p")
+        done <<< "${{ inputs.exclude_paths }}"
+        
+        # Get list of removed files between current branch and upstream target_ref
+        removed_files=$(git diff --name-only --diff-filter=D HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
+        
+        # Filter for PKGBUILD files and get unique directories
+        removed_dirs=$(printf '%s\n' "$removed_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
+        
+        # Save removed directories to output variable
+        {
+          echo "removed_dirs<<<EOF"
+          echo "$removed_dirs"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        
+        removed_dir_files_json=$(jq -Rn --arg dirs "$removed_dirs" --arg files "$removed_files" '
+          ($files | split("\n") | map(select(length > 0))) as $all
+          | ($dirs | split("\n") | map(select(length > 0)))
+          | map(. as $d | {dir: $d, files: ($all | map(select(startswith($d + "/"))))})
+        ')
+        echo "removed_dir_files_json=$removed_dir_files_json" >> "$GITHUB_OUTPUT"
+
+    - name: Get new package directories
+      id: get_new
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        exclude_args=()
+        while IFS= read -r p || [[ -n "$p" ]]; do
+          # Trim optional surrounding whitespace per line.
+          p="${p#"${p%%[![:space:]]*}"}"
+          p="${p%"${p##*[![:space:]]}"}"
+          [[ -z "$p" ]] && continue
+          exclude_args+=(":(exclude)$p")
+        done <<< "${{ inputs.exclude_paths }}"
+
+        # Get list of new files between current branch and upstream target_ref
+        new_files=$(git diff --name-only --diff-filter=A HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
+        
+        # Filter for PKGBUILD files and get unique directories
+        new_dirs=$(printf '%s\n' "$new_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
+        
+        # Save new directories to output variable
+        {
+          echo "new_dirs<<<EOF"
+          echo "$new_dirs"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        
+        new_dir_files_json=$(jq -Rn --arg dirs "$new_dirs" --arg files "$new_files" '
+          ($files | split("\n") | map(select(length > 0))) as $all
+          | ($dirs | split("\n") | map(select(length > 0)))
+          | map(. as $d | {dir: $d, files: ($all | map(select(startswith($d + "/"))))})
+        ')
+        echo "new_dir_files_json=$new_dir_files_json" >> "$GITHUB_OUTPUT"
+
+    - name: Get changed package directories
+      id: get_changes
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        exclude_args=()
+        while IFS= read -r p || [[ -n "$p" ]]; do
+          # Trim optional surrounding whitespace per line.
+          p="${p#"${p%%[![:space:]]*}"}"
+          p="${p%"${p##*[![:space:]]}"}"
+          [[ -z "$p" ]] && continue
+          exclude_args+=(":(exclude)$p")
+        done <<< "${{ inputs.exclude_paths }}"
+
+        # Get list of changed files between current branch and upstream target_ref
+        changed_files=$(git diff --name-only HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
+
+        # Filter for PKGBUILD files and get unique directories
+        changed_dirs=$(printf '%s\n' "$changed_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
+
+        # Save changed directories to output variable
+        {
+          echo "changed_dirs<<<EOF"
+          echo "$changed_dirs"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        
+        {
+          echo "changed_files<<<EOF"
+          echo "$changed_files"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        
+        changed_dir_files_json=$(jq -Rn --arg dirs "$changed_dirs" --arg files "$changed_files" '
+          ($files | split("\n") | map(select(length > 0))) as $all
+          | ($dirs | split("\n") | map(select(length > 0)))
+          | map(. as $d | {dir: $d, files: ($all | map(select(startswith($d + "/"))))})
+        ')
+        echo "changed_dir_files_json=$changed_dir_files_json" >> "$GITHUB_OUTPUT"
