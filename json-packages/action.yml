@@ -115,7 +115,7 @@ runs:
 
     - name: Add package entry if not exists
       id: add_pkg
-      if: inputs.action == 'add'
+      if: inputs.action == 'add' && inputs.pkg_name != '' && inputs.key != ''
       shell: bash
       env:
         JSON_PATH: ${{ inputs.path }}
@@ -128,20 +128,27 @@ runs:
           echo "::error::'pkg_name' is required for action=add."
           exit 1
         fi
-        
-        jq --argjson obj "$KEY_JSON" '
-          reduce ($obj | to_entries[]) as $e
-            (.;
-             if has($e.key) then .
-             else . + {($e.key): $e.value}
-             end)
+
+        # KEY_JSON must be the object value, e.g.
+        # {"custom":false,"dir":"test","upstream":"CachyOS/CachyOS-PKGBUILDS"}
+        if ! jq -e 'type == "object"' <<< "$KEY_JSON" >/dev/null 2>&1; then
+          echo "::error::inputs.key must be a valid JSON object."
+          exit 1
+        fi
+
+        jq --arg pkg "$PKG_NAME" --argjson val "$KEY_JSON" '
+          if has($pkg) then
+            .
+          else
+            . + {($pkg): $val}
+          end
         ' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
 
         echo "success=true" >> "$GITHUB_OUTPUT"
 
     - name: Update package entry
       id: add_update_pkg
-      if: inputs.action == 'update'
+      if: inputs.action == 'update' && inputs.pkg_name != '' && inputs.key != '' && inputs.value != ''
       shell: bash
       env:
         JSON_PATH: ${{ inputs.path }}
