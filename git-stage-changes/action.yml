@@ -90,4 +90,3 @@ runs:
           echo "$staged_files"
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
-
