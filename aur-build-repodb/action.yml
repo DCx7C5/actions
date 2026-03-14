@@ -1,6 +1,10 @@
 name: "Build Repository Database"
+description: "GitHub Action to build a repository database using repo-add. It can optionally sign the database with GPG if a key ID and passphrase are provided."
 author: "DCx7C5"
 
+branding:
+  icon: "archive"
+  color: "blue"
 
 inputs:
   database_name:
