@@ -4,13 +4,6 @@ author: "DCx7C5"
 
 
 inputs:
-  repository:
-    required: true
-    description: "URL of the AUR repository to compare against (default: https://aur.archlinux.org/)"
-  repository_url:
-    required: false
-    description: "URL of the AUR repository to compare against (default: https://aur.archlinux.org/)"
-    default: "https://github.com/${{ inputs.repository }}"
   remote_name:
     required: false
     description: "Name of the remote to add for the AUR repository (default: upstream)"
