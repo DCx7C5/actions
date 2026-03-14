@@ -3,30 +3,77 @@ author: "DCx7C5"
 
 
 inputs:
-  repo_name:
+  database_name:
     required: true
     description: "Repository name (e.g: dystopian)"
+  gpg_sign:
+    required: false
+    description: "Whether to sign the repository database with GPG (defaults to false)"
+    default: 'false'
+  gpg_key_id:
+    required: false
+    description: "GPG key ID to sign the repository database with"
+    default: ''
   gpg_passphrase:
-    required: true
+    required: false
     description: "Passphrase for GPG key"
+    default: ''
   github_token:
     required: false
     default: ''
     description: "GitHub token for API access (defaults to github.token)"
+  working_directory:
+    required: false
+    default: ${{ github.workspace }}
+    description: "Working directory to run the command in (defaults to github.workspace)"
 
 
 runs:
   using: composite
   steps:
+    - id: mask_and_validate
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        gpg_key_id="${{ inputs.gpg_key_id }}"
+        
+        if [[ '${{ inputs.gpg_passphrase }}' != '' ]]; then
+          echo '::add-mask::${{ inputs.gpg_passphrase }}'
+        fi
+        
+        if [[ -n "$gpg_key_id" ]]; then
+          echo "::notice::GPG signing is enabled with key ID '$gpg_key_id'"
+          if [[ -n "${{ inputs.gpg_passphrase }}" ]]; then
+            echo "::notice::GPG passphrase is provided (will be used for signing)"
+          else
+            echo "::notice::No GPG passphrase provided (will attempt to sign without passphrase)"
+          fi
+        else
+          echo "::notice::GPG signing is disabled (no key ID provided)"
+        fi
+
     - id: aur_build_repo
       uses: ./arch-run-cmd
-      env:
-        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
+      working-directory: "${{ inputs.working_directory }}"
       with:
         run_with_sudo: 'false'
         enable_ccache: 'false'
         preset_cache: 'true'
-        gpg_passhphrase: ${{ inputs.gpg_passphrase }}
+        github_token: '${{ inputs.github_token || env.GH_TOKEN || github.token }}'
         run: |
-          repo-add --sign --new --remove ${{ inputs.repo_name }}.db.tar.gz *.pkg.tar.zst
+          set -euo pipefail
+          if [[ -n "${{ inputs.gpg_key_id }}" && -n "${{ inputs.gpg_passphrase }} && "${{ inputs.gpg_sign }}" == true ]]; then
+            repo-add --sign --new --remove ${{ inputs.database_name }}.db.tar.gz *.pkg.tar.zst || {
+              echo "::error::Failed to build and sign repository database with GPG key ID '${{ inputs.gpg_key_id }}'"
+              exit 1
+            }
+          else
+            repo-add --new --remove ${{ inputs.database_name }}.db.tar.gz *.pkg.tar.zst || {
+              echo "::error::Failed to build repository database (GPG signing is disabled)"
+              exit 1
+            }
+          fi
+          
+          echo "::notice::Repository database '${{ inputs.database_name }}.db.tar.gz' built successfully"
+
