@@ -1,0 +1,93 @@
+name: "Stage Git Changes"
+description: "Stage tracked and/or untracked changes in a Git repository with optional path filtering"
+author: "DCx7C5"
+
+branding:
+  icon: "git-commit"
+  color: "blue"
+
+inputs:
+  workspace_path:
+    required: false
+    default: "."
+    description: "Path to the Git workspace (default: current directory)"
+  paths:
+    required: false
+    default: ""
+    description: "New-line separated list of file/directory paths to stage (empty = whole workspace)"
+  include_untracked:
+    required: false
+    default: "true"
+    description: "Stage untracked files too (true/false)"
+
+outputs:
+  staged:
+    description: "Whether there are staged changes after this action (true/false)"
+    value: ${{ steps.stage.outputs.staged }}
+  staged_files:
+    description: "New-line separated list of staged file paths"
+    value: ${{ steps.stage.outputs.staged_files }}
+
+runs:
+  using: composite
+  steps:
+    - id: stage
+      shell: bash
+      env:
+        WORKSPACE_PATH: ${{ inputs.workspace_path }}
+        INPUT_PATHS: ${{ inputs.paths }}
+        INCLUDE_UNTRACKED: ${{ inputs.include_untracked }}
+      run: |
+        set -euo pipefail
+
+        cd "$WORKSPACE_PATH"
+
+        if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+          echo "::error::Current directory '$WORKSPACE_PATH' is not a Git repository."
+          exit 1
+        fi
+
+        if [[ "$INCLUDE_UNTRACKED" != "true" && "$INCLUDE_UNTRACKED" != "false" ]]; then
+          echo "::error::Invalid include_untracked='$INCLUDE_UNTRACKED'. Allowed values: true, false."
+          exit 1
+        fi
+
+        if [[ -n "$INPUT_PATHS" ]]; then
+          stage_paths=()
+          while IFS= read -r p || [[ -n "$p" ]]; do
+            p="${p#"${p%%[![:space:]]*}"}"
+            p="${p%"${p##*[![:space:]]}"}"
+            [[ -z "$p" ]] && continue
+            stage_paths+=("$p")
+          done <<< "$INPUT_PATHS"
+
+          if [[ ${#stage_paths[@]} -eq 0 ]]; then
+            echo "::notice::No valid paths provided after trimming."
+          else
+            if [[ "$INCLUDE_UNTRACKED" == "true" ]]; then
+              git add -A -- "${stage_paths[@]}"
+            else
+              git add --update -- "${stage_paths[@]}"
+            fi
+          fi
+        else
+          if [[ "$INCLUDE_UNTRACKED" == "true" ]]; then
+            git add -A
+          else
+            git add --update .
+          fi
+        fi
+
+        staged_files="$(git diff --cached --name-only)"
+        if [[ -n "$staged_files" ]]; then
+          echo "staged=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "staged=false" >> "$GITHUB_OUTPUT"
+        fi
+
+        {
+          echo "staged_files<<EOF"
+          echo "$staged_files"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
