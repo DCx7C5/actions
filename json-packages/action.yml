@@ -2,6 +2,10 @@ name: "Manage packages.json file"
 description: "Action to manage the packages.json file in the repository, allowing for adding, updating, and removing package entries"
 author: "DCx7C5"
 
+branding:
+  icon: "package"
+  color: "blue"
+
 
 inputs:
   path:
@@ -12,7 +16,7 @@ inputs:
     required: false
     default: 'get'
     description: "Action to perform on the packages.json file (e.g.,'get', 'add', 'update', 'remove')"
-  package_name:
+  pkg_name:
     required: false
     default: ''
     description: "Name of the package to manage in the packages.json file"
@@ -28,7 +32,7 @@ inputs:
 
 outputs:
   packages:
-    description: "List of all package names in the packages.json file (only for 'get' action without package_name)"
+    description: "List of all package names in the packages.json file (only for 'get' action without pkg_name)"
     value: ${{ steps.get_all_packages.outputs.packages }}
   upstream:
     description: ""
@@ -51,22 +55,22 @@ runs:
       shell: bash
       env:
         ACTION: ${{ inputs.action }}
-        PKG_NAME: ${{ inputs.package_name }}
+        PKG_NAME: ${{ inputs.pkg_name }}
       run: |
         set -euo pipefail
-        
+
         valid_actions=("get" "add" "update" "remove")
-        
+
         if [[ ! " ${valid_actions[*]} " =~ " ${ACTION} " ]]; then
           echo "::error::Invalid action '${ACTION}'. Valid actions are: ${valid_actions[*]}"
           exit 1
         fi
-        
+
         if [[ ! -f "$JSON_PATH" ]]; then
           echo "::error::File '$JSON_PATH' does not exist."
           exit 1
         fi
-        
+
         if [[ -n "${{ inputs.key }} && -z "${{ inputs.value }}" && ! "$ACTION" ~= '^remove|get$' ]]; then
           echo "::error::Both 'key' and 'value' inputs must be provided together for add/update actions."
           exit 1
@@ -80,7 +84,7 @@ runs:
 
     - name: Get all package names
       id: get_all_packages
-      if: inputs.action == 'get' && inputs.package_name == ''
+      if: inputs.action == 'get' && inputs.pkg_name == ''
       shell: bash
       env:
         JSON_PATH: ${{ inputs.path }}
@@ -95,42 +99,62 @@ runs:
 
     - name: Get package values
       id: get_pkg_value
-      if: inputs.package_name != ''
+      if: inputs.pkg_name != ''
       shell: bash
       env:
         JSON_PATH: ${{ inputs.path }}
-        PKG_NAME: ${{ inputs.package_name }}
+        PKG_NAME: ${{ inputs.pkg_name }}
       run: |
         set -euo pipefail
-        
+
         pkg=$(jq --arg pkg "$PKG_NAME" '.[$pkg] // empty' "$JSON_PATH")
-        
-        echo "upstream=$( jq -r '.upstream // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"      
+
+        echo "upstream=$( jq -r '.upstream // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
         echo "custom=$( jq -r '.custom // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
         echo "refactor=$( jq -r '.refactor // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
 
-    - name: Add or update package entry
-      id: add_update_pkg
-      if: inputs.action == 'add' || inputs.action == 'update'
+    - name: Add package entry if not exists
+      id: add_pkg
+      if: inputs.action == 'add'
       shell: bash
       env:
         JSON_PATH: ${{ inputs.path }}
-        PKG_NAME: ${{ inputs.package_name }}
+        PKG_NAME: ${{ inputs.pkg_name }}
+        KEY_JSON: ${{ inputs.key }}
+      run: |
+        set -euo pipefail
+
+        if [[ -z "$PKG_NAME" ]]; then
+          echo "::error::'pkg_name' is required for action=add."
+          exit 1
+        fi
+        
+        jq --argjson obj "$KEY_JSON" '
+          reduce ($obj | to_entries[]) as $e
+            (.;
+             if has($e.key) then .
+             else . + {($e.key): $e.value}
+             end)
+        ' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
+
+        echo "success=true" >> "$GITHUB_OUTPUT"
+
+    - name: Update package entry
+      id: add_update_pkg
+      if: inputs.action == 'update'
+      shell: bash
+      env:
+        JSON_PATH: ${{ inputs.path }}
+        PKG_NAME: ${{ inputs.pkg_name }}
         ACTION: ${{ inputs.action }}
         KEY: ${{ inputs.key }}
         VALUE: ${{ inputs.value }}
       run: |
         set -euo pipefail
-        
-        if [[ "$ACTION" == "add" ]]; then
-          jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
-            'if has($pkg) then . else . + {($pkg): {($key): $value}} end' \
-            "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
-        elif [[ "$ACTION" == "update" ]]; then
-          jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
+
+        jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
             'if has($pkg) then .[$pkg][$key] = $value else . end' \
             "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
-        fi
         echo "success=true" >> "$GITHUB_OUTPUT"
         echo "::notice::Updated '$JSON_PATH' with package '$PKG_NAME' ($KEY=$VALUE) for action '$ACTION'"
 
@@ -140,12 +164,12 @@ runs:
       shell: bash
       env:
         JSON_PATH: ${{ inputs.path }}
-        PKG_NAME: ${{ inputs.package_name }}
+        PKG_NAME: ${{ inputs.pkg_name }}
         ACTION: ${{ inputs.action }}
         KEY: ${{ inputs.key }}
       run: |
         set -euo pipefail
-        
+
         if [[ -z "$KEY" ]]; then
           jq --arg pkg "$PKG_NAME" 'del(.[$pkg])' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
           echo "::notice::Removed package '$PKG_NAME' from '$JSON_PATH'"
@@ -153,12 +177,12 @@ runs:
           jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
             echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in '$JSON_PATH'"
         fi
-        
+
         echo "success=true" >> "$GITHUB_OUTPUT"
 
     - name: Get all packages with key == value
       id: get_packages_by_key_value
-      if: inputs.action == 'get' && inputs.key != '' && inputs.value != '' && inputs.package_name == ''
+      if: inputs.action == 'get' && inputs.key != '' && inputs.value != '' && inputs.pkg_name == ''
       shell: bash
       env:
         JSON_PATH: ${{ inputs.path }}
@@ -166,29 +190,29 @@ runs:
         VALUE: ${{ inputs.value }}
       run: |
         set -euo pipefail
-            
+
         echo "::notice::Finding packages in '$JSON_PATH' where '$KEY' == '$VALUE'"
-            
+
         matching_packages=$(jq -r --arg key "$KEY" --arg value "$VALUE" 'to_entries[] | select(.value[$key] == $value) | .key' "$JSON_PATH")
-            
+
         echo "packages<<EOF"
         echo "$matching_packages"
         echo "EOF" >> "$GITHUB_OUTPUT"
 
     - name: Get all packages with key present
       id: get_packages_by_key
-      if: inputs.action == 'get' && inputs.key != '' && inputs.value == '' && inputs.package_name == ''
+      if: inputs.action == 'get' && inputs.key != '' && inputs.value == '' && inputs.pkg_name == ''
       shell: bash
       env:
         JSON_PATH: ${{ inputs.path }}
         KEY: ${{ inputs.key }}
       run: |
         set -euo pipefail
-            
+
         echo "::notice::Finding packages in '$JSON_PATH' where key '$KEY' is present"
-            
+
         matching_packages=$(jq -r --arg key "$KEY" 'to_entries[] | select(.value[$key] != null) | .key // empty' "$JSON_PATH")
-            
+
         echo "packages<<EOF"
         echo "$matching_packages"
         echo "EOF" >> "$GITHUB_OUTPUT"
