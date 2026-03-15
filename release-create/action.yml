@@ -115,7 +115,8 @@ runs:
             echo "Skipping creation (fail_if_exists=false)."
             echo "created=false" >> "$GITHUB_OUTPUT"
             echo "release_id=$(gh release view "$TAG" --json id --jq .id)" >> "$GITHUB_OUTPUT"
-            echo "html_url=$(gh release view "$TAG" --json html_url --jq .html_url)" >> "$GITHUB_OUTPUT"
+            echo "html_url=$(gh release view "$TAG" --json url --jq .url)" >> "$GITHUB_OUTPUT"
+            echo "upload_url=$(gh release view "$TAG" --json uploadUrl --jq .uploadUrl)" >> "$GITHUB_OUTPUT"
             exit 0
           fi
         fi
@@ -128,12 +129,12 @@ runs:
 
         echo "created=true" >> "$GITHUB_OUTPUT"
         echo "release_id=$(gh release view "$TAG" --json id --jq .id)" >> "$GITHUB_OUTPUT"
-        echo "html_url=$(gh release view "$TAG" --json html_url --jq .html_url)" >> "$GITHUB_OUTPUT"
-        echo "upload_url=$(gh release view "$TAG" --json upload_url --jq .upload_url)" >> "$GITHUB_OUTPUT"
+        echo "html_url=$(gh release view "$TAG" --json url --jq .url)" >> "$GITHUB_OUTPUT"
+        echo "upload_url=$(gh release view "$TAG" --json uploadUrl --jq .uploadUrl)" >> "$GITHUB_OUTPUT"
 
     - name: Upload assets (if provided)
       if: inputs.assets != ''
-      uses: DCx7C5/actions/upload-assets@v1
+      uses: ./upload-assets
       with:
         release_tag: ${{ inputs.release_tag }}
         assets: ${{ inputs.assets }}
