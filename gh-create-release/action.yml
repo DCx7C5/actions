@@ -45,6 +45,9 @@ inputs:
     default: "true"
 
 outputs:
+  success:
+    description: "Whether the release was successfully created"
+    value: "${{ steps.create.outcome == 'success' && steps.create.outputs.created == 'true' }}"
   created:
     description: "If release was created true/false"
     value: "${{ steps.create.outputs.created }}"
@@ -128,10 +131,16 @@ runs:
         echo "release_id=$(gh release view "${TAG}" --json id --jq .id)" >> "$GITHUB_OUTPUT"
         echo "html_url=$(gh release view "${TAG}" --json url --jq .url)" >> "$GITHUB_OUTPUT"
         echo "upload_url=$(gh release view "${TAG}" --json uploadUrl --jq .uploadUrl)" >> "$GITHUB_OUTPUT"
+        
+        if [[ "$created" == "true" ]]; then
+          echo "::notice::✅ Release $TAG created successfully: ${{ steps.create.outputs.html_url }}"
+        else
+          echo "::warn::⚠️ Release $TAG already exists: ${{ steps.create.outputs.html_url }}"
+        fi
 
     - name: Upload assets (if provided)
       if: inputs.assets != ''
-      uses: ./upload-assets
+      uses: ./gh-upload-assets
       with:
         release_tag: ${{ inputs.release_tag }}
         assets: ${{ inputs.assets }}
