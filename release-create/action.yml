@@ -122,7 +122,7 @@ runs:
         fi
 
         # Create the release
-        gh release create "$TAG" $FLAGS || {
+        gh release create $TAG $FLAGS || {
           echo "::error::Failed to create release $TAG"
           exit 1
         }
