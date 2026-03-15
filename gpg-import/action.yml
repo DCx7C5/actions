@@ -119,7 +119,7 @@ runs:
         passphrase: ${{ inputs.ssl_pass || inputs.gpg_pass }}
         type: ${{ steps.validate.outputs.is_file == 'true' && 'file' || 'inline' }}
         encoding: ${{ steps.validate.outputs.is_ssl_enc_binary_key == 'true' && 'binary' || 'text' }}
-        cleanup: 'true'
+        cleanup: true
 
     - name: Import from secret/variable/inline value
       id: inline_import
@@ -130,7 +130,7 @@ runs:
       with:
         gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.gpg_pass }}
-        type: 'auto'
+        type: auto
 
     - name: Import from file
       id: file_import
@@ -198,4 +198,4 @@ runs:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
         pass: ${{ inputs.gpg_pass }}
-        forget: 'false'
+        forget: false
