@@ -68,7 +68,7 @@ outputs:
   removed_dirs_matrix:
     description: "JSON matrix for removed package directories in GitHub Actions include format"
     value: ${{ steps.get_removed.outputs.removed_dirs_matrix }}
-  combined_changes_new_matrix:
+  combined_matrix:
     description: "JSON matrix for new and changed package directories combined in GitHub Actions include format"
     value: ${{ steps.get_changes.outputs.combined_matrix }}
 
