@@ -58,7 +58,7 @@ Composite GitHub Action to create (or verify) a GitHub Release for a tag and opt
 ```yaml
 - name: Create release
   id: release
-  uses: ./gh-release-create
+  uses: ./gh-create-release
   with:
     release_tag: v1.2.3
     release_name: Dystopian v1.2.3
@@ -73,7 +73,7 @@ Composite GitHub Action to create (or verify) a GitHub Release for a tag and opt
 
 ```yaml
 - name: Create prerelease and upload assets
-  uses: ./gh-release-create
+  uses: ./gh-create-release
   with:
     release_tag: v1.3.0-rc1
     generate_notes: "true"
