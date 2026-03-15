@@ -19,6 +19,10 @@ inputs:
   workflow_status:
     description: "New-line separated list of workflow statuses to delete (e.g. 'failure' or 'cancelled')"
     required: true
+  github_token:
+    description: "GitHub token for API access (defaults to github.token)"
+    required: false
+    default: ''
 
 
 outputs:
@@ -36,7 +40,7 @@ runs:
       env:
         ACTION: ${{ inputs.action }}
         WORKFLOW_STATUSES: ${{ inputs.workflow_status }}
-        GH_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
         KEEP: ${{ inputs.keep }}
       run: |
         set -euo pipefail
