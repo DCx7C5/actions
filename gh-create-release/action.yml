@@ -132,11 +132,8 @@ runs:
         echo "html_url=$(gh release view "${TAG}" --json url --jq .url)" >> "$GITHUB_OUTPUT"
         echo "upload_url=$(gh release view "${TAG}" --json uploadUrl --jq .uploadUrl)" >> "$GITHUB_OUTPUT"
         
-        if [[ "${{ steps.create.outputs.created }}" == "true" ]]; then
-          echo "::notice::✅ Release $TAG created successfully: ${{ steps.create.outputs.html_url }}"
-        else
-          echo "::warn::⚠️ Release $TAG already exists: ${{ steps.create.outputs.html_url }}"
-        fi
+        echo "::notice::✅ Release $TAG created successfully: ${{ steps.create.outputs.html_url }}"
+
 
     - name: Upload assets (if provided)
       if: inputs.assets != ''
