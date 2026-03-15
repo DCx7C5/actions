@@ -14,14 +14,18 @@ inputs:
     description: "Whether to stage the deletion changes (true/false)"
     required: false
     default: 'true'
+  packages_json_path:
+    description: "Path to packages.json metadata file"
+    required: false
+    default: '${{ github.workspace }}/.ci/packages.json'
 
 outputs:
   changed:
-    description: "Whether deletion produced staged changes"
-    value: ${{ steps.stage.outputs.staged }}
+    description: "Whether deletion produced changes (staged if stage enabled, otherwise workspace changes)"
+    value: ${{ steps.finalize.outputs.changed }}
   staged_files:
     description: "New-line separated staged file list"
-    value: ${{ steps.stage.outputs.staged_files }}
+    value: ${{ steps.finalize.outputs.staged_files }}
 
 
 runs:
@@ -40,15 +44,43 @@ runs:
       id: del_json
       uses: ./json-packages
       with:
-        path: '${{ github.workspace }}/.ci/packages.json'
+        path: '${{ inputs.packages_json_path }}'
         action: 'remove'
         pkg_name: ${{ inputs.pkg_name }}
 
     - name: Stage changes
       id: stage
-      if: inputs.stage_changes == 'true' || inputs.stage_changes == true
+      if: inputs.stage_changes == 'true'
       uses: ./git-stage-changes
       with:
         paths: |
           ${{ inputs.pkg_name }}
-          ${{ github.workspace }}/.ci/packages.json
+          ${{ inputs.packages_json_path }}
+
+    - name: Finalize outputs
+      id: finalize
+      if: always()
+      shell: bash
+      env:
+        STAGE_CHANGES: ${{ inputs.stage_changes }}
+        PKG_NAME: ${{ inputs.pkg_name }}
+        PACKAGES_JSON_PATH: ${{ inputs.packages_json_path }}
+      run: |
+        set -euo pipefail
+
+        if [[ "$STAGE_CHANGES" == "true" ]]; then
+          echo "changed=${{ steps.stage.outputs.staged || 'false' }}" >> "$GITHUB_OUTPUT"
+          {
+            echo "staged_files<<EOF"
+            echo "${{ steps.stage.outputs.staged_files || '' }}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        if [[ -n "$(git status --porcelain -- "$PKG_NAME" "$PACKAGES_JSON_PATH")" ]]; then
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "changed=false" >> "$GITHUB_OUTPUT"
+        fi
+        echo "staged_files=" >> "$GITHUB_OUTPUT"
