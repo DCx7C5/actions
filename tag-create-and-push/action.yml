@@ -222,7 +222,7 @@ runs:
         TAG: '${{ steps.tag_create_signed.outputs.tag || steps.tag_create_signed_pass.outputs.tag || steps.tag_create_unsigned.outputs.tag }}'
       run: |
         set -euo pipefail
-        
+    
         if ! git push origin $TAG; then
           echo "::error::Failed to push tag to repository" >&2
           exit 1
