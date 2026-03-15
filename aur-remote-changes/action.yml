@@ -27,7 +27,6 @@ inputs:
     required: false
     description: "New-line separated list of paths to exclude from changed comparison (default: none)"
     default: ""
-    
 
 
 outputs:
