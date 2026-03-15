@@ -15,6 +15,14 @@ inputs:
     required: false
     description: "Git reference to compare against (default: main)"
     default: "main"
+  include_only:
+    required: false
+    description: "New-line separated list of paths to include in comparison (default: all)"
+    default: "false"
+  exclude_paths:
+    required: false
+    description: "New-line separated list of paths to exclude from all comparisons (default: none)"
+    default: ""
   exclude_paths_delete:
     required: false
     description: "New-line separated list of paths to exclude from comparison (default: none)"
@@ -71,15 +79,35 @@ runs:
         set -euo pipefail
         
         exclude_args=()
+        # Globale Excludes
+        while IFS= read -r p || [[ -n "$p" ]]; do
+          p="${p#"${p%%[![:space:]]*}"}"
+          p="${p%"${p##*[![:space:]]}"}"
+          [[ -z "$p" ]] && continue
+          exclude_args+=(":(exclude)$p")
+        done <<< "${{ inputs.exclude_paths }}"
+        # Schritt-spezifische Excludes
         while IFS= read -r p || [[ -n "$p" ]]; do
           p="${p#"${p%%[![:space:]]*}"}"
           p="${p%"${p##*[![:space:]]}"}"
           [[ -z "$p" ]] && continue
           exclude_args+=(":(exclude)$p")
         done <<< "${{ inputs.exclude_paths_delete }}"
+
+        include_args=()
+        if [[ "${{ inputs.include_only }}" != "false" && -n "${{ inputs.include_only }}" ]]; then
+          while IFS= read -r p || [[ -n "$p" ]]; do
+            p="${p#"${p%%[![:space:]]*}"}"
+            p="${p%"${p##*[![:space:]]}"}"
+            [[ -z "$p" ]] && continue
+            include_args+=("$p")
+          done <<< "${{ inputs.include_only }}"
+        else
+          include_args=(.)
+        fi
         
         # Get list of removed files between current branch and upstream target_ref
-        removed_files=$(git diff --no-renames --name-only --diff-filter=D HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
+        removed_files=$(git diff --no-renames --name-only --diff-filter=D HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- "${include_args[@]}" "${exclude_args[@]}")
         
         # Filter for PKGBUILD files and get unique directories
         removed_dirs=$(printf '%s\n' "$removed_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
@@ -102,6 +130,14 @@ runs:
         set -euo pipefail
         
         exclude_args=()
+        # Globale Excludes
+        while IFS= read -r p || [[ -n "$p" ]]; do
+          p="${p#"${p%%[![:space:]]*}"}"
+          p="${p%"${p##*[![:space:]]}"}"
+          [[ -z "$p" ]] && continue
+          exclude_args+=(":(exclude)$p")
+        done <<< "${{ inputs.exclude_paths }}"
+        # Schritt-spezifische Excludes
         while IFS= read -r p || [[ -n "$p" ]]; do
           p="${p#"${p%%[![:space:]]*}"}"
           p="${p%"${p##*[![:space:]]}"}"
@@ -109,8 +145,20 @@ runs:
           exclude_args+=(":(exclude)$p")
         done <<< "${{ inputs.exclude_paths_new }}"
 
+        include_args=()
+        if [[ "${{ inputs.include_only }}" != "false" && -n "${{ inputs.include_only }}" ]]; then
+          while IFS= read -r p || [[ -n "$p" ]]; do
+            p="${p#"${p%%[![:space:]]*}"}"
+            p="${p%"${p##*[![:space:]]}"}"
+            [[ -z "$p" ]] && continue
+            include_args+=("$p")
+          done <<< "${{ inputs.include_only }}"
+        else
+          include_args=(.)
+        fi
+        
         # Get list of new files between current branch and upstream target_ref
-        new_files=$(git diff --no-renames --name-only --diff-filter=A HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
+        new_files=$(git diff --no-renames --name-only --diff-filter=A HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- "${include_args[@]}" "${exclude_args[@]}")
         
         # Filter for PKGBUILD files and get unique directories
         new_dirs=$(printf '%s\n' "$new_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
@@ -132,6 +180,14 @@ runs:
         set -euo pipefail
 
         exclude_args=()
+        # Globale Excludes
+        while IFS= read -r p || [[ -n "$p" ]]; do
+          p="${p#"${p%%[![:space:]]*}"}"
+          p="${p%"${p##*[![:space:]]}"}"
+          [[ -z "$p" ]] && continue
+          exclude_args+=(":(exclude)$p")
+        done <<< "${{ inputs.exclude_paths }}"
+        # Schritt-spezifische Excludes
         while IFS= read -r p || [[ -n "$p" ]]; do
           p="${p#"${p%%[![:space:]]*}"}"
           p="${p%"${p##*[![:space:]]}"}"
@@ -139,9 +195,20 @@ runs:
           exclude_args+=(":(exclude)$p")
         done <<< "${{ inputs.exclude_paths_changed }}"
 
-        # Get list of modified files between current branch and upstream target_ref
-        changed_pkgbuild_files=$(git diff --no-renames --name-only --diff-filter=M HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
+        include_args=()
+        if [[ "${{ inputs.include_only }}" != "false" && -n "${{ inputs.include_only }}" ]]; then
+          while IFS= read -r p || [[ -n "$p" ]]; do
+            p="${p#"${p%%[![:space:]]*}"}"
+            p="${p%"${p##*[![:space:]]}"}"
+            [[ -z "$p" ]] && continue
+            include_args+=("$p")
+          done <<< "${{ inputs.include_only }}"
+        else
+          include_args=(.)
+        fi
 
+        # Get list of modified files between current branch and upstream target_ref
+        changed_pkgbuild_files=$(git diff --no-renames --name-only --diff-filter=M HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- "${include_args[@]}" "${exclude_args[@]}")
 
         # Filter for modified PKGBUILD files and get unique directories.
         changed_dirs=$(printf '%s\n' "$changed_pkgbuild_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)

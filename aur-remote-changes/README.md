@@ -12,25 +12,27 @@ Composite GitHub Action to detect new, changed, and removed PKGBUILD package dir
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `remote_name` | no | `upstream` | Git remote name to compare against. |
-| `remote_ref` | no | `main` | Git ref on remote to compare against. |
-| `exclude_paths_delete` | no | `""` | Newline-separated paths to exclude from the **removed** file comparison via `:(exclude)`. |
-| `exclude_paths_new` | no | `""` | Newline-separated paths to exclude from the **new** file comparison via `:(exclude)`. |
-| `exclude_paths_changed` | no | `""` | Newline-separated paths to exclude from the **changed** file comparison via `:(exclude)`. |
+| Input                   | Required | Default    | Description                                                                               |
+|-------------------------|----------|------------|-------------------------------------------------------------------------------------------|
+| `remote_name`           | no       | `upstream` | Git remote name to compare against.                                                       |
+| `remote_ref`            | no       | `main`     | Git ref on remote to compare against.                                                     |
+| `include_only`          | no       | `false`    | Newline-separated paths to include in all comparisons (default: all).                     |
+| `exclude_paths`         | no       | `""`       | Newline-separated paths to exclude from **all** comparisons (global).                     |
+| `exclude_paths_delete`  | no       | `""`       | Newline-separated paths to exclude from the **removed** file comparison via `:(exclude)`. |
+| `exclude_paths_new`     | no       | `""`       | Newline-separated paths to exclude from the **new** file comparison via `:(exclude)`.     |
+| `exclude_paths_changed` | no       | `""`       | Newline-separated paths to exclude from the **changed** file comparison via `:(exclude)`. |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
-| `has_updates` | `true` when `new_dirs` or `changed_dirs` is non-empty. |
-| `has_removed` | `true` when `removed_dirs` is non-empty. |
-| `new_dirs` | Newline-separated package directories with added `PKGBUILD`. |
-| `new_dirs_matrix` | JSON matrix in format `{"include":[{"dir":"..."}]}` for `new_dirs`. |
-| `changed_dirs` | Newline-separated package directories with modified `PKGBUILD`. |
+| Output                | Description                                                             |
+|-----------------------|-------------------------------------------------------------------------|
+| `has_updates`         | `true` when `new_dirs` or `changed_dirs` is non-empty.                  |
+| `has_removed`         | `true` when `removed_dirs` is non-empty.                                |
+| `new_dirs`            | Newline-separated package directories with added `PKGBUILD`.            |
+| `new_dirs_matrix`     | JSON matrix in format `{"include":[{"dir":"..."}]}` for `new_dirs`.     |
+| `changed_dirs`        | Newline-separated package directories with modified `PKGBUILD`.         |
 | `changed_dirs_matrix` | JSON matrix in format `{"include":[{"dir":"..."}]}` for `changed_dirs`. |
-| `removed_dirs` | Newline-separated package directories with deleted `PKGBUILD`. |
+| `removed_dirs`        | Newline-separated package directories with deleted `PKGBUILD`.          |
 | `removed_dirs_matrix` | JSON matrix in format `{"include":[{"dir":"..."}]}` for `removed_dirs`. |
 
 ## Dependencies
@@ -51,7 +53,7 @@ Composite GitHub Action to detect new, changed, and removed PKGBUILD package dir
 
 ## Examples
 
-## Example: detect upstream changes
+### Example: detect upstream changes
 
 ```yaml
 - name: Detect remote package changes
@@ -62,7 +64,7 @@ Composite GitHub Action to detect new, changed, and removed PKGBUILD package dir
     remote_ref: main
 ```
 
-## Example: exclude paths per comparison type
+### Example: global and per-type exclude/include
 
 ```yaml
 - name: Detect remote package changes
@@ -71,32 +73,20 @@ Composite GitHub Action to detect new, changed, and removed PKGBUILD package dir
   with:
     remote_name: upstream
     remote_ref: main
-    exclude_paths_delete: |
+    include_only: |
+      packages/
+      extra/
+    exclude_paths: |
       .ci/
       .github/
+    exclude_paths_delete: |
+      backup/
     exclude_paths_new: |
       .ci/
     exclude_paths_changed: |
       .ci/
       docs/
 ```
-
-## Example: use matrix for new packages
-
-```yaml
-- name: Detect changes
-  id: changes
-  uses: ./aur-remote-changes
-
-- name: Build newly added packages
-  if: steps.changes.outputs.new_dirs != ''
-  strategy:
-    matrix: ${{ fromJson(steps.changes.outputs.new_dirs_matrix) }}
-  shell: bash
-  run: |
-    echo "Build package dir: ${{ matrix.dir }}"
-```
-
 
 ## Common failures
 
@@ -121,4 +111,3 @@ Composite GitHub Action to detect new, changed, and removed PKGBUILD package dir
     echo "changed_dirs_matrix=${{ steps.changes.outputs.changed_dirs_matrix }}"
     echo "removed_dirs_matrix=${{ steps.changes.outputs.removed_dirs_matrix }}"
 ```
-
