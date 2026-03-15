@@ -8,9 +8,14 @@ branding:
 
 
 inputs:
+  action:
+    description: "Action to perform on workflow runs (currently only 'delete' is supported)"
+    required: false
+    default: "delete"
   workflow_status:
     description: "New-line separated list of workflow statuses to delete (e.g. 'failure' or 'cancelled')"
     required: true
+
 
 outputs:
   deleted:
@@ -22,8 +27,10 @@ runs:
   using: composite
   steps:
     - id: delete_workflow_runs
+      if: inputs.action == 'delete'
       shell: bash
       env:
+        ACTION: ${{ inputs.action }}
         WORKFLOW_STATUSES: ${{ inputs.workflow_status }}
         GH_TOKEN: ${{ github.token }}
       run: |
