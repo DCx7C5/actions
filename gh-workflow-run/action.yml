@@ -8,12 +8,16 @@ branding:
 
 
 inputs:
+  keep:
+    description: "Maximum number of workflow runs to keep"
+    required: false
+    default: ''
   action:
     description: "Action to perform on workflow runs (currently only 'delete' is supported)"
     required: false
-    default: "delete"
+    default: 'delete'
   workflow_status:
-    description: "New-line separated list of workflow statuses to delete (e.g. 'failure' or 'cancelled')"
+    description: "New-line separated list of workflow statuses to delete (e.g. 'failure' or 'canceled')"
     required: true
 
 
@@ -33,6 +37,7 @@ runs:
         ACTION: ${{ inputs.action }}
         WORKFLOW_STATUSES: ${{ inputs.workflow_status }}
         GH_TOKEN: ${{ github.token }}
+        KEEP: ${{ inputs.keep }}
       run: |
         set -euo pipefail
         deleted=false
@@ -43,14 +48,29 @@ runs:
 
           echo "::notice::Deleting workflow runs with status: $status"
 
-          run_ids="$(gh run list --status "$status" --json databaseId --jq '.[].databaseId')"
-          [[ -z "$run_ids" ]] && continue
+          if [[ -n "$KEEP" && "$KEEP" =~ ^[0-9]+$ && "$KEEP" -gt 0 ]]; then
+            # Get all run IDs sorted by creation (oldest first)
+            run_ids_sorted=$(gh run list --status "$status" --json databaseId,createdAt --jq 'sort_by(.createdAt) | .[].databaseId')
+            total=$(echo "$run_ids_sorted" | grep -c . || true)
+            if (( total > KEEP )); then
+              to_delete=$((total - KEEP))
+              echo "Keeping $KEEP most recent runs, deleting $to_delete oldest runs."
+              run_ids_to_delete=$(echo "$run_ids_sorted" | head -n "$to_delete")
+            else
+              echo "Nothing to delete for status $status (total: $total, keep: $KEEP)"
+              continue
+            fi
+          else
+            run_ids_to_delete=$(gh run list --status "$status" --json databaseId --jq '.[].databaseId')
+          fi
+
+          [[ -z "$run_ids_to_delete" ]] && continue
 
           deleted=true
           while IFS= read -r run_id; do
             [[ -z "$run_id" ]] && continue
             gh run delete "$run_id"
-          done <<< "$run_ids"
+          done <<< "$run_ids_to_delete"
         done <<< "$WORKFLOW_STATUSES"
 
         echo "deleted=$deleted" >> "$GITHUB_OUTPUT"
