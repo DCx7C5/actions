@@ -16,7 +16,9 @@ Composite GitHub Action to detect new, changed, and removed PKGBUILD package dir
 |---|---|---|---|
 | `remote_name` | no | `upstream` | Git remote name to compare against. |
 | `remote_ref` | no | `main` | Git ref on remote to compare against. |
-| `exclude_paths` | no | `""` | Newline-separated paths to exclude via git pathspec `:(exclude)`. |
+| `exclude_paths_delete` | no | `""` | Newline-separated paths to exclude from the **removed** file comparison via `:(exclude)`. |
+| `exclude_paths_new` | no | `""` | Newline-separated paths to exclude from the **new** file comparison via `:(exclude)`. |
+| `exclude_paths_changed` | no | `""` | Newline-separated paths to exclude from the **changed** file comparison via `:(exclude)`. |
 
 ## Outputs
 
@@ -41,7 +43,7 @@ Composite GitHub Action to detect new, changed, and removed PKGBUILD package dir
 
 ## Operation flow
 
-1. Build optional `exclude_args` from `exclude_paths`.
+1. Build optional `exclude_args` per step from `exclude_paths_delete`, `exclude_paths_new`, and `exclude_paths_changed`.
 2. Compute removed files with `git diff --diff-filter=D ...` and derive `removed_dirs`.
 3. Compute new files with `git diff --diff-filter=A ...` and derive `new_dirs`.
 4. Compute changed files with `git diff --diff-filter=M ...` and derive `changed_dirs`.
@@ -60,6 +62,25 @@ Composite GitHub Action to detect new, changed, and removed PKGBUILD package dir
     remote_ref: main
 ```
 
+## Example: exclude paths per comparison type
+
+```yaml
+- name: Detect remote package changes
+  id: changes
+  uses: ./aur-remote-changes
+  with:
+    remote_name: upstream
+    remote_ref: main
+    exclude_paths_delete: |
+      .ci/
+      .github/
+    exclude_paths_new: |
+      .ci/
+    exclude_paths_changed: |
+      .ci/
+      docs/
+```
+
 ## Example: use matrix for new packages
 
 ```yaml
@@ -71,8 +92,11 @@ Composite GitHub Action to detect new, changed, and removed PKGBUILD package dir
   if: steps.changes.outputs.new_dirs != ''
   strategy:
     matrix: ${{ fromJson(steps.changes.outputs.new_dirs_matrix) }}
-  run: echo "Build package dir: ${{ matrix.dir }}"
+  shell: bash
+  run: |
+    echo "Build package dir: ${{ matrix.dir }}"
 ```
+
 
 ## Common failures
 

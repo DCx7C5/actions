@@ -15,10 +15,19 @@ inputs:
     required: false
     description: "Git reference to compare against (default: main)"
     default: "main"
-  exclude_paths:
+  exclude_paths_delete:
     required: false
     description: "New-line separated list of paths to exclude from comparison (default: none)"
     default: ""
+  exclude_paths_new:
+    required: false
+    description: "New-line separated list of paths to exclude from new/changed comparison (default: none)"
+    default: ""
+  exclude_paths_changed:
+    required: false
+    description: "New-line separated list of paths to exclude from changed comparison (default: none)"
+    default: ""
+    
 
 
 outputs:
@@ -58,12 +67,11 @@ runs:
         
         exclude_args=()
         while IFS= read -r p || [[ -n "$p" ]]; do
-          # Trim optional surrounding whitespace per line.
           p="${p#"${p%%[![:space:]]*}"}"
           p="${p%"${p##*[![:space:]]}"}"
           [[ -z "$p" ]] && continue
           exclude_args+=(":(exclude)$p")
-        done <<< "${{ inputs.exclude_paths }}"
+        done <<< "${{ inputs.exclude_paths_delete }}"
         
         # Get list of removed files between current branch and upstream target_ref
         removed_files=$(git diff --no-renames --name-only --diff-filter=D HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
@@ -90,12 +98,11 @@ runs:
         
         exclude_args=()
         while IFS= read -r p || [[ -n "$p" ]]; do
-          # Trim optional surrounding whitespace per line.
           p="${p#"${p%%[![:space:]]*}"}"
           p="${p%"${p##*[![:space:]]}"}"
           [[ -z "$p" ]] && continue
           exclude_args+=(":(exclude)$p")
-        done <<< "${{ inputs.exclude_paths }}"
+        done <<< "${{ inputs.exclude_paths_new }}"
 
         # Get list of new files between current branch and upstream target_ref
         new_files=$(git diff --no-renames --name-only --diff-filter=A HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
@@ -121,12 +128,11 @@ runs:
 
         exclude_args=()
         while IFS= read -r p || [[ -n "$p" ]]; do
-          # Trim optional surrounding whitespace per line.
           p="${p#"${p%%[![:space:]]*}"}"
           p="${p%"${p##*[![:space:]]}"}"
           [[ -z "$p" ]] && continue
           exclude_args+=(":(exclude)$p")
-        done <<< "${{ inputs.exclude_paths }}"
+        done <<< "${{ inputs.exclude_paths_changed }}"
 
         # Get list of modified files between current branch and upstream target_ref
         changed_pkgbuild_files=$(git diff --no-renames --name-only --diff-filter=M HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
