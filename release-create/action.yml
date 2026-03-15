@@ -68,29 +68,8 @@ runs:
       env:
         TAG: ${{ inputs.release_tag }}
         NAME: ${{ inputs.release_name }}
-        BODY: ${{ inputs.release_body }}
-        GEN_NOTES: ${{ inputs.generate_notes }}
-        DRAFT: ${{ inputs.draft }}
-        PRERELEASE: ${{ inputs.prerelease }}
       run: |
-        # Set default release name = tag if empty
         RELEASE_TITLE="${NAME:-$TAG}"
-        
-        # Build gh command flags
-        FLAGS="--title \"$RELEASE_TITLE\""
-        
-        if [ "$GEN_NOTES" = "true" ]; then
-          FLAGS="$FLAGS --generate-notes"
-        elif [ -n "$BODY" ]; then
-          FLAGS="$FLAGS --notes-file <(echo "$BODY")"
-        else
-          FLAGS="$FLAGS --notes \"\""
-        fi
-        
-        [ "$DRAFT" = "true" ] && FLAGS="$FLAGS --draft"
-        [ "$PRERELEASE" = "true" ] && FLAGS="$FLAGS --prerelease"
-        
-        echo "flags=$FLAGS" >> "$GITHUB_OUTPUT"
         echo "title=$RELEASE_TITLE" >> "$GITHUB_OUTPUT"
 
     - name: Create or verify release
@@ -99,7 +78,11 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github_token }}
         TAG: ${{ inputs.release_tag }}
-        FLAGS: ${{ steps.prepare.outputs.flags }}
+        TITLE: ${{ steps.prepare.outputs.title }}
+        BODY: ${{ inputs.release_body }}
+        GEN_NOTES: ${{ inputs.generate_notes }}
+        DRAFT: ${{ inputs.draft }}
+        PRERELEASE: ${{ inputs.prerelease }}
         FAIL_IF_EXISTS: ${{ inputs.fail_if_exists }}
       run: |
         set -euo pipefail
@@ -121,8 +104,22 @@ runs:
           fi
         fi
 
+        # Build flags as a proper array to avoid quoting issues
+        FLAGS=(--title "$TITLE")
+
+        if [ "$GEN_NOTES" = "true" ]; then
+          FLAGS+=(--generate-notes)
+        elif [ -n "$BODY" ]; then
+          FLAGS+=(--notes "$BODY")
+        else
+          FLAGS+=(--notes "")
+        fi
+
+        [ "$DRAFT" = "true" ]      && FLAGS+=(--draft)
+        [ "$PRERELEASE" = "true" ] && FLAGS+=(--prerelease)
+
         # Create the release
-        gh release create "${TAG}" $FLAGS || {
+        gh release create "${TAG}" "${FLAGS[@]}" || {
           echo "::error::Failed to create release $TAG"
           exit 1
         }
