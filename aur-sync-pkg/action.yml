@@ -1,4 +1,4 @@
-name: "Add/Update/Delete package in PKGBUILDs repository"
+name: "Add/Update package in PKGBUILDs repository"
 description: "GitHub Action to sync package changes from an upstream repository to this PKGBUILDs repository, with support for both custom and non-custom packages. It fetches changes from the specified upstream repository and ref, compares the package directories, and commits any differences with appropriate commit messages based on the change type (new/changed)."
 author: "DCx7C5"
 
@@ -14,9 +14,9 @@ inputs:
   dir_name:
     description: "Source package directory in upstream repository (for non-custom packages) or target package directory in this repository (for custom packages)"
     required: false
-    default: ''
+    default: ${{ inputs.pkg_name }}
   sync_type:
-    description: "Change type for commit message (add/update/delete)"
+    description: "Change type for commit message (add/update)"
     required: true
   is_custom:
     description: "Custom Package type (true/false) to determine sync behavior"
@@ -32,6 +32,11 @@ inputs:
   remote_repo:
     required: true
     description: "GitHub repository in the format <owner/repo> to use as the remote URL for fetching"
+  stage_change:
+    description: "Whether to stage the changes for commit (true/false, default: true)"
+    required: false
+    default: 'true'
+
 
 outputs:
   changed:
@@ -71,8 +76,20 @@ runs:
       uses: ./json-packages
       with:
         action: 'add'
+        path: ${{ github.workspace }}/.ci/packages.json
         pkg_name: ${{ inputs.pkg_name }}
         key: '{"custom":${{ inputs.is_custom }},"dir":"${{ inputs.dir_name }}","upstream":"${{ inputs.remote_repo }}"}'
+
+    - name: Stage changes
+      if: inputs.stage_change == 'true'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        TARGET_DIR: ${{ inputs.pkg_name }}
+      run: |
+        set -euo pipefail
+        git add -A -- "$TARGET_DIR"
+        git add -A -- ".ci/packages.json"
 
     - name: Finalize outputs
       id: finalize
@@ -90,3 +107,4 @@ runs:
           echo "changed=${{ steps.sync_pkg.outputs.changed || 'false' }}" >> "$GITHUB_OUTPUT"
           echo "commit_sha=${{ steps.sync_pkg.outputs.commit_sha || '' }}" >> "$GITHUB_OUTPUT"
         fi
+
