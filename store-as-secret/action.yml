@@ -30,7 +30,7 @@ runs:
         token: ${{ inputs.token }}
 
     - name: Store as GitHub Repository Secret
-      if: inputs.var_type == 'repo'
+      if: inputs.secret_type == 'repo'
       id: store_as_repo_secret
       shell: bash
       run: |
@@ -38,7 +38,7 @@ runs:
         gh secret set "${{ inputs.secret_name }}" --body "${{ inputs.value }}" --repo "${{ github.repository }}" || { echo "ERROR: Failed to store secret ${{ inputs.secret_name }}" >&2; exit 1; }
 
     - name: Store as GitHub Organisation Secret
-      if: inputs.var_type == 'org'
+      if: inputs.secret_type == 'org'
       id: store_as_org_secret
       shell: bash
       run: |
@@ -46,7 +46,7 @@ runs:
         gh secret set "${{ inputs.secret_name }}" --body "${{ inputs.value }}" --org "${{ github.repository_owner }}" || { echo "ERROR: Failed to store secret ${{ inputs.secret_name }}" >&2; exit 1; }
 
     - name: Store as GitHub Environment Secret
-      if: inputs.var_type == 'env'
+      if: inputs.secret_type == 'env'
       id: store_as_env_secret
       shell: bash
       run: |
