@@ -40,7 +40,7 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
           action: 'delete'
-          workflow_status: 'failed'
+          workflow_status: 'failure'
           keep: '10'
 
       - name: Cleanup Successful Workflow Artifacts
