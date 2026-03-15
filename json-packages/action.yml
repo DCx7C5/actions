@@ -34,15 +34,15 @@ outputs:
   packages:
     description: "List of all package names in the packages.json file (only for 'get' action without pkg_name)"
     value: ${{ steps.get_all_packages.outputs.packages }}
-  upstream:
-    description: ""
-    value: ${{ steps.get_pkg_value.outputs.upstream }}
+  remote:
+    description: "Remote repository URL for the specified package (only for 'get' action with pkg_name)"
+    value: ${{ steps.get_pkg_value.outputs.remote }}
   custom:
-    description: ""
-    value: ${{ steps.custom_output.outputs.custom }}
-  refactor:
-    description: ""
-    value: ${{ steps.refactored_output.outputs.refactor }}
+    description: "Custom flag value for the specified package (only for 'get' action with pkg_name)"
+    value: ${{ steps.get_pkg_value.outputs.custom }}
+  remote_type:
+    description: "Remote type (e.g., 'PKG', 'GIT') for the specified package (only for 'get' action with pkg_name)"
+    value: ${{ steps.get_pkg_value.outputs.refactor }}
   success:
     description: "Whether the action was successful (true/false)"
     value: ${{ steps.remove_pkg.outputs.success || steps.add_update_pkg.outputs.success }}
@@ -109,9 +109,9 @@ runs:
 
         pkg=$(jq --arg pkg "$PKG_NAME" '.[$pkg] // empty' "$JSON_PATH")
 
-        echo "upstream=$( jq -r '.upstream // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
+        echo "remote=$( jq -r '.remote // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
         echo "custom=$( jq -r '.custom // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
-        echo "refactor=$( jq -r '.refactor // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
+        echo "remote_type=$( jq -r '.remote_type // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
 
     - name: Add package entry if not exists
       id: add_pkg
