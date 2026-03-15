@@ -57,7 +57,7 @@ runs:
 
           cd "$PKG_NAME"
 
-          if [[ "$GPG_SIGN" == 'true' && -n "$GPG_KEY_ID" ]]; then
+          if [[ "$GPG_SIGN" ~= ^true$ && -n "$GPG_KEY_ID" ]]; then
             if [[ -n "$GPG_PASSPHRASE" ]]; then
               echo "::notice::GPG signing is enabled with key ID and passphrase"
             else
