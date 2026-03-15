@@ -76,16 +76,17 @@ jobs:
           commit_msg: "Release v1"
           pass: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Create GitHub Release
-        id: rel_create
-        uses: softprops/action-gh-release@v2
+      - name: Create release on GitHub
+        id: release_create
+        uses: ./release-create
         with:
-          tag_name: "${{ steps.tag_create.outputs.tag_name }}"
-          name: "${{ steps.tag_create.outputs.tag_name }}"
-          body: "Release ${{ steps.tag_create.outputs.tag_name }} - Updated tag to point to latest commit on main branch"
-          draft: false
-          prerelease: false
-          fail_on_unmatched_files: true
+          github_token: ${{ steps.app_token.outputs.token }}
+          release_tag: "${{ steps.tag_create.outputs.tag_name }}"
+          release_name: "${{ steps.tag_create.outputs.tag_name }}"
+          generate_notes: 'true'
+          fail_if_exists: 'true'
+          prerelease: 'false'
+          draft: 'false'
 
       - name: Cleanup GPG keys from runner
         if: steps.gpg_import.outputs.gpg_home != ''
