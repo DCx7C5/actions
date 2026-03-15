@@ -42,7 +42,6 @@ runs:
           remote_url="origin"
         fi
 
-        # HEAD als Standard auf den aktuell ausgecheckten Branch pushen.
         if [[ "$REF" == "HEAD" ]]; then
           current_branch="$(git rev-parse --abbrev-ref HEAD)"
           if [[ -z "$current_branch" || "$current_branch" == "HEAD" ]]; then
