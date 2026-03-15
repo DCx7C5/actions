@@ -71,13 +71,13 @@ runs:
       id: tag_delete
       shell: bash
       env:
-        TAG_NAME: ${{ inputs.tag_name }}
+        TAG_NAME: ${{ inputs.release_tag }}
       run: |
         set -euo pipefail
 
         # Validate input
         if [ -z "$TAG_NAME" ]; then
-          echo "::error::tag_name input is required and cannot be empty"
+          echo "::error::release_tag input is required and cannot be empty"
           exit 1
         fi
 
