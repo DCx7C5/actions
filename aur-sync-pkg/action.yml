@@ -14,18 +14,10 @@ inputs:
   dir_name:
     description: "Source package directory in upstream repository (for non-custom packages) or target package directory in this repository (for custom packages)"
     required: false
-    default: ${{ inputs.pkg_name }}
+    default: ''
   sync_type:
     description: "Change type for commit message (add/update/delete)"
     required: true
-    options:
-      description: "Allowed values for sync_type"
-      add:
-        description: "Process added packages"
-      update:
-        description: "Process updated packages"
-      delete:
-        description: "Process removed packages"
   is_custom:
     description: "Custom Package type (true/false) to determine sync behavior"
     required: true
@@ -55,7 +47,7 @@ runs:
   steps:
     - id: sync_custom_pkg
       if: inputs.is_custom == 'true' && (inputs.sync_type == 'add' || inputs.sync_type == 'update')
-      uses: ./aur-sync-package/sync-custom-pkg
+      uses: ./aur-sync-pkg/sync-custom-pkg
       with:
         pkg_name: ${{ inputs.pkg_name }}
         dir_name: ${{ inputs.dir_name }}
@@ -66,7 +58,7 @@ runs:
 
     - id: sync_pkg
       if: inputs.is_custom == 'false' && (inputs.sync_type == 'add' || inputs.sync_type == 'update')
-      uses: ./aur-sync-package/sync-pkg
+      uses: ./aur-sync-pkg/sync-pkg
       with:
         pkg_name: ${{ inputs.pkg_name }}
         remote_name: ${{ inputs.remote_name }}
@@ -80,7 +72,7 @@ runs:
       with:
         action: 'add'
         pkg_name: ${{ inputs.pkg_name }}
-        key: '{"dir":"${{ inputs.dir_name }}","custom":${{ inputs.is_custom }},"upstream":"${{ inputs.remote_repo }}"}'
+        key: '{"custom":${{ inputs.is_custom }},"dir":"${{ inputs.dir_name }}","upstream":"${{ inputs.remote_repo }}"}'
 
     - name: Finalize outputs
       id: finalize
