@@ -1,0 +1,54 @@
+name: "Delete Package from PKGBUILDS repository"
+description: "Deletes a package directory from the repository and stages the change"
+author: "DCx7C5"
+
+branding:
+  icon: trash-2
+  color: red
+
+inputs:
+  pkg_name:
+    description: "Name of the package to delete"
+    required: true
+  stage_changes:
+    description: "Whether to stage the deletion changes (true/false)"
+    required: false
+    default: 'true'
+
+outputs:
+  changed:
+    description: "Whether deletion produced staged changes"
+    value: ${{ steps.stage.outputs.staged }}
+  staged_files:
+    description: "New-line separated staged file list"
+    value: ${{ steps.stage.outputs.staged_files }}
+
+
+runs:
+  using: composite
+  steps:
+    - name: Delete package
+      id: delete_pkg
+      shell: bash
+      run: |
+        set -euo pipefail
+        pkg_name="${{ inputs.pkg_name }}"
+        [[ -n "$pkg_name" ]] || { echo "::error::pkg_name is required."; exit 1; }
+        rm -rf -- "$pkg_name"
+
+    - name: Delete package from package.json
+      id: del_json
+      uses: ./json-packages
+      with:
+        path: '${{ github.workspace }}/.ci/packages.json'
+        action: 'remove'
+        pkg_name: ${{ inputs.pkg_name }}
+
+    - name: Stage changes
+      id: stage
+      if: inputs.stage_changes == 'true' || inputs.stage_changes == true
+      uses: ./git-stage-changes
+      with:
+        paths: |
+          ${{ inputs.pkg_name }}
+          ${{ github.workspace }}/.ci/packages.json
