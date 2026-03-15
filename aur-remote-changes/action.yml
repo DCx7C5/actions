@@ -33,6 +33,12 @@ outputs:
   has_updates:
     description: "Whether any new or changed package directories were detected"
     value: ${{ steps.get_new.outputs.new_dirs != '' || steps.get_changes.outputs.changed_dirs != '' }}
+  has_new:
+    description: "Whether any new package directories were detected"
+    value: ${{ steps.get_new.outputs.new_dirs != '' }}
+  has_changed:
+    description: "Whether any changed package directories were detected"
+    value: ${{ steps.get_changes.outputs.changed_dirs != '' }}
   has_removed:
     description: "Whether any removed package directories were detected"
     value: ${{ steps.get_removed.outputs.removed_dirs != '' }}
