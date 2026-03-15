@@ -35,7 +35,8 @@ inputs:
 runs:
   using: composite
   steps:
-    - id: mask_and_validate
+    - name: Mask GPG passphrase and validate inputs
+      id: mask_and_validate
       shell: bash
       run: |
         set -euo pipefail
@@ -57,27 +58,65 @@ runs:
           echo "::notice::GPG signing is disabled (no key ID provided)"
         fi
 
-    - id: aur_build_repo
+    - name: Validate signing requirements
+      if: inputs.gpg_sign == 'true' && inputs.gpg_key_id == ''
+      shell: bash
+      run: |
+        echo "::error::gpg_key_id is required when gpg_sign is set to 'true'."
+        exit 1
+
+    - name: Build unsigned repository database
+      id: aur_build_repo
+      if: inputs.gpg_sign != 'true'
+      uses: ./arch-run-cmd
+      working-directory: "${{ inputs.working_directory }}"
+      with:
+        run_with_sudo: 'false'
+        enable_ccache: 'false'
+        preset_cache: 'false'
+        github_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+
+          shopt -s nullglob
+          pkgs=(*.pkg.tar.zst)
+          if (( ${#pkgs[@]} == 0 )); then
+            echo "::error::No package files matching '*.pkg.tar.zst' found in working directory."
+            exit 1
+          fi
+
+          repo-add --new --remove "${{ inputs.database_name }}.db.tar.gz" "${pkgs[@]}" || {
+            echo "::error::Failed to build repository database (GPG signing is disabled)"
+            exit 1
+          }
+          
+          echo "::notice::Repository database '${{ inputs.database_name }}.db.tar.gz' built successfully"
+
+    - name: Build signed repository database
+      if: inputs.gpg_sign == 'true' && inputs.gpg_key_id != ''
+      id: aur_build_repo_signed
       uses: ./arch-run-cmd
       working-directory: "${{ inputs.working_directory }}"
       with:
         run_with_sudo: 'false'
         enable_ccache: 'false'
         preset_cache: 'true'
-        github_token: '${{ inputs.github_token || env.GH_TOKEN || github.token }}'
+        github_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
+        gpg_key_id: ${{ inputs.gpg_key_id }}
+        gpg_passhphrase: ${{ inputs.gpg_passphrase }}
         run: |
           set -euo pipefail
-          if [[ -n "${{ inputs.gpg_key_id }}" && -n "${{ inputs.gpg_passphrase }} && "${{ inputs.gpg_sign }}" == true ]]; then
-            repo-add --sign --new --remove ${{ inputs.database_name }}.db.tar.gz *.pkg.tar.zst || {
-              echo "::error::Failed to build and sign repository database with GPG key ID '${{ inputs.gpg_key_id }}'"
-              exit 1
-            }
-          else
-            repo-add --new --remove ${{ inputs.database_name }}.db.tar.gz *.pkg.tar.zst || {
-              echo "::error::Failed to build repository database (GPG signing is disabled)"
-              exit 1
-            }
-          fi
-          
-          echo "::notice::Repository database '${{ inputs.database_name }}.db.tar.gz' built successfully"
 
+          shopt -s nullglob
+          pkgs=(*.pkg.tar.zst)
+          if (( ${#pkgs[@]} == 0 )); then
+            echo "::error::No package files matching '*.pkg.tar.zst' found in working directory."
+            exit 1
+          fi
+
+          repo-add --sign --new --remove "${{ inputs.database_name }}.db.tar.gz" "${pkgs[@]}" || {
+            echo "::error::Failed to build and sign repository database with GPG key ID '${{ inputs.gpg_key_id }}'"
+            exit 1
+          }
+          
+          echo "::notice::Signed repository database '${{ inputs.database_name }}.db.tar.gz' built successfully"
