@@ -5,13 +5,13 @@ on:
   schedule:
     - cron: '0 0 * * *' # Run daily at midnight
 
-permissions:
-  contents: write
-
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
     steps:
       - name: Generate GitHub App Token
         id: app_token
