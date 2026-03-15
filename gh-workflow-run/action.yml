@@ -50,7 +50,7 @@ runs:
 
           if [[ -n "$KEEP" && "$KEEP" =~ ^[0-9]+$ && "$KEEP" -gt 0 ]]; then
             # Get all run IDs sorted by creation (oldest first)
-            run_ids_sorted=$(gh run list --status "$status" --json databaseId,createdAt --jq 'sort_by(.createdAt) | .[].databaseId')
+            run_ids_sorted=$(gh run list --status "$status" --limit 1000 --json databaseId,createdAt --jq 'sort_by(.createdAt) | .[].databaseId')
             total=$(echo "$run_ids_sorted" | grep -c . || true)
             if (( total > KEEP )); then
               to_delete=$((total - KEEP))
@@ -61,7 +61,7 @@ runs:
               continue
             fi
           else
-            run_ids_to_delete=$(gh run list --status "$status" --json databaseId --jq '.[].databaseId')
+            run_ids_to_delete=$(gh run list --status "$status" --limit 1000 --json databaseId --jq '.[].databaseId')
           fi
 
           [[ -z "$run_ids_to_delete" ]] && continue
