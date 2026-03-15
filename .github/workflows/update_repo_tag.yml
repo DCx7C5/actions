@@ -49,13 +49,13 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
-          method: inline
+          method: 'inline'
           gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
-          delete_after_import: true
-          configure_git: true
-          setup_home: true
-          preset_pass: true
+          delete_after_import: 'true'
+          configure_git: 'true'
+          setup_home: 'true'
+          preset_pass: 'true'
 
       - name: Delete old tag & release (if exists)
         id: tag_delete
@@ -71,7 +71,7 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
           GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
         with:
-          sign: true
+          sign: 'true'
           version: "v1"
           commit_msg: "Release v1"
           pass: ${{ secrets.GPG_PASSPHRASE }}
@@ -85,10 +85,10 @@ jobs:
           github_token: ${{ steps.app_token.outputs.token || env.GH_TOKEN || github.token }}
           release_tag: ${{ steps.tag_create.outputs.tag_name }}
           release_name: ${{ steps.tag_create.outputs.tag_name }}
-          generate_notes: true
-          fail_if_exists: true
-          prerelease: false
-          draft: false
+          generate_notes: 'false'
+          fail_if_exists: 'true'
+          prerelease: 'false'
+          draft: 'false'
 
       - name: Cleanup GPG keys from runner
         if: steps.gpg_import.outputs.gpg_home != ''
