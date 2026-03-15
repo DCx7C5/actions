@@ -1,0 +1,74 @@
+name: "Create GitHub Issue"
+description: "Create a GitHub issue in the specified repository with given title and body"
+author: "DCx7C5"
+
+branding:
+  icon: "mail"
+  color: "yellow"
+
+
+inputs:
+  title:
+    required: true
+    description: "Title of the GitHub issue to create"
+  body:
+    required: false
+    default: ''
+    description: "Body content of the GitHub issue (optional)"
+  labels:
+    required: false
+    default: ''
+    description: "Comma-separated list of labels to assign to the issue (optional)"
+  assignees:
+    required: false
+    default: ''
+    description: "Comma-separated list of GitHub usernames to assign the issue to (optional)"
+  github_token:
+    required: false
+    default: ''
+    description: "GitHub token for API access (defaults to github.token)"
+
+
+runs:
+  using: composite
+  steps:
+    - id: create_issue
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token || env.GITHUB_TOKEN || github.token }}
+        ISSUE_TITLE: ${{ inputs.title }}
+        ISSUE_BODY: ${{ inputs.body }}
+        ISSUE_LABELS: ${{ inputs.labels }}
+        ISSUE_ASSIGNEES: ${{ inputs.assignees }}
+      run: |
+        set -euo pipefail
+        
+        # Prepare labels and assignees arguments
+        LABELS_ARG=""
+        if [ -n "$ISSUE_LABELS" ]; then
+            IFS=',' read -ra LABELS_ARRAY <<< "$ISSUE_LABELS"
+            for label in "${LABELS_ARRAY[@]}"; do
+                LABELS_ARG+="--label $(echo "$label" | xargs) "
+            done
+        fi
+        
+        ASSIGNEES_ARG=""
+        if [ -n "$ISSUE_ASSIGNEES" ]; then
+            IFS=',' read -ra ASSIGNEES_ARRAY <<< "$ISSUE_ASSIGNEES"
+            for assignee in "${ASSIGNEES_ARRAY[@]}"; do
+                ASSIGNEES_ARG+="--assignee $(echo "$assignee" | xargs) "
+            done
+        fi
+        
+        # Create the issue using gh CLI
+        ISSUE_URL=$(gh issue create --title "$ISSUE_TITLE" --body "$ISSUE_BODY" $LABELS_ARG $ASSIGNEES_ARG --json url -q .url)
+
+    - if: success()
+      shell: bash
+      run: |
+        echo "::notice::✅ Created issue: ${{ steps.create_issue.outputs.ISSUE_URL }}"
+
+    - if: failure()
+      shell: bash
+      run: |
+        echo "::error::❌ Failed to create issue with ${{ inputs.title }}. Please check the error messages above for details.'"
