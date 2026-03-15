@@ -44,9 +44,11 @@ runs:
       shell: bash
       working-directory: ${{ inputs.workspace_dir }}
       env:
+        FILES_PATTERN: ${{ inputs.files }}
         SIG_EXT: ${{ inputs.sig_ext }}
+        KEY_ID: ${{ inputs.gpg_keyid }}
+        PASSPHRASE: ${{ inputs.gpg_passphrase }}
         PASS_PRECACHED: ${{ inputs.gpg_pass_precached }}
-        GPG_KEY: ${{ inputs.gpg_keyid }}
       run: |
         set -euo pipefail
         
