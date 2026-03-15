@@ -1,0 +1,83 @@
+name: "Update custom package upstream changes with PKGBUILDs repository"
+description: "GitHub Action to update custom package changes from an upstream repository to this PKGBUILDs repository. It fetches changes from the specified upstream repository and ref, compares the package directories, and commits any differences with appropriate commit messages based on the change type (new/changed)."
+author: "DCx7C5"
+
+branding:
+  icon: "git-merge"
+  color: "blue"
+
+
+inputs:
+  pkg_name:
+    description: "Target package name in this repository"
+    required: true
+  remote_pkg_name:
+    description: "Source package directory in upstream repository (for non-custom packages) or target package directory in this repository (for custom packages)"
+    required: false
+    default: ${{ inputs.pkg_name }}
+  remote_repo:
+    required: true
+    description: "Remote repository <User/Repo>"
+  remote_name:
+    required: true
+    description: "Name of the remote to add for the AUR repository (default: upstream)"
+  remote_ref:
+    required: true
+    description: "Git reference to compare against (default: main)"
+  base_ref:
+    required: false
+    description: "Git reference for base repository"
+    default: 'HEAD'
+
+
+outputs:
+  changed:
+    description: "Whether any package files were changed and committed"
+    value: ${{ steps.sync_custom_pkg.outputs.changed }}
+  commit_sha:
+    description: "Commit SHA if a commit was created"
+    value: ${{ steps.sync_custom_pkg.outputs.commit_sha }}
+
+
+runs:
+  using: composite
+  steps:
+    - id: sync_custom_pkg
+      shell: bash
+      env:
+        PKG_NAME: "${{ inputs.pkg_name }}"
+        DIR_NAME: "${{ inputs.remote_pkg_name }}"
+        REMOTE_PKG_NAME: "${{ inputs.remote_pkg_name }}"
+        REMOTE_NAME: "${{ inputs.remote_name }}"
+        REMOTE_REF: "${{ inputs.remote_ref }}"
+        BASE_REF: "${{ inputs.base_ref }}"
+      run: |
+        set -euo pipefail
+
+        mapfile -t changed_files < <(git diff --name-only "$BASE_REF" "$REMOTE_NAME/$REMOTE_REF" -- "$DIR_NAME")
+        if (( ${#changed_files[@]} == 0 )); then
+          echo "changed=false" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        backup_dir="${RUNNER_TEMP}/custom-backup-${PKG_NAME//\//-}"
+        rm -rf -- "$backup_dir"
+        if [[ -d "$PKG_NAME" ]]; then
+          cp -a "$PKG_NAME" "$backup_dir"
+        fi
+        rm -rf -- "$DIR_NAME"
+        rm -rf -- "$PKG_NAME"
+        if ! git cat-file -e "$REMOTE_NAME/$REMOTE_REF:$DIR_NAME/PKGBUILD" 2>/dev/null; then
+          echo "::error::Upstream package directory '$DIR_NAME' not found in $REMOTE_NAME/$REMOTE_REF."
+          exit 1
+        fi
+        git archive --format=tar "$REMOTE_NAME/$REMOTE_REF" "$DIR_NAME" | tar -xf -
+        if [[ "$DIR_NAME" != "$PKG_NAME" ]]; then
+          mv "$DIR_NAME" "$PKG_NAME"
+        fi
+        # Re-apply local custom overrides on top of upstream state.
+        if [[ -d "$backup_dir" ]]; then
+          rsync -a "$backup_dir/" "$PKG_NAME/"
+        fi
+        echo "changed=true" >> "$GITHUB_OUTPUT"
+        echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"

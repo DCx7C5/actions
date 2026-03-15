@@ -1,22 +1,20 @@
-name: "Sync custom package upstream changes with PKGBUILDs repository"
-description: "GitHub Action to sync custom package changes from an upstream repository to this PKGBUILDs repository. It fetches changes from the specified upstream repository and ref, compares the package directories, and commits any differences with appropriate commit messages based on the change type (new/changed)."
+name: "Add custom package upstream changes with PKGBUILDs repository"
+description: "GitHub Action to add custom package changes from an upstream repository to this PKGBUILDs repository. It fetches changes from the specified upstream repository and ref, compares the package directories, and commits any differences with appropriate commit messages based on the change type (new/changed)."
 author: "DCx7C5"
 
 branding:
   icon: "git-merge"
   color: "blue"
 
+
 inputs:
   pkg_name:
     description: "Target package name in this repository"
     required: true
-  dir_name:
+  remote_pkg_name:
     description: "Source package directory in upstream repository (for non-custom packages) or target package directory in this repository (for custom packages)"
     required: false
     default: ${{ inputs.pkg_name }}
-  sync_type:
-    description: "add/update"
-    required: true
   remote_repo:
     required: true
     description: "Remote repository <User/Repo>"
@@ -31,13 +29,15 @@ inputs:
     description: "Git reference for base repository"
     default: 'HEAD'
 
+
 outputs:
   changed:
     description: "Whether any package files were changed and committed"
-    value: ${{ steps.finalize.outputs.changed }}
+    value: ${{ steps.sync_custom_pkg.outputs.changed }}
   commit_sha:
     description: "Commit SHA if a commit was created"
-    value: ${{ steps.finalize.outputs.commit_sha }}
+    value: ${{ steps.sync_custom_pkg.outputs.commit_sha }}
+
 
 runs:
   using: composite
@@ -46,18 +46,12 @@ runs:
       shell: bash
       env:
         PKG_NAME: "${{ inputs.pkg_name }}"
-        DIR_NAME: "${{ inputs.dir_name }}"
-        SYNC_TYPE: "${{ inputs.sync_type }}"
+        DIR_NAME: "${{ inputs.remote_pkg_name }}"
         REMOTE_NAME: "${{ inputs.remote_name }}"
         REMOTE_REF: "${{ inputs.remote_ref }}"
         BASE_REF: "${{ inputs.base_ref }}"
       run: |
         set -euo pipefail
-
-        if [[ "$SYNC_TYPE" != "add" && "$SYNC_TYPE" != "update" ]]; then
-          echo "::error::sync_type must be 'add' or 'update', got '$SYNC_TYPE'."
-          exit 1
-        fi
 
         mapfile -t changed_files < <(git diff --name-only "$BASE_REF" "$REMOTE_NAME/$REMOTE_REF" -- "$DIR_NAME")
         if (( ${#changed_files[@]} == 0 )); then
@@ -90,4 +84,3 @@ runs:
         fi
 
         echo "changed=true" >> "$GITHUB_OUTPUT"
-
