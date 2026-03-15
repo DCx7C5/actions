@@ -57,12 +57,12 @@ Merge a specified branch or ref into the current branch with configurable merge 
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `source` | ✅ | - | Source branch/ref to merge (e.g., `origin/main`, `feature/xyz`) |
-| `strategy` | ❌ | `merge` | Merge strategy: `merge`, `ff-only`, `no-ff`, `squash` |
-| `message` | ❌ | `` | Custom merge commit message |
-| `allow_unrelated` | ❌ | `false` | Allow merging unrelated histories |
+| Input             | Required | Default | Description                                                     |
+|-------------------|----------|---------|-----------------------------------------------------------------|
+| `source`          | ✅        | -       | Source branch/ref to merge (e.g., `origin/main`, `feature/xyz`) |
+| `strategy`        | ❌        | `merge` | Merge strategy: `merge`, `ff-only`, `no-ff`, `squash`           |
+| `message`         | ❌        | ``      | Custom merge commit message                                     |
+| `allow_unrelated` | ❌        | `false` | Allow merging unrelated histories                               |
 
 ## Strategies Explained
 

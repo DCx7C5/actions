@@ -44,12 +44,12 @@ Pull the latest changes from a Git repository with configurable strategies.
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `strategy` | ❌ | `rebase` | Pull strategy: `rebase` or `ff-only` |
-| `remote` | ❌ | `origin` | Remote name to pull from |
-| `branch` | ❌ | `` | Branch to pull (defaults to current branch) |
-| `allow_dirty` | ❌ | `false` | Allow pull with local uncommitted changes |
+| Input         | Required | Default  | Description                                 |
+|---------------|----------|----------|---------------------------------------------|
+| `strategy`    | ❌        | `rebase` | Pull strategy: `rebase` or `ff-only`        |
+| `remote`      | ❌        | `origin` | Remote name to pull from                    |
+| `branch`      | ❌        | ``       | Branch to pull (defaults to current branch) |
+| `allow_dirty` | ❌        | `false`  | Allow pull with local uncommitted changes   |
 
 ## Strategies Explained
 

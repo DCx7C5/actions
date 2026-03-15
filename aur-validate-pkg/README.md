@@ -12,12 +12,12 @@ Composite GitHub Action to validate an AUR package with `namcap` and `makepkg --
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `pkg_name` | yes | - | Name of the package directory containing `PKGBUILD`. |
-| `working_directory` | no | `${{ github.workspace || '.' }}` | Base directory where the package folder is located. |
-| `run_namcap` | no | `true` | Run `namcap PKGBUILD` check. |
-| `verify_sources` | no | `true` | Run `makepkg --verifysource` source checksum validation. |
+| Input               | Required | Default               | Description                                              |
+|---------------------|----------|-----------------------|----------------------------------------------------------|
+| `pkg_name`          | yes      | -                     | Name of the package directory containing `PKGBUILD`.     |
+| `working_directory` | no       | `${{ github.workspace |                                                          | '.' }}` | Base directory where the package folder is located. |
+| `run_namcap`        | no       | `true`                | Run `namcap PKGBUILD` check.                             |
+| `verify_sources`    | no       | `true`                | Run `makepkg --verifysource` source checksum validation. |
 
 ## Outputs
 

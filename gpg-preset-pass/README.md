@@ -11,13 +11,13 @@ Composite GitHub Action to preset (or forget) GPG passphrases in `gpg-agent` cac
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `key_id` | no | `''` | Key ID or fingerprint to scope keygrip discovery. |
-| `pass` | yes | - | Passphrase to cache in `gpg-agent`. |
-| `grp` | no | `''` | Explicit keygrip to target. |
-| `gpg_home` | no | `''` | GPG home path (fallback to existing `GNUPGHOME`). |
-| `forget` | no | `''` | If `true`, remove cached passphrases instead of presetting. |
+| Input      | Required | Default | Description                                                 |
+|------------|----------|---------|-------------------------------------------------------------|
+| `key_id`   | no       | `''`    | Key ID or fingerprint to scope keygrip discovery.           |
+| `pass`     | yes      | -       | Passphrase to cache in `gpg-agent`.                         |
+| `grp`      | no       | `''`    | Explicit keygrip to target.                                 |
+| `gpg_home` | no       | `''`    | GPG home path (fallback to existing `GNUPGHOME`).           |
+| `forget`   | no       | `''`    | If `true`, remove cached passphrases instead of presetting. |
 
 ## Outputs
 

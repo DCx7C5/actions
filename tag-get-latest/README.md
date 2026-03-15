@@ -10,16 +10,16 @@ Composite GitHub Action to query the latest GitHub release tag for a repository 
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `repository` | no | `${{ github.repository }}` | Repository to query, e.g. `owner/name`. |
-| `exit_if_not_found` | no | `false` | Declared switch to fail if no tag is found. |
-| `exit_if_up_to_date` | no | `false` | Declared switch to fail if the latest tag matches the current tag. |
+| Input                | Required | Default                    | Description                                                        |
+|----------------------|----------|----------------------------|--------------------------------------------------------------------|
+| `repository`         | no       | `${{ github.repository }}` | Repository to query, e.g. `owner/name`.                            |
+| `exit_if_not_found`  | no       | `false`                    | Declared switch to fail if no tag is found.                        |
+| `exit_if_up_to_date` | no       | `false`                    | Declared switch to fail if the latest tag matches the current tag. |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
+| Output     | Description                                    |
+|------------|------------------------------------------------|
 | `tag_name` | Latest release tag returned by the GitHub API. |
 
 ## Environment and dependencies

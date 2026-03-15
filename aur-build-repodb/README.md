@@ -11,14 +11,14 @@ Composite GitHub Action to build an Arch repository database with `repo-add`, wi
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `database_name` | yes | - | Repository database base name (for example `dystopian`). |
-| `gpg_sign` | no | `false` | If `true`, enables the signed build path (requires `gpg_key_id`). |
-| `gpg_key_id` | no | `''` | GPG key ID used for signing mode. |
-| `gpg_passphrase` | no | `''` | Passphrase for signing key (forwarded to nested action signing input). |
-| `github_token` | no | `''` | Token used by nested `arch-run-cmd`. Falls back to `env.GH_TOKEN` or `github.token`. |
-| `working_directory` | no | `${{ github.workspace }}` | Directory where `repo-add` is executed. |
+| Input               | Required | Default                   | Description                                                                          |
+|---------------------|----------|---------------------------|--------------------------------------------------------------------------------------|
+| `database_name`     | yes      | -                         | Repository database base name (for example `dystopian`).                             |
+| `gpg_sign`          | no       | `false`                   | If `true`, enables the signed build path (requires `gpg_key_id`).                    |
+| `gpg_key_id`        | no       | `''`                      | GPG key ID used for signing mode.                                                    |
+| `gpg_passphrase`    | no       | `''`                      | Passphrase for signing key (forwarded to nested action signing input).               |
+| `github_token`      | no       | `''`                      | Token used by nested `arch-run-cmd`. Falls back to `env.GH_TOKEN` or `github.token`. |
+| `working_directory` | no       | `${{ github.workspace }}` | Directory where `repo-add` is executed.                                              |
 
 ## Outputs
 

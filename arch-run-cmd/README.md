@@ -13,18 +13,18 @@ Docker-based GitHub Action that runs a command inside a minimal Arch Linux conta
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `run` | yes | - | Command or script to execute inside the container. |
-| `working_directory` | no | `''` | Working directory inside the container. Falls back to `${{ github.workspace }}`. |
-| `gpg_home` | no | `''` | GPG home directory, typically inside the mounted workspace. |
-| `ccache_dir` | no | `${{ github.workspace }}/.ccache` | ccache directory intended for build cache reuse. |
-| `enable_ccache` | no | `true` | Declared switch for ccache support. |
-| `github_token` | no | `''` | Token exposed as `GH_TOKEN` inside the container. Falls back to `env.GH_TOKEN` or `github.token`. |
-| `gpg_key_id` | no | `''` | GPG key ID or fingerprint used for passphrase preset lookup. |
-| `gpg_passhphrase` | no | `''` | GPG passphrase used for cache preset before execution. |
-| `preset_cache` | no | `true` | Whether to pre-cache the GPG passphrase in `gpg-agent`. |
-| `run_with_sudo` | no | `false` | Run the command as `builder` via `sudo -u builder`. |
+| Input               | Required | Default                           | Description                                                                                       |
+|---------------------|----------|-----------------------------------|---------------------------------------------------------------------------------------------------|
+| `run`               | yes      | -                                 | Command or script to execute inside the container.                                                |
+| `working_directory` | no       | `''`                              | Working directory inside the container. Falls back to `${{ github.workspace }}`.                  |
+| `gpg_home`          | no       | `''`                              | GPG home directory, typically inside the mounted workspace.                                       |
+| `ccache_dir`        | no       | `${{ github.workspace }}/.ccache` | ccache directory intended for build cache reuse.                                                  |
+| `enable_ccache`     | no       | `true`                            | Declared switch for ccache support.                                                               |
+| `github_token`      | no       | `''`                              | Token exposed as `GH_TOKEN` inside the container. Falls back to `env.GH_TOKEN` or `github.token`. |
+| `gpg_key_id`        | no       | `''`                              | GPG key ID or fingerprint used for passphrase preset lookup.                                      |
+| `gpg_passhphrase`   | no       | `''`                              | GPG passphrase used for cache preset before execution.                                            |
+| `preset_cache`      | no       | `true`                            | Whether to pre-cache the GPG passphrase in `gpg-agent`.                                           |
+| `run_with_sudo`     | no       | `false`                           | Run the command as `builder` via `sudo -u builder`.                                               |
 
 ## Outputs
 

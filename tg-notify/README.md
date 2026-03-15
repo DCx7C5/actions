@@ -13,13 +13,13 @@ Composite GitHub Action to send a Telegram message from a GitHub Actions workflo
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `token` | yes | - | Telegram bot token. Expected format: `<numeric-id>:<token>`. |
-| `to` | yes | - | Telegram chat ID. Must be numeric, can be negative for groups/channels. |
-| `message` | yes | - | Message text to send. |
-| `parse_mode` | no | `HTML` | Telegram parse mode: `MarkdownV2`, `Markdown`, or `HTML`. |
-| `silent` | no | `false` | Whether to disable notification sound (`true`/`false`). |
+| Input        | Required | Default | Description                                                             |
+|--------------|----------|---------|-------------------------------------------------------------------------|
+| `token`      | yes      | -       | Telegram bot token. Expected format: `<numeric-id>:<token>`.            |
+| `to`         | yes      | -       | Telegram chat ID. Must be numeric, can be negative for groups/channels. |
+| `message`    | yes      | -       | Message text to send.                                                   |
+| `parse_mode` | no       | `HTML`  | Telegram parse mode: `MarkdownV2`, `Markdown`, or `HTML`.               |
+| `silent`     | no       | `false` | Whether to disable notification sound (`true`/`false`).                 |
 
 ## Outputs
 

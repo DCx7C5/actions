@@ -11,11 +11,11 @@ Composite GitHub Action to upload one or more files as assets to an existing Git
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `release_tag` | yes | - | Tag name/version for the target release. |
-| `assets` | no | `""` | Newline-separated list of file paths to upload. |
-| `github_token` | no | `""` | Token for GitHub API/CLI. Falls back to `env.GITHUB_TOKEN` or `${{ github.token }}`. |
+| Input          | Required | Default | Description                                                                          |
+|----------------|----------|---------|--------------------------------------------------------------------------------------|
+| `release_tag`  | yes      | -       | Tag name/version for the target release.                                             |
+| `assets`       | no       | `""`    | Newline-separated list of file paths to upload.                                      |
+| `github_token` | no       | `""`    | Token for GitHub API/CLI. Falls back to `env.GITHUB_TOKEN` or `${{ github.token }}`. |
 
 ## Outputs
 

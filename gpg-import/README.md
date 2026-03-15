@@ -19,31 +19,31 @@ It auto-detects the input type, imports the key, and exposes key stats as output
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `gpg_key` | yes | - | Inline key content, file path, or key id/fingerprint |
-| `gpg_pass` | no | `''` | Passphrase for GPG key (also used as SSL pass fallback) |
-| `ssl_pass` | no | `''` | Passphrase for OpenSSL decryption |
-| `keyserver_url` | no | `hkps://keys.openpgp.org` | Keyserver URL |
-| `delete_after_import` | no | `true` | Securely delete key file after file import |
-| `method` | no | `auto` | Declared import method hint (`secret`, `file`, `keyserver`, `auto`) |
-| `gpg_home` | no | `''` | Explicit GPG home directory |
-| `gpg_type` | no | `auto` | Key type hint (`auto`, `private`, `public`) |
-| `configure_git` | no | `true` | Configure Git to sign commits/tags with imported key |
-| `setup_home` | no | `true` | Create and use temporary GPG home |
-| `preset_pass` | no | `true` | Preset passphrase with `gpg-agent` |
-| `github_token` | no | `''` | Token for git/GitHub auth when configuring Git |
+| Input                 | Required | Default                   | Description                                                         |
+|-----------------------|----------|---------------------------|---------------------------------------------------------------------|
+| `gpg_key`             | yes      | -                         | Inline key content, file path, or key id/fingerprint                |
+| `gpg_pass`            | no       | `''`                      | Passphrase for GPG key (also used as SSL pass fallback)             |
+| `ssl_pass`            | no       | `''`                      | Passphrase for OpenSSL decryption                                   |
+| `keyserver_url`       | no       | `hkps://keys.openpgp.org` | Keyserver URL                                                       |
+| `delete_after_import` | no       | `true`                    | Securely delete key file after file import                          |
+| `method`              | no       | `auto`                    | Declared import method hint (`secret`, `file`, `keyserver`, `auto`) |
+| `gpg_home`            | no       | `''`                      | Explicit GPG home directory                                         |
+| `gpg_type`            | no       | `auto`                    | Key type hint (`auto`, `private`, `public`)                         |
+| `configure_git`       | no       | `true`                    | Configure Git to sign commits/tags with imported key                |
+| `setup_home`          | no       | `true`                    | Create and use temporary GPG home                                   |
+| `preset_pass`         | no       | `true`                    | Preset passphrase with `gpg-agent`                                  |
+| `github_token`        | no       | `''`                      | Token for git/GitHub auth when configuring Git                      |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
+| Output        | Description                                       |
+|---------------|---------------------------------------------------|
 | `fingerprint` | Fingerprint of imported key (or keyserver key id) |
-| `keys_total` | Total keys available |
-| `keys_public` | Number of public keys |
-| `keys_secret` | Number of secret keys |
-| `gpg_home` | Effective GPG home directory |
-| `key_grips` | Keygrips (if available) |
+| `keys_total`  | Total keys available                              |
+| `keys_public` | Number of public keys                             |
+| `keys_secret` | Number of secret keys                             |
+| `gpg_home`    | Effective GPG home directory                      |
+| `key_grips`   | Keygrips (if available)                           |
 
 ## Environment variables
 

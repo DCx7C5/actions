@@ -11,11 +11,11 @@ Composite GitHub Action to set ownertrust level for an imported GPG key.
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `fingerprint` | yes | - | Fingerprint of the GPG key to update trust for. |
-| `trust_level` | no | `5` | Trust level value passed to GPG (`5` = ultimate/owner trust in this flow). |
-| `gpg_home` | no | `''` | Path to `GNUPGHOME`; falls back to `env.GNUPGHOME` or `${{ github.workspace }}/.gnupg`. |
+| Input         | Required | Default | Description                                                                             |
+|---------------|----------|---------|-----------------------------------------------------------------------------------------|
+| `fingerprint` | yes      | -       | Fingerprint of the GPG key to update trust for.                                         |
+| `trust_level` | no       | `5`     | Trust level value passed to GPG (`5` = ultimate/owner trust in this flow).              |
+| `gpg_home`    | no       | `''`    | Path to `GNUPGHOME`; falls back to `env.GNUPGHOME` or `${{ github.workspace }}/.gnupg`. |
 
 ## Outputs
 

@@ -15,15 +15,15 @@ Composite GitHub Action to create a Git tag locally and push it to `origin`, opt
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `version` | yes | - | Tag name/version to create, e.g. `v1.2.3`. |
-| `commit_msg` | no | `''` | Annotation message for the tag. |
-| `fingerprint` | no | `''` | GPG fingerprint or email to use for signing. |
-| `pass` | no | `''` | Passphrase for GPG signing key. |
-| `sign` | no | `true` | Whether to sign the tag with GPG. |
-| `gpg_home` | no | `''` | Path to `GNUPGHOME`. |
-| `gpg_grp` | no | `''` | Explicit keygrip used when presetting a passphrase. |
+| Input         | Required | Default | Description                                         |
+|---------------|----------|---------|-----------------------------------------------------|
+| `version`     | yes      | -       | Tag name/version to create, e.g. `v1.2.3`.          |
+| `commit_msg`  | no       | `''`    | Annotation message for the tag.                     |
+| `fingerprint` | no       | `''`    | GPG fingerprint or email to use for signing.        |
+| `pass`        | no       | `''`    | Passphrase for GPG signing key.                     |
+| `sign`        | no       | `true`  | Whether to sign the tag with GPG.                   |
+| `gpg_home`    | no       | `''`    | Path to `GNUPGHOME`.                                |
+| `gpg_grp`     | no       | `''`    | Explicit keygrip used when presetting a passphrase. |
 
 ## Outputs
 

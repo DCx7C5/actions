@@ -11,14 +11,14 @@ Composite GitHub Action to delete GitHub Actions workflow runs by status using t
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `workflow_status` | yes | - | Newline-separated statuses to delete (for example `failure`, `cancelled`). |
+| Input             | Required | Default | Description                                                                |
+|-------------------|----------|---------|----------------------------------------------------------------------------|
+| `workflow_status` | yes      | -       | Newline-separated statuses to delete (for example `failure`, `cancelled`). |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
+| Output    | Description                                                         |
+|-----------|---------------------------------------------------------------------|
 | `deleted` | `true` if at least one workflow run was deleted, otherwise `false`. |
 
 ## Dependencies

@@ -17,22 +17,22 @@ It can auto-detect input type and output encoding, then returns plaintext output
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `enc_input` | yes | - | Encrypted file path or inline encrypted value |
-| `passphrase` | yes | - | Password for OpenSSL decryption |
-| `salt` | no | `''` | Optional salt passed to OpenSSL (`-S`) |
-| `type` | no | `auto` | `auto`, `file`, `inline` (also accepts aliases `secret`, `value`, `variable`) |
-| `encoding` | no | `auto` | `auto`, `binary`, or `text` |
-| `cleanup` | no | `true` | Securely delete encrypted input file (file mode only) |
+| Input        | Required | Default | Description                                                                   |
+|--------------|----------|---------|-------------------------------------------------------------------------------|
+| `enc_input`  | yes      | -       | Encrypted file path or inline encrypted value                                 |
+| `passphrase` | yes      | -       | Password for OpenSSL decryption                                               |
+| `salt`       | no       | `''`    | Optional salt passed to OpenSSL (`-S`)                                        |
+| `type`       | no       | `auto`  | `auto`, `file`, `inline` (also accepts aliases `secret`, `value`, `variable`) |
+| `encoding`   | no       | `auto`  | `auto`, `binary`, or `text`                                                   |
+| `cleanup`    | no       | `true`  | Securely delete encrypted input file (file mode only)                         |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
-| `type` | Resolved input type (`file` or `inline`) |
-| `encoding` | Resolved output encoding (`binary` or `text`) |
-| `decrypted_content` | Decrypted text output |
+| Output                  | Description                                      |
+|-------------------------|--------------------------------------------------|
+| `type`                  | Resolved input type (`file` or `inline`)         |
+| `encoding`              | Resolved output encoding (`binary` or `text`)    |
+| `decrypted_content`     | Decrypted text output                            |
 | `decrypted_content_b64` | Base64-encoded decrypted bytes for binary output |
 
 ## Environment and dependencies

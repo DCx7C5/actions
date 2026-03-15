@@ -62,13 +62,13 @@ Fetch references and objects from a remote repository without merging.
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `remote` | ❌ | `origin` | Remote name to fetch from |
-| `ref` | ❌ | `` | Specific ref to fetch (empty = fetch all refs) |
-| `prune` | ❌ | `false` | Remove remote-tracking refs that no longer exist on remote |
-| `tags` | ❌ | `auto` | Fetch tags: `auto`, `all`, `none` |
-| `depth` | ❌ | `` | Limit fetching to N commits (shallow fetch) |
+| Input    | Required | Default  | Description                                                |
+|----------|----------|----------|------------------------------------------------------------|
+| `remote` | ❌        | `origin` | Remote name to fetch from                                  |
+| `ref`    | ❌        | ``       | Specific ref to fetch (empty = fetch all refs)             |
+| `prune`  | ❌        | `false`  | Remove remote-tracking refs that no longer exist on remote |
+| `tags`   | ❌        | `auto`   | Fetch tags: `auto`, `all`, `none`                          |
+| `depth`  | ❌        | ``       | Limit fetching to N commits (shallow fetch)                |
 
 ## Tags Options
 

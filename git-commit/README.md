@@ -12,29 +12,29 @@ Composite GitHub Action to create (or amend) Git commits with optional GPG signi
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `message` | no | `''` | Commit message to use. |
-| `copilot` | no | `false` | If `true`, enable Copilot CLI support for commit message generation. |
-| `amend` | no | `false` | If `true`, amend previous commit instead of creating a new one. |
-| `signoff` | no | `false` | If `true`, add `Signed-off-by` line. |
-| `allow_empty` | no | `false` | If `true`, allow creating an empty commit. |
-| `no_verify` | no | `false` | If `true`, bypass commit hooks (`--no-verify`). |
-| `gpg_sign` | no | `false` | If `true`, request GPG signing flow. |
-| `gpg_key_id` | no | `""` | GPG key ID for signing. |
-| `gpg_passphrase` | no | `""` | Passphrase for the GPG key. |
-| `pre_cached_pass` | no | `false` | Indicates passphrase is already cached in gpg-agent. |
-| `skip_if_no_changes` | no | `true` | If `true`, skip commit when no staged changes exist. |
-| `github_token` | no | `''` | Token used by optional Copilot installation step. |
+| Input                | Required | Default | Description                                                          |
+|----------------------|----------|---------|----------------------------------------------------------------------|
+| `message`            | no       | `''`    | Commit message to use.                                               |
+| `copilot`            | no       | `false` | If `true`, enable Copilot CLI support for commit message generation. |
+| `amend`              | no       | `false` | If `true`, amend previous commit instead of creating a new one.      |
+| `signoff`            | no       | `false` | If `true`, add `Signed-off-by` line.                                 |
+| `allow_empty`        | no       | `false` | If `true`, allow creating an empty commit.                           |
+| `no_verify`          | no       | `false` | If `true`, bypass commit hooks (`--no-verify`).                      |
+| `gpg_sign`           | no       | `false` | If `true`, request GPG signing flow.                                 |
+| `gpg_key_id`         | no       | `""`    | GPG key ID for signing.                                              |
+| `gpg_passphrase`     | no       | `""`    | Passphrase for the GPG key.                                          |
+| `pre_cached_pass`    | no       | `false` | Indicates passphrase is already cached in gpg-agent.                 |
+| `skip_if_no_changes` | no       | `true`  | If `true`, skip commit when no staged changes exist.                 |
+| `github_token`       | no       | `''`    | Token used by optional Copilot installation step.                    |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
-| `commit_sha` | SHA of created commit (empty if no commit was made). |
-| `message` | Resolved commit message used by the action (input/copilot/fallback). |
-| `committed` | `true` if commit was created, otherwise `false`/`pending` according to flow state. |
-| `amended` | Mirrors `inputs.amend`. |
+| Output       | Description                                                                        |
+|--------------|------------------------------------------------------------------------------------|
+| `commit_sha` | SHA of created commit (empty if no commit was made).                               |
+| `message`    | Resolved commit message used by the action (input/copilot/fallback).               |
+| `committed`  | `true` if commit was created, otherwise `false`/`pending` according to flow state. |
+| `amended`    | Mirrors `inputs.amend`.                                                            |
 
 ## Dependencies
 

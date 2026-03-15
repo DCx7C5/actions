@@ -12,20 +12,20 @@ Composite GitHub Action to discover a signing key in `GNUPGHOME` and configure `
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `key_id` | no | `''` | Key ID or fingerprint to use. If empty, first secret key in keyring is used. |
-| `gpg_home` | no | `''` | Path to `GNUPGHOME`. Falls back to existing `GNUPGHOME` environment. |
-| `token` | no | `''` | GitHub token for optional `gh` client config usage. |
+| Input      | Required | Default | Description                                                                  |
+|------------|----------|---------|------------------------------------------------------------------------------|
+| `key_id`   | no       | `''`    | Key ID or fingerprint to use. If empty, first secret key in keyring is used. |
+| `gpg_home` | no       | `''`    | Path to `GNUPGHOME`. Falls back to existing `GNUPGHOME` environment.         |
+| `token`    | no       | `''`    | GitHub token for optional `gh` client config usage.                          |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
-| `fingerprint` | Fingerprint of key chosen for signing. |
-| `name` | Parsed display name from key UID (fallback: `GitHub Actions`). |
-| `email` | Parsed email from key UID (fallback: `actions@github.com`). |
-| `key_grips` | Newline-separated keygrips from selected (or available) secret keys. |
+| Output        | Description                                                          |
+|---------------|----------------------------------------------------------------------|
+| `fingerprint` | Fingerprint of key chosen for signing.                               |
+| `name`        | Parsed display name from key UID (fallback: `GitHub Actions`).       |
+| `email`       | Parsed email from key UID (fallback: `actions@github.com`).          |
+| `key_grips`   | Newline-separated keygrips from selected (or available) secret keys. |
 
 ## Dependencies
 

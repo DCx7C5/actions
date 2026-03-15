@@ -10,17 +10,17 @@ Composite GitHub Action to send a Telegram notification for a newly published si
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `token` | yes | - | Telegram bot token. |
-| `to` | yes | - | Telegram chat ID. |
-| `repository` | no | `${{ github.repository }}` | Repository name shown in the message. |
-| `commit` | no | `${{ github.sha }}` | Commit SHA shown in the message. |
-| `branch` | no | `${{ github.ref_name }}` | Branch name shown in the message. |
-| `actor` | no | `${{ github.actor }}` | GitHub actor shown in the message. |
-| `fingerprint` | yes | `''` | GPG fingerprint shown in the signing section. |
-| `tag_name` | yes | `''` | Tag name shown in the tag/release section. |
-| `release_name` | yes | `''` | Release name shown in the message. |
+| Input          | Required | Default                    | Description                                   |
+|----------------|----------|----------------------------|-----------------------------------------------|
+| `token`        | yes      | -                          | Telegram bot token.                           |
+| `to`           | yes      | -                          | Telegram chat ID.                             |
+| `repository`   | no       | `${{ github.repository }}` | Repository name shown in the message.         |
+| `commit`       | no       | `${{ github.sha }}`        | Commit SHA shown in the message.              |
+| `branch`       | no       | `${{ github.ref_name }}`   | Branch name shown in the message.             |
+| `actor`        | no       | `${{ github.actor }}`      | GitHub actor shown in the message.            |
+| `fingerprint`  | yes      | `''`                       | GPG fingerprint shown in the signing section. |
+| `tag_name`     | yes      | `''`                       | Tag name shown in the tag/release section.    |
+| `release_name` | yes      | `''`                       | Release name shown in the message.            |
 
 ## Outputs
 

@@ -12,11 +12,11 @@ Composite GitHub Action to install the GitHub Copilot CLI binary from GitHub Rel
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `version` | no | `latest` | Copilot CLI version to install (`latest` or release tag). |
-| `install_path` | no | `/usr/local/bin/copilot` | Destination path for installed executable. |
-| `github_token` | no | `${{ github.token }}` | Token used for GitHub API calls and optional `gh` auth step. |
+| Input          | Required | Default                  | Description                                                  |
+|----------------|----------|--------------------------|--------------------------------------------------------------|
+| `version`      | no       | `latest`                 | Copilot CLI version to install (`latest` or release tag).    |
+| `install_path` | no       | `/usr/local/bin/copilot` | Destination path for installed executable.                   |
+| `github_token` | no       | `${{ github.token }}`    | Token used for GitHub API calls and optional `gh` auth step. |
 
 ## Outputs
 

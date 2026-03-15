@@ -11,12 +11,12 @@ Composite GitHub Action to create or update GitHub Actions variables using `gh v
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `value` | yes | - | Variable value to store (supports multiline values). |
-| `variable_name` | yes | - | Variable name to create or update. |
-| `token` | no | `${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}` | Token used to authenticate GitHub CLI. |
-| `variable_type` | no | `org` | Target scope: `env`, `repo`, or `org`. |
+| Input           | Required | Default                      | Description                                          |
+|-----------------|----------|------------------------------|------------------------------------------------------|
+| `value`         | yes      | -                            | Variable value to store (supports multiline values). |
+| `variable_name` | yes      | -                            | Variable name to create or update.                   |
+| `token`         | no       | `${{ secrets.GITHUB_TOKEN }} |                                                      | ${{ github.token }}` | Token used to authenticate GitHub CLI. |
+| `variable_type` | no       | `org`                        | Target scope: `env`, `repo`, or `org`.               |
 
 ## Outputs
 

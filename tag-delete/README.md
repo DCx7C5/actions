@@ -11,18 +11,18 @@ Composite GitHub Action to delete a Git tag locally and remotely, with optional 
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `tag_name` | yes | - | Tag name/version to delete. |
-| `delete_release` | no | `false` | Whether to also delete the matching GitHub release via `gh`. |
+| Input            | Required | Default | Description                                                  |
+|------------------|----------|---------|--------------------------------------------------------------|
+| `tag_name`       | yes      | -       | Tag name/version to delete.                                  |
+| `delete_release` | no       | `false` | Whether to also delete the matching GitHub release via `gh`. |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
-| `deleted` | `true` if the tag was deleted locally or remotely. |
-| `tag_existed` | `true` if the tag existed locally before deletion. |
-| `pushed` | `true` if remote deletion via `git push origin --delete` succeeded. |
+| Output        | Description                                                         |
+|---------------|---------------------------------------------------------------------|
+| `deleted`     | `true` if the tag was deleted locally or remotely.                  |
+| `tag_existed` | `true` if the tag existed locally before deletion.                  |
+| `pushed`      | `true` if remote deletion via `git push origin --delete` succeeded. |
 
 ## Environment and dependencies
 

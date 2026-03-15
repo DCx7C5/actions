@@ -11,16 +11,16 @@ Composite GitHub Action to stage Git changes with optional path filtering and un
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `paths` | no | `""` | Newline-separated list of paths to stage. Empty means whole workspace. |
-| `include_untracked` | no | `"true"` | `true` stages untracked files too; `false` stages tracked changes only. |
+| Input               | Required | Default  | Description                                                             |
+|---------------------|----------|----------|-------------------------------------------------------------------------|
+| `paths`             | no       | `""`     | Newline-separated list of paths to stage. Empty means whole workspace.  |
+| `include_untracked` | no       | `"true"` | `true` stages untracked files too; `false` stages tracked changes only. |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
-| `staged` | `true` if there are staged changes after this action, otherwise `false`. |
+| Output         | Description                                                                    |
+|----------------|--------------------------------------------------------------------------------|
+| `staged`       | `true` if there are staged changes after this action, otherwise `false`.       |
 | `staged_files` | Newline-separated list of staged file paths (`git diff --cached --name-only`). |
 
 ## Dependencies

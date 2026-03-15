@@ -11,18 +11,18 @@ Composite GitHub Action to remove a package directory and its entry from `.ci/pa
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `pkg_name` | yes | - | Package directory/name to delete. |
-| `stage_changes` | no | `true` | If `true`, stages deletion changes after removal. |
-| `packages_json_path` | no | `${{ github.workspace }}/.ci/packages.json` | Path to the package metadata file that should be updated. |
+| Input                | Required | Default                                     | Description                                               |
+|----------------------|----------|---------------------------------------------|-----------------------------------------------------------|
+| `pkg_name`           | yes      | -                                           | Package directory/name to delete.                         |
+| `stage_changes`      | no       | `true`                                      | If `true`, stages deletion changes after removal.         |
+| `packages_json_path` | no       | `${{ github.workspace }}/.ci/packages.json` | Path to the package metadata file that should be updated. |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
-| `changed` | `true` when deletion produced changes (staged changes if staging is enabled, otherwise unstaged workspace changes). |
-| `staged_files` | Newline-separated staged file list when staging is enabled; empty when `stage_changes` is `false`. |
+| Output         | Description                                                                                                         |
+|----------------|---------------------------------------------------------------------------------------------------------------------|
+| `changed`      | `true` when deletion produced changes (staged changes if staging is enabled, otherwise unstaged workspace changes). |
+| `staged_files` | Newline-separated staged file list when staging is enabled; empty when `stage_changes` is `false`.                  |
 
 ## Dependencies
 

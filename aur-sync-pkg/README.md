@@ -13,22 +13,22 @@ Composite GitHub Action to sync package directory changes from an upstream repos
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `pkg_name` | yes | - | Target package name in this repository. |
-| `dir_name` | no | `${{ inputs.pkg_name }}` | Upstream source directory for custom syncs. |
-| `sync_type` | yes | - | Sync mode. Supported by this action path: `add`, `update`. |
-| `is_custom` | yes | `false` | If `true`, use `./aur-sync-pkg/sync-custom-pkg`; else `./aur-sync-pkg/sync-pkg`. |
-| `remote_name` | yes | `upstream` | Git remote name used for upstream fetch/diff. |
-| `remote_ref` | yes | - | Git ref on remote to compare against (for example `main`). |
-| `remote_repo` | yes | - | Upstream repository in `<owner/repo>` format. |
-| `stage_change` | no | `true` | If `true`, stages package directory and `.ci/packages.json`. |
+| Input          | Required | Default                  | Description                                                                      |
+|----------------|----------|--------------------------|----------------------------------------------------------------------------------|
+| `pkg_name`     | yes      | -                        | Target package name in this repository.                                          |
+| `dir_name`     | no       | `${{ inputs.pkg_name }}` | Upstream source directory for custom syncs.                                      |
+| `sync_type`    | yes      | -                        | Sync mode. Supported by this action path: `add`, `update`.                       |
+| `is_custom`    | yes      | `false`                  | If `true`, use `./aur-sync-pkg/sync-custom-pkg`; else `./aur-sync-pkg/sync-pkg`. |
+| `remote_name`  | yes      | `upstream`               | Git remote name used for upstream fetch/diff.                                    |
+| `remote_ref`   | yes      | -                        | Git ref on remote to compare against (for example `main`).                       |
+| `remote_repo`  | yes      | -                        | Upstream repository in `<owner/repo>` format.                                    |
+| `stage_change` | no       | `true`                   | If `true`, stages package directory and `.ci/packages.json`.                     |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
-| `changed` | Reports whether sync step detected/applied changes. |
+| Output       | Description                                          |
+|--------------|------------------------------------------------------|
+| `changed`    | Reports whether sync step detected/applied changes.  |
 | `commit_sha` | Intended commit SHA output from delegated sync step. |
 
 ## Dependencies

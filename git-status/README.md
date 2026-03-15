@@ -11,9 +11,9 @@ Composite GitHub Action to print repository status and recent commit graph for t
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `workspace_path` | no | `.` | Path to the Git repository to inspect. |
+| Input            | Required | Default | Description                            |
+|------------------|----------|---------|----------------------------------------|
+| `workspace_path` | no       | `.`     | Path to the Git repository to inspect. |
 
 ## Outputs
 

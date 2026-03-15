@@ -12,12 +12,12 @@ Composite GitHub Action to push local Git changes to a GitHub repository with op
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `repository` | no | `${{ github.repository }}` | Target repository in `owner/repo` format. |
-| `branch` | no | `${{ github.ref_name }}` | Branch target used when `ref` is `HEAD`. |
-| `ref` | no | `HEAD` | Git ref/refspec to push. `HEAD` triggers auto current-branch push. |
-| `github_token` | no | `''` | Token for authenticated HTTPS push. Falls back to `env.GH_TOKEN` or `github.token`. |
+| Input          | Required | Default                    | Description                                                                         |
+|----------------|----------|----------------------------|-------------------------------------------------------------------------------------|
+| `repository`   | no       | `${{ github.repository }}` | Target repository in `owner/repo` format.                                           |
+| `branch`       | no       | `${{ github.ref_name }}`   | Branch target used when `ref` is `HEAD`.                                            |
+| `ref`          | no       | `HEAD`                     | Git ref/refspec to push. `HEAD` triggers auto current-branch push.                  |
+| `github_token` | no       | `''`                       | Token for authenticated HTTPS push. Falls back to `env.GH_TOKEN` or `github.token`. |
 
 ## Outputs
 

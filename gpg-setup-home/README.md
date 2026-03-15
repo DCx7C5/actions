@@ -13,9 +13,9 @@ Composite GitHub Action to create and harden a GnuPG home directory for CI usage
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `gpg_home` | no | `''` | Path to GPG home directory. If empty, a temporary directory is created. |
+| Input      | Required | Default | Description                                                             |
+|------------|----------|---------|-------------------------------------------------------------------------|
+| `gpg_home` | no       | `''`    | Path to GPG home directory. If empty, a temporary directory is created. |
 
 ## Outputs
 

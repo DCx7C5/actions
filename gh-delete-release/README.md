@@ -11,18 +11,18 @@ Composite GitHub Action to delete a GitHub release by tag, with optional Git tag
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `release_tag` | yes | - | Release tag/version to delete. |
-| `github_token` | no | `${{ github.token }}` | Token used by GitHub CLI (`gh`) for release operations. |
-| `delete_tag` | no | `false` | If `true`, run additional local/remote Git tag deletion logic. |
+| Input          | Required | Default               | Description                                                    |
+|----------------|----------|-----------------------|----------------------------------------------------------------|
+| `release_tag`  | yes      | -                     | Release tag/version to delete.                                 |
+| `github_token` | no       | `${{ github.token }}` | Token used by GitHub CLI (`gh`) for release operations.        |
+| `delete_tag`   | no       | `false`               | If `true`, run additional local/remote Git tag deletion logic. |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
-| `deleted` | `true` if release deletion succeeded, `false` when release was not found. |
-| `release_id` | ID of deleted release when found; empty otherwise. |
+| Output       | Description                                                               |
+|--------------|---------------------------------------------------------------------------|
+| `deleted`    | `true` if release deletion succeeded, `false` when release was not found. |
+| `release_id` | ID of deleted release when found; empty otherwise.                        |
 
 ## Dependencies
 

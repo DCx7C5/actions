@@ -11,23 +11,23 @@ Composite GitHub Action to read and mutate a `packages.json` document with `jq`.
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `path` | no | `${{ github.workspace }}/.ci/packages.json` | Path to target JSON file. |
-| `action` | no | `get` | Operation: `get`, `add`, `update`, `remove`. |
-| `package_name` | no | `''` | Package name to query or mutate. |
-| `key` | no | `''` | Property key used by add/update/remove/filter operations. |
-| `value` | no | `''` | Property value used by add/update or filter operations. |
+| Input          | Required | Default                                     | Description                                               |
+|----------------|----------|---------------------------------------------|-----------------------------------------------------------|
+| `path`         | no       | `${{ github.workspace }}/.ci/packages.json` | Path to target JSON file.                                 |
+| `action`       | no       | `get`                                       | Operation: `get`, `add`, `update`, `remove`.              |
+| `package_name` | no       | `''`                                        | Package name to query or mutate.                          |
+| `key`          | no       | `''`                                        | Property key used by add/update/remove/filter operations. |
+| `value`        | no       | `''`                                        | Property value used by add/update or filter operations.   |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
+| Output     | Description                                               |
+|------------|-----------------------------------------------------------|
 | `packages` | Newline-separated package names for matching `get` paths. |
-| `upstream` | `upstream` value of selected package (if any). |
-| `custom` | `custom` value of selected package (if any). |
-| `refactor` | `refactor` value of selected package (if any). |
-| `success` | `true` when add/update/remove step reports success. |
+| `upstream` | `upstream` value of selected package (if any).            |
+| `custom`   | `custom` value of selected package (if any).              |
+| `refactor` | `refactor` value of selected package (if any).            |
+| `success`  | `true` when add/update/remove step reports success.       |
 
 ## Dependencies
 

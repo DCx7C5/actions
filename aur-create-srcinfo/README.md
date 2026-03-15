@@ -11,10 +11,10 @@ Composite GitHub Action to generate a `.SRCINFO` file for an AUR package from it
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `pkg_name` | yes | - | Package directory name containing `PKGBUILD`. |
-| `working_directory` | no | `${{ github.workspace || '.' }}` | Base directory where the command runs before changing into `pkg_name`. |
+| Input               | Required | Default               | Description                                   |
+|---------------------|----------|-----------------------|-----------------------------------------------|
+| `pkg_name`          | yes      | -                     | Package directory name containing `PKGBUILD`. |
+| `working_directory` | no       | `${{ github.workspace |                                               | '.' }}` | Base directory where the command runs before changing into `pkg_name`. |
 
 ## Outputs
 

@@ -11,10 +11,10 @@ Composite GitHub Action to add a Git remote in the current repository workspace.
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `remote_url` | yes | - | Remote repository URL to add. |
-| `remote_name` | no | `upstream` | Name of the remote to create. |
+| Input         | Required | Default    | Description                   |
+|---------------|----------|------------|-------------------------------|
+| `remote_url`  | yes      | -          | Remote repository URL to add. |
+| `remote_name` | no       | `upstream` | Name of the remote to create. |
 
 ## Outputs
 

@@ -13,26 +13,26 @@ Composite GitHub Action to create (or verify) a GitHub Release for a tag and opt
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `release_tag` | yes | - | Git tag to create the release for (for example `v1.2.3`). |
-| `release_name` | no | `""` | Release title. Falls back to `release_tag` when empty. |
-| `release_body` | no | `""` | Custom markdown release notes body. |
-| `generate_notes` | no | `"false"` | If `true`, uses GitHub-generated release notes. |
-| `draft` | no | `"false"` | If `true`, creates the release as draft. |
-| `prerelease` | no | `"false"` | If `true`, marks release as prerelease. |
-| `assets` | no | `""` | Newline-separated file paths to upload as release assets. |
-| `github_token` | no | `""` | Token for GitHub API/CLI. Defaults to `${{ github.token }}`. |
-| `fail_if_exists` | no | `"true"` | If `true`, fails when release for tag already exists. |
+| Input            | Required | Default   | Description                                                  |
+|------------------|----------|-----------|--------------------------------------------------------------|
+| `release_tag`    | yes      | -         | Git tag to create the release for (for example `v1.2.3`).    |
+| `release_name`   | no       | `""`      | Release title. Falls back to `release_tag` when empty.       |
+| `release_body`   | no       | `""`      | Custom markdown release notes body.                          |
+| `generate_notes` | no       | `"false"` | If `true`, uses GitHub-generated release notes.              |
+| `draft`          | no       | `"false"` | If `true`, creates the release as draft.                     |
+| `prerelease`     | no       | `"false"` | If `true`, marks release as prerelease.                      |
+| `assets`         | no       | `""`      | Newline-separated file paths to upload as release assets.    |
+| `github_token`   | no       | `""`      | Token for GitHub API/CLI. Defaults to `${{ github.token }}`. |
+| `fail_if_exists` | no       | `"true"`  | If `true`, fails when release for tag already exists.        |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
-| `created` | `true` if release was created, `false` if already existed and action continued. |
-| `release_id` | Numeric ID of the release. |
-| `html_url` | Public release page URL. |
-| `upload_url` | API upload URL for release assets. |
+| Output       | Description                                                                     |
+|--------------|---------------------------------------------------------------------------------|
+| `created`    | `true` if release was created, `false` if already existed and action continued. |
+| `release_id` | Numeric ID of the release.                                                      |
+| `html_url`   | Public release page URL.                                                        |
+| `upload_url` | API upload URL for release assets.                                              |
 
 ## Dependencies
 

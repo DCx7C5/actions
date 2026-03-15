@@ -11,14 +11,14 @@ Composite GitHub Action to build an Arch/AUR package via `makepkg` inside the sh
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `pkg_name` | yes | - | Package name/directory to build. |
-| `gpg_sign` | no | `false` | Whether package signing should be enabled. |
-| `gpg_key_id` | no | `''` | GPG key ID/fingerprint for signing. |
-| `gpg_passhphrase` | no | `''` | Passphrase for the GPG key (note current input spelling). |
-| `gpg_home` | no | `''` | Path to `GNUPGHOME`; falls back to `env.GNUPGHOME` in nested action call. |
-| `github_token` | no | `''` | Token forwarded to nested action (`github.token` fallback). |
+| Input             | Required | Default | Description                                                               |
+|-------------------|----------|---------|---------------------------------------------------------------------------|
+| `pkg_name`        | yes      | -       | Package name/directory to build.                                          |
+| `gpg_sign`        | no       | `false` | Whether package signing should be enabled.                                |
+| `gpg_key_id`      | no       | `''`    | GPG key ID/fingerprint for signing.                                       |
+| `gpg_passhphrase` | no       | `''`    | Passphrase for the GPG key (note current input spelling).                 |
+| `gpg_home`        | no       | `''`    | Path to `GNUPGHOME`; falls back to `env.GNUPGHOME` in nested action call. |
+| `github_token`    | no       | `''`    | Token forwarded to nested action (`github.token` fallback).               |
 
 ## Outputs
 

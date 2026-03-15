@@ -12,19 +12,19 @@ Composite GitHub Action to create detached ASCII-armored OpenPGP signatures for 
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `files` | no | `*.tar.gz` | File pattern or file list to sign. |
-| `sig_ext` | no | `sig` | Extension for generated detached signatures. |
-| `workspace_dir` | no | `${{ github.workspace }}` | Working directory where files are resolved/signed. |
-| `gpg_keyid` | no | `""` | GPG key ID to use for signing; default key is used when empty. |
-| `gpg_passphrase` | no | `""` | GPG passphrase for loopback signing when needed. |
-| `gpg_pass_precached` | no | `false` | Set to `true` when passphrase is already cached in gpg-agent. |
+| Input                | Required | Default                   | Description                                                    |
+|----------------------|----------|---------------------------|----------------------------------------------------------------|
+| `files`              | no       | `*.tar.gz`                | File pattern or file list to sign.                             |
+| `sig_ext`            | no       | `sig`                     | Extension for generated detached signatures.                   |
+| `workspace_dir`      | no       | `${{ github.workspace }}` | Working directory where files are resolved/signed.             |
+| `gpg_keyid`          | no       | `""`                      | GPG key ID to use for signing; default key is used when empty. |
+| `gpg_passphrase`     | no       | `""`                      | GPG passphrase for loopback signing when needed.               |
+| `gpg_pass_precached` | no       | `false`                   | Set to `true` when passphrase is already cached in gpg-agent.  |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
+| Output         | Description                                                                         |
+|----------------|-------------------------------------------------------------------------------------|
 | `signed_files` | Space-separated list of created signature files from the signing step output block. |
 
 ## Dependencies

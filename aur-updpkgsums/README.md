@@ -11,10 +11,10 @@ Composite GitHub Action to run `updpkgsums` for an AUR package and refresh check
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `pkg_name` | yes | - | Package directory name to update. |
-| `working_directory` | no | `${{ github.workspace || '.' }}` | Base directory where the command runs before changing into `pkg_name`. |
+| Input               | Required | Default               | Description                       |
+|---------------------|----------|-----------------------|-----------------------------------|
+| `pkg_name`          | yes      | -                     | Package directory name to update. |
+| `working_directory` | no       | `${{ github.workspace |                                   | '.' }}` | Base directory where the command runs before changing into `pkg_name`. |
 
 ## Outputs
 

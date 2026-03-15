@@ -11,12 +11,12 @@ Composite GitHub Action to create or update GitHub Secrets using `gh secret set`
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|---|---|---|---|
-| `value` | yes | - | Secret value to store (supports multiline values). |
-| `secret_name` | yes | - | Secret name to create or update. |
-| `token` | no | `${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}` | Token used to authenticate GitHub CLI. |
-| `secret_type` | no | `org` | Intended target scope: `repo`, `org`, or `env`. |
+| Input         | Required | Default                      | Description                                        |
+|---------------|----------|------------------------------|----------------------------------------------------|
+| `value`       | yes      | -                            | Secret value to store (supports multiline values). |
+| `secret_name` | yes      | -                            | Secret name to create or update.                   |
+| `token`       | no       | `${{ secrets.GITHUB_TOKEN }} |                                                    | ${{ github.token }}` | Token used to authenticate GitHub CLI. |
+| `secret_type` | no       | `org`                        | Intended target scope: `repo`, `org`, or `env`.    |
 
 ## Outputs
 
