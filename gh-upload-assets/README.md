@@ -42,7 +42,7 @@ This action does not define outputs.
 
 ```yaml
 - name: Upload release assets
-  uses: ./upload-assets
+  uses: ./gh-upload-assets
   with:
     release_tag: v1.2.3
     assets: |
@@ -60,7 +60,7 @@ This action does not define outputs.
     release_tag: v1.2.3
 
 - name: Upload debug symbols
-  uses: ./upload-assets
+  uses: ./gh-upload-assets
   with:
     release_tag: v1.2.3
     assets: |
