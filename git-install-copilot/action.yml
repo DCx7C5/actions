@@ -87,5 +87,12 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github_token }}
       run: |
+        set -euo pipefail
         echo "::notice::GitHub token provided, setting up authentication for API access"
-        gh auth login --with-token < "$GH_TOKEN"
+
+        if ! command -v gh >/dev/null 2>&1; then
+          echo "::warning::gh CLI not found; skipping gh auth login setup"
+          exit 0
+        fi
+
+        printf '%s' "$GH_TOKEN" | gh auth login --with-token
