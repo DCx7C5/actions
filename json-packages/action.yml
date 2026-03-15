@@ -165,7 +165,7 @@ runs:
 
     - name: Remove package entry
       id: remove_pkg
-      if: inputs.action == 'remove'
+      if: inputs.action == 'remove' || inputs.action == 'delete'
       shell: bash
       env:
         JSON_PATH: ${{ inputs.path }}
