@@ -39,9 +39,9 @@ inputs:
 
 
 outputs:
-  changed:
-    description: "Whether any package files were changed and committed"
-    value: ${{ steps.add_custom.outputs.changed || steps.add.outputs.changed || steps.update_custom.outputs.changed || steps.update.outputs.changed }}
+  success:
+    description: "Whether the action completed successfully"
+    value: ${{ steps.add_custom.outcome == 'success' || steps.add.outcome == 'success' || steps.update_custom.outcome == 'success' || steps.update.outcome == 'success' }}
   commit_sha:
     description: "Commit SHA if a commit was created"
     value: ${{ steps.add_custom.outputs.commit_sha || steps.add.outputs.commit_sha || steps.update_custom.outputs.commit_sha || steps.update.outputs.commit_sha }}
