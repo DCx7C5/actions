@@ -19,11 +19,26 @@ inputs:
 
 
 outputs:
+  has_add:
+    description: "Whether any new or changed package directories were detected"
+    value: ${{ steps.build_matrices.outputs.has_add }}
+  has_removed:
+    description: "Whether any removed package directories were detected"
+    value: ${{ steps.build_matrices.outputs.has_removed }}
+  add_matrix_json:
+    description: "Matrix JSON for add/update jobs in the form {include:[{change_type, dir, files}]}"
+    value: ${{ steps.build_matrices.outputs.add_matrix_json }}
+  removed_matrix_json:
+    description: "Matrix JSON for delete jobs in the form {include:[{change_type, dir, files}]}"
+    value: ${{ steps.build_matrices.outputs.removed_matrix_json }}
+  has_changes:
+    description: "Whether any new, changed, or removed package directories were detected"
+    value: ${{ steps.has_changes.outputs.has_changes }}
   new_dirs:
     description: "New package directories (exist in compare but not in base)"
     value: ${{ steps.get_new.outputs.new_dirs }}
   new_dir_files_json:
-    description: "New package directories with their new files as JSON array of objects [{dir, files}]"
+    description: "New package directories with their new files as matrix JSON object {include:[{dir, files}]}"
     value: ${{ steps.get_new.outputs.new_dir_files_json }}
   changed_dirs:
     description: "Changed package directories (PKGBUILD differs between branches)"
@@ -32,13 +47,13 @@ outputs:
     description: "Removed package directories (exist in base but not in compare)"
     value: ${{ steps.get_removed.outputs.removed_dirs }}
   removed_dir_files_json:
-    description: "Removed package directories with their removed files as JSON array of objects [{dir, files}]"
+    description: "Removed package directories with their removed files as matrix JSON object {include:[{dir, files}]}"
     value: ${{ steps.get_removed.outputs.removed_dir_files_json }}
   changed_files:
     description: "Changed files between branches"
     value: ${{ steps.get_changes.outputs.changed_files }}
   changed_dir_files_json:
-    description: "Changed package directories with their changed files as JSON array of objects [{dir, files}]"
+    description: "Changed package directories with their changed files as matrix JSON object {include:[{dir, files}]}"
     value: ${{ steps.get_changes.outputs.changed_dir_files_json }}
 
 
@@ -61,7 +76,7 @@ runs:
         done <<< "${{ inputs.exclude_paths }}"
         
         # Get list of removed files between current branch and upstream target_ref
-        removed_files=$(git diff --name-only --diff-filter=D HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
+        removed_files=$(git diff --no-renames --name-only --diff-filter=D HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
         
         # Filter for PKGBUILD files and get unique directories
         removed_dirs=$(printf '%s\n' "$removed_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
@@ -73,10 +88,10 @@ runs:
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
         
-        removed_dir_files_json=$(jq -Rn --arg dirs "$removed_dirs" --arg files "$removed_files" '
+        removed_dir_files_json=$(jq -cn --arg dirs "$removed_dirs" --arg files "$removed_files" '
           ($files | split("\n") | map(select(length > 0))) as $all
-          | ($dirs | split("\n") | map(select(length > 0)))
-          | map(. as $d | {dir: $d, files: ($all | map(select(startswith($d + "/"))))})
+          | {include: (($dirs | split("\n") | map(select(length > 0)))
+            | map(. as $d | {dir: $d, files: ($all | map(select(startswith($d + "/"))))}))}
         ')
         echo "removed_dir_files_json=$removed_dir_files_json" >> "$GITHUB_OUTPUT"
 
@@ -96,7 +111,7 @@ runs:
         done <<< "${{ inputs.exclude_paths }}"
 
         # Get list of new files between current branch and upstream target_ref
-        new_files=$(git diff --name-only --diff-filter=A HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
+        new_files=$(git diff --no-renames --name-only --diff-filter=A HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
         
         # Filter for PKGBUILD files and get unique directories
         new_dirs=$(printf '%s\n' "$new_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
@@ -108,10 +123,10 @@ runs:
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
         
-        new_dir_files_json=$(jq -Rn --arg dirs "$new_dirs" --arg files "$new_files" '
+        new_dir_files_json=$(jq -cn --arg dirs "$new_dirs" --arg files "$new_files" '
           ($files | split("\n") | map(select(length > 0))) as $all
-          | ($dirs | split("\n") | map(select(length > 0)))
-          | map(. as $d | {dir: $d, files: ($all | map(select(startswith($d + "/"))))})
+          | {include: (($dirs | split("\n") | map(select(length > 0)))
+            | map(. as $d | {dir: $d, files: ($all | map(select(startswith($d + "/"))))}))}
         ')
         echo "new_dir_files_json=$new_dir_files_json" >> "$GITHUB_OUTPUT"
 
@@ -130,11 +145,14 @@ runs:
           exclude_args+=(":(exclude)$p")
         done <<< "${{ inputs.exclude_paths }}"
 
-        # Get list of changed files between current branch and upstream target_ref
-        changed_files=$(git diff --name-only HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
+        # Get list of changed files between current branch and upstream target_ref.
+        # Keep the full file list for the JSON payload, but only treat directories with a
+        # modified PKGBUILD (not added/removed) as "changed" to avoid overlap with new/removed.
+        changed_files=$(git diff --no-renames --name-only HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
+        changed_pkgbuild_files=$(git diff --no-renames --name-only --diff-filter=M HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- . "${exclude_args[@]}")
 
-        # Filter for PKGBUILD files and get unique directories
-        changed_dirs=$(printf '%s\n' "$changed_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
+        # Filter for modified PKGBUILD files and get unique directories.
+        changed_dirs=$(printf '%s\n' "$changed_pkgbuild_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
 
         # Save changed directories to output variable
         {
@@ -149,9 +167,84 @@ runs:
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
         
-        changed_dir_files_json=$(jq -Rn --arg dirs "$changed_dirs" --arg files "$changed_files" '
+        changed_dir_files_json=$(jq -cn --arg dirs "$changed_dirs" --arg files "$changed_files" '
           ($files | split("\n") | map(select(length > 0))) as $all
-          | ($dirs | split("\n") | map(select(length > 0)))
-          | map(. as $d | {dir: $d, files: ($all | map(select(startswith($d + "/"))))})
+          | {include: (($dirs | split("\n") | map(select(length > 0)))
+            | map(. as $d | {dir: $d, files: ($all | map(select(startswith($d + "/"))))}))}
         ')
         echo "changed_dir_files_json=$changed_dir_files_json" >> "$GITHUB_OUTPUT"
+
+    - name: Compute has_changes
+      id: has_changes
+      shell: bash
+      run: |
+        set -euo pipefail
+        new_dirs="${{ steps.get_new.outputs.new_dirs }}"
+        changed_dirs="${{ steps.get_changes.outputs.changed_dirs }}"
+        removed_dirs="${{ steps.get_removed.outputs.removed_dirs }}"
+
+        if [[ -n "$new_dirs" || -n "$changed_dirs" || -n "$removed_dirs" ]]; then
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "has_changes=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Build matrix outputs
+      id: build_matrices
+      shell: bash
+      env:
+        NEW_JSON: ${{ steps.get_new.outputs.new_dir_files_json }}
+        CHANGED_JSON: ${{ steps.get_changes.outputs.changed_dir_files_json }}
+        REMOVED_JSON: ${{ steps.get_removed.outputs.removed_dir_files_json }}
+      run: |
+        set -euo pipefail
+
+        add_matrix_json=$(jq -cn \
+          --argjson new "${NEW_JSON:-{\"include\":[]}}" \
+          --argjson changed "${CHANGED_JSON:-{\"include\":[]}}" \
+          --slurpfile packages .ci/packages.json '
+          def basename_dir($d): ($d | split("/") | last);
+          def map_item($item; $type):
+            (($packages[0] | to_entries | map(select((.value.dir // "") == $item.dir)) | .[0]) // null) as $m
+            | {
+                change_type: $type,
+                dir: $item.dir,
+                upstream_dir: $item.dir,
+                files: ($item.files // []),
+                pkg_name: (if $m == null then basename_dir($item.dir) else $m.key end),
+                target_dir: (if $m == null then basename_dir($item.dir) else $m.key end),
+                custom: (if $m == null then false else ($m.value.custom // false) end)
+              };
+          {
+            include:
+              ((($new.include // []) | map(map_item(.; "new")))
+               + (($changed.include // []) | map(map_item(.; "changed"))))
+          }
+        ')
+
+        removed_matrix_json=$(jq -cn \
+          --argjson removed "${REMOVED_JSON:-{\"include\":[]}}" \
+          --slurpfile packages .ci/packages.json '
+          def basename_dir($d): ($d | split("/") | last);
+          def map_item($item):
+            (($packages[0] | to_entries | map(select((.value.dir // "") == $item.dir)) | .[0]) // null) as $m
+            | {
+                change_type: "removed",
+                dir: $item.dir,
+                upstream_dir: $item.dir,
+                files: ($item.files // []),
+                pkg_name: (if $m == null then basename_dir($item.dir) else $m.key end),
+                target_dir: (if $m == null then basename_dir($item.dir) else $m.key end),
+                custom: (if $m == null then false else ($m.value.custom // false) end)
+              };
+          {
+            include:
+              (($removed.include // []) | map(map_item(.)))
+          }
+        ')
+
+        echo "add_matrix_json=$add_matrix_json" >> "$GITHUB_OUTPUT"
+        echo "removed_matrix_json=$removed_matrix_json" >> "$GITHUB_OUTPUT"
+        echo "has_add=$(jq -r 'if (.include | length) > 0 then "true" else "false" end' <<< "$add_matrix_json")" >> "$GITHUB_OUTPUT"
+        echo "has_removed=$(jq -r 'if (.include | length) > 0 then "true" else "false" end' <<< "$removed_matrix_json")" >> "$GITHUB_OUTPUT"
+
