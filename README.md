@@ -39,15 +39,15 @@ jobs:
 
 ### Release and tags
 
-| Action | Purpose |
-|---|---|
-| [`gh-release-create`](./gh-release-create) | Create or verify GitHub release for a tag and optionally upload assets. |
-| [`upload-assets`](./upload-assets) | Upload one or more files to an existing release tag. |
-| [`gh-workflow-delete`](./gh-workflow-delete) | Delete workflow runs by status (`failure`, `cancelled`, ...). |
-| [`release-delete`](./release-delete) | Delete an existing GitHub release. |
-| [`tag-create-and-push`](./tag-create-and-push) | Create and push git tags. |
-| [`tag-delete`](./tag-delete) | Delete tags locally/remotely. |
-| [`tag-get-latest`](./tag-get-latest) | Resolve latest tag for release/version workflows. |
+| Action                                         | Purpose                                                                 |
+|------------------------------------------------|-------------------------------------------------------------------------|
+| [`gh-create-release`](./gh-create-release)     | Create or verify GitHub release for a tag and optionally upload assets. |
+| [`upload-assets`](gh-upload-assets)             | Upload one or more files to an existing release tag.                    |
+| [`gh-workflow-run`](./gh-workflow-run)         | Delete workflow runs by status (`failure`, `cancelled`, ...).           |
+| [`gh-delete-release`](./gh-delete-release)     | Delete an existing GitHub release.                                      |
+| [`tag-create-and-push`](./tag-create-and-push) | Create and push git tags.                                               |
+| [`tag-delete`](./tag-delete)                   | Delete tags locally/remotely.                                           |
+| [`tag-get-latest`](./tag-get-latest)           | Resolve latest tag for release/version workflows.                       |
 
 ### AUR / PKGBUILD automation
 
@@ -66,48 +66,48 @@ jobs:
 
 ### Git and repository utilities
 
-| Action | Purpose |
-|---|---|
-| [`git-add-remote`](./git-add-remote) | Add/configure git remotes used by automation. |
-| [`git-fetch`](./git-fetch) | Fetch refs from configured remotes. |
-| [`git-find-changed`](./git-find-changed) | Detect changed files/paths for conditional steps. |
-| [`git-stage-changes`](./git-stage-changes) | Stage selected paths before commit. |
-| [`git-commit`](./git-commit) | Create commits from staged changes. |
-| [`git-pull-changes`](./git-pull-changes) | Pull changes from remote. |
-| [`git-push-changes`](./git-push-changes) | Push commits/tags to remote. |
-| [`git-merge`](./git-merge) | Merge branches/refs in automation workflows. |
-| [`git-status`](./git-status) | Inspect and expose workspace status. |
-| [`git-clean-workspace`](./git-clean-workspace) | Clean untracked/generated files in workspace. |
-| [`git-create-repo`](./git-create-repo) | Create repository via GitHub API/CLI flows. |
-| [`git-delete-repo`](./git-delete-repo) | Delete repository via automation flow. |
+| Action                                         | Purpose                                           |
+|------------------------------------------------|---------------------------------------------------|
+| [`git-add-remote`](./git-add-remote)           | Add/configure git remotes used by automation.     |
+| [`git-fetch`](./git-fetch)                     | Fetch refs from configured remotes.               |
+| [`git-find-changed`](./git-find-changed)       | Detect changed files/paths for conditional steps. |
+| [`git-stage-changes`](./git-stage-changes)     | Stage selected paths before commit.               |
+| [`git-commit`](./git-commit)                   | Create commits from staged changes.               |
+| [`git-pull-changes`](./git-pull-changes)       | Pull changes from remote.                         |
+| [`git-push-changes`](./git-push-changes)       | Push commits/tags to remote.                      |
+| [`git-merge`](./git-merge)                     | Merge branches/refs in automation workflows.      |
+| [`git-status`](./git-status)                   | Inspect and expose workspace status.              |
+| [`git-clean-workspace`](./git-clean-workspace) | Clean untracked/generated files in workspace.     |
+| [`git-create-repo`](./git-create-repo)         | Create repository via GitHub API/CLI flows.       |
+| [`git-delete-repo`](./git-delete-repo)         | Delete repository via automation flow.            |
 
 ### GPG / crypto helpers
 
-| Action | Purpose |
-|---|---|
-| [`gpg-setup-home`](./gpg-setup-home) | Prepare GnuPG home for CI usage. |
-| [`gpg-import`](./gpg-import) | Import armored/binary key material. |
-| [`gpg-export-key`](./gpg-export-key) | Export selected key material. |
-| [`gpg-preset-pass`](./gpg-preset-pass) | Preload passphrase cache for signing. |
-| [`gpg-create-subkey`](./gpg-create-subkey) | Create subkeys for CI signing/encryption flows. |
-| [`gpg-set-ownertrust`](./gpg-set-ownertrust) | Set ownertrust for imported keys. |
-| [`gpg-sign-detached`](./gpg-sign-detached) | Create detached signatures for artifacts. |
-| [`gpg-decrypt`](./gpg-decrypt) | Decrypt encrypted files for CI tasks. |
-| [`gpg-cleanup`](./gpg-cleanup) | Best-effort cleanup of temporary key material. |
-| [`ssl-decrypt`](./ssl-decrypt) | SSL-related decryption helper for secret workflows. |
+| Action                                       | Purpose                                             |
+|----------------------------------------------|-----------------------------------------------------|
+| [`gpg-setup-home`](./gpg-setup-home)         | Prepare GnuPG home for CI usage.                    |
+| [`gpg-import`](./gpg-import)                 | Import armored/binary key material.                 |
+| [`gpg-export-key`](./gpg-export-key)         | Export selected key material.                       |
+| [`gpg-preset-pass`](./gpg-preset-pass)       | Preload passphrase cache for signing.               |
+| [`gpg-create-subkey`](./gpg-create-subkey)   | Create subkeys for CI signing/encryption flows.     |
+| [`gpg-set-ownertrust`](./gpg-set-ownertrust) | Set ownertrust for imported keys.                   |
+| [`gpg-sign-detached`](./gpg-sign-detached)   | Create detached signatures for artifacts.           |
+| [`gpg-decrypt`](./gpg-decrypt)               | Decrypt encrypted files for CI tasks.               |
+| [`gpg-cleanup`](./gpg-cleanup)               | Best-effort cleanup of temporary key material.      |
+| [`ssl-decrypt`](./ssl-decrypt)               | SSL-related decryption helper for secret workflows. |
 
 ### Containers, packaging, misc
 
-| Action | Purpose |
-|---|---|
-| [`arch-run-cmd`](./arch-run-cmd) | Run commands in a controlled Arch Linux container/toolchain. |
-| [`json-packages`](./json-packages) | Query and mutate `.ci/packages.json` with `jq`. |
-| [`tar-create`](./tar-create) | Build tar archives from selected files. |
-| [`store-as-secret`](./store-as-secret) | Store generated values as GitHub secret. |
-| [`store-as-variable`](./store-as-variable) | Store generated values as GitHub Actions variable. |
-| [`upload-assets`](./upload-assets) | Release asset upload helper (also used by release creation). |
-| [`tg-notify`](./tg-notify) | Send Telegram notifications. |
-| [`tg-notify-release`](./tg-notify-release) | Send Telegram release notifications. |
+| Action                                     | Purpose                                                      |
+|--------------------------------------------|--------------------------------------------------------------|
+| [`arch-run-cmd`](./arch-run-cmd)           | Run commands in a controlled Arch Linux container/toolchain. |
+| [`json-packages`](./json-packages)         | Query and mutate `.ci/packages.json` with `jq`.              |
+| [`tar-create`](./tar-create)               | Build tar archives from selected files.                      |
+| [`store-as-secret`](./store-as-secret)     | Store generated values as GitHub secret.                     |
+| [`store-as-variable`](./store-as-variable) | Store generated values as GitHub Actions variable.           |
+| [`upload-assets`](gh-upload-assets)         | Release asset upload helper (also used by release creation). |
+| [`tg-notify`](./tg-notify)                 | Send Telegram notifications.                                 |
+| [`tg-notify-release`](./tg-notify-release) | Send Telegram release notifications.                         |
 
 ## Notes for maintainers
 
