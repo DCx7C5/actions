@@ -68,6 +68,9 @@ outputs:
   removed_dirs_matrix:
     description: "JSON matrix for removed package directories in GitHub Actions include format"
     value: ${{ steps.get_removed.outputs.removed_dirs_matrix }}
+  combined_changes_new_matrix:
+    description: "JSON matrix for new and changed package directories combined in GitHub Actions include format"
+    value: ${{ steps.get_changes.outputs.combined_matrix }}
 
 runs:
   using: composite
@@ -166,7 +169,6 @@ runs:
         new_dirs_matrix=$(jq -Rn --arg dirs "$new_dirs" '{include: ($dirs | split("\n") | map(select(length > 0)) | map({dir: .}))}')
         echo "new_dirs_matrix=$new_dirs_matrix" >> "$GITHUB_OUTPUT"
 
-
     - name: Get changed package directories
       id: get_changes
       shell: bash
@@ -220,4 +222,12 @@ runs:
 
         changed_dirs_matrix=$(jq -Rn --arg dirs "$changed_dirs_filtered" '{include: ($dirs | split("\n") | map(select(length > 0)) | map({dir: .}))}')
         echo "changed_dirs_matrix=$changed_dirs_matrix" >> "$GITHUB_OUTPUT"
-
+        
+        # Kombiniere new_dirs (add) und changed_dirs_filtered (update) für eine kombinierte Matrix
+        combined_matrix=$(jq -n --arg new_dirs "$new_dirs" --arg changed_dirs "$changed_dirs_filtered" '
+          {include: (
+            ($new_dirs | split("\n") | map(select(length > 0)) | map({dir: ., sync_type: "add"})) +
+            ($changed_dirs | split("\n") | map(select(length > 0)) | map({dir: ., sync_type: "update"}))
+          )}
+        ')
+        echo "combined_matrix=$combined_matrix" >> "$GITHUB_OUTPUT"
