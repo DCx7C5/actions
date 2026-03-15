@@ -14,19 +14,18 @@ Use local actions from workflows with relative paths:
 
 ```yaml
 jobs:
-    example:
-	    runs-on: ubuntu-latest
-	    steps:
-	      - uses: actions/checkout@v4
-          
-	      - name: Create release
-	    	uses: DCx7C5/actions/gh-create-release@v1
-	    	with:
-	    	  release_tag: v1.2.3
-	    	  generate_notes: 'true'
-              prerelease: 'false'
-              assets: |
-                dist/app.tar.gz 
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release
+        uses: DCx7C5/actions/gh-create-release@v1
+        with:
+          release_tag: v1.2.3
+          generate_notes: 'true'
+          prerelease: 'false'
+          assets: |
+            dist/app.tar.gz 
 ```
 
 ## Conventions
