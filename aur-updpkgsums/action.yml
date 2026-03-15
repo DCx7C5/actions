@@ -9,8 +9,8 @@ inputs:
     description: "Name of the package to update"
   working_directory:
     required: false
-    default: "${{ github.workspace || '.' }}"
-    description: "Working directory to run updpkgsums in (default: package directory in the repository)"
+    description: "Working directory to run makepkg in (default: the repository root or current directory if github.workspace is not set)"
+    default: ''
 
 
 runs:
@@ -18,9 +18,16 @@ runs:
   steps:
     - id: run_updpkgsums
       uses: ./arch-run-cmd
-      working-directory: "${{ inputs.working_directory }}"
+      working-directory: ${{ inputs.working_directory || github.workspace || '.' }}
       with:
         run_with_sudo: 'false'
         enable_ccache: 'false'
         preset_cache: 'false'
-        run: cd "${{ inputs.pkg_name }}" && updpkgsums
+        run: |
+          set -euo pipefail
+          
+          cd "${{ inputs.pkg_name }}"
+          echo "::group::Running updpkgsums for package '${{ inputs.pkg_name }}'"
+          updpkgsums
+          echo "::endgroup::"
+          echo "::notice::updpkgsums completed successfully for package '${{ inputs.pkg_name }}'"
