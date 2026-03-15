@@ -32,6 +32,7 @@ Composite GitHub Action to create (or amend) Git commits with optional GPG signi
 | Output | Description |
 |---|---|
 | `commit_sha` | SHA of created commit (empty if no commit was made). |
+| `message` | Resolved commit message used by the action (input/copilot/fallback). |
 | `committed` | `true` if commit was created, otherwise `false`/`pending` according to flow state. |
 | `amended` | Mirrors `inputs.amend`. |
 
@@ -49,7 +50,7 @@ Composite GitHub Action to create (or amend) Git commits with optional GPG signi
 3. Optionally check for staged changes and skip commit when `skip_if_no_changes` is `true`.
 4. Resolve final commit message from `message`, Copilot output, or fallback message.
 5. Run `git commit` with prepared args and optional passphrase handling.
-6. Emit `commit_sha`, `committed`, and `amended` in final output step.
+6. Emit `commit_sha`, `message`, `committed`, and `amended` in final output step.
 
 ## Examples
 
@@ -105,6 +106,7 @@ Composite GitHub Action to create (or amend) Git commits with optional GPG signi
   run: |
     git log -1 --oneline | cat
     echo "sha=${{ steps.commit.outputs.commit_sha }}"
+    echo "message=${{ steps.commit.outputs.message }}"
     echo "committed=${{ steps.commit.outputs.committed }}"
 ```
 

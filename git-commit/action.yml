@@ -57,6 +57,9 @@ outputs:
   commit_sha:
     description: "SHA of the created commit (empty if no commit was made)"
     value: "${{ steps.final_outputs.outputs.commit_sha }}"
+  message:
+    description: "Resolved commit message used by the action (input/copilot/fallback)"
+    value: "${{ steps.final_outputs.outputs.message }}"
   committed:
     description: "Whether a commit was created (true/false)"
     value: "${{ steps.final_outputs.outputs.committed }}"
@@ -178,6 +181,12 @@ runs:
           FINAL_MSG="chore: automated commit"
           echo "::notice::No commit message provided/generated; using fallback message."
         fi
+
+        {
+          echo "message<<EOF"
+          echo "$FINAL_MSG"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
         
         if [[ -n "${GPG_PASSPHRASE}" ]]; then
           if [[ "${{ inputs.pre_cached_pass }}" == "true" ]]; then
@@ -216,5 +225,10 @@ runs:
       shell: bash
       run: |
         echo "commit_sha=${{ steps.commit.outputs.commit_sha || '' }}" >> "$GITHUB_OUTPUT"
+        {
+          echo "message<<EOF"
+          echo "${{ steps.commit.outputs.message || steps.copilot_msg.outputs.message || inputs.message || '' }}"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
         echo "committed=${{ steps.commit.outputs.committed || steps.check_changes.outputs.committed || 'false' }}" >> "$GITHUB_OUTPUT"
         echo "amended=${{ inputs.amend }}" >> "$GITHUB_OUTPUT"
