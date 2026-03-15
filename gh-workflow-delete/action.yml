@@ -1,0 +1,49 @@
+name: "Delete GitHub Actions Workflow Runs"
+description: "Deletes GitHub Actions workflow runs for one or more statuses"
+author: "DCx7C5"
+
+branding:
+  icon: "trash-2"
+  color: "red"
+
+
+inputs:
+  workflow_status:
+    description: "New-line separated list of workflow statuses to delete (e.g. 'failure' or 'cancelled')"
+    required: true
+
+outputs:
+  deleted:
+    description: "Whether any workflow files were deleted"
+    value: ${{ steps.delete_workflow_runs.outputs.deleted }}
+
+
+runs:
+  using: composite
+  steps:
+    - id: delete_workflow_runs
+      shell: bash
+      env:
+        WORKFLOW_STATUSES: ${{ inputs.workflow_status }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        deleted=false
+
+        while IFS= read -r status; do
+          status="$(echo "$status" | xargs)"
+          [[ -z "$status" ]] && continue
+
+          echo "::notice::Deleting workflow runs with status: $status"
+
+          run_ids="$(gh run list --status "$status" --json databaseId --jq '.[].databaseId')"
+          [[ -z "$run_ids" ]] && continue
+
+          deleted=true
+          while IFS= read -r run_id; do
+            [[ -z "$run_id" ]] && continue
+            gh run delete "$run_id"
+          done <<< "$run_ids"
+        done <<< "$WORKFLOW_STATUSES"
+
+        echo "deleted=$deleted" >> "$GITHUB_OUTPUT"
