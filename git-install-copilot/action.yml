@@ -14,7 +14,7 @@ inputs:
     description: "Path to install the GitHub Copilot CLI executable (default: /usr/local/bin/copilot)"
   github_token:
     required: false
-    default: '${{ github.token }}'
+    default: ${{ github.token }}
     description: "GitHub token for authentication (if required for private releases or API rate limits)"
 
 
