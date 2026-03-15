@@ -55,7 +55,7 @@ This action does not define outputs.
 
 ```yaml
 - name: Create release
-  uses: ./gh-release-create
+  uses: ./gh-create-release
   with:
     release_tag: v1.2.3
 
