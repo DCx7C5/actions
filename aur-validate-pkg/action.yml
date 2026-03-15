@@ -1,0 +1,53 @@
+name: "Validate AUR Package"
+description: "Validates an AUR package using namcap and makepkg --verifysource inside an Arch Linux container"
+author: "DCx7C5"
+
+
+inputs:
+  pkg_name:
+    required: true
+    description: "Name of the package to validate (should match the directory name containing the PKGBUILD)"
+  working_directory:
+    required: false
+    default: "${{ github.workspace || '.' }}"
+    description: "Working directory (default: repository root)"
+  run_namcap:
+    required: false
+    default: 'true'
+    description: "Run namcap on the PKGBUILD to check for common errors (default: true)"
+  verify_sources:
+    required: false
+    default: 'true'
+    description: "Run makepkg --verifysource to validate checksums (default: true)"
+
+
+runs:
+  using: composite
+  steps:
+    - id: validate_pkg
+      uses: ./arch-run-cmd
+      working-directory: "${{ inputs.working_directory }}"
+      with:
+        run_with_sudo: 'false'
+        enable_ccache: 'false'
+        preset_cache: 'false'
+        run: |
+          set -euo pipefail
+
+          cd "${{ inputs.pkg_name }}"
+
+          if [[ '${{ inputs.run_namcap }}' == 'true' ]]; then
+            echo "::group::namcap PKGBUILD"
+            namcap PKGBUILD
+            echo "::endgroup::"
+            echo "::notice::namcap validation passed for package '${{ inputs.pkg_name }}'"
+          fi
+
+          if [[ '${{ inputs.verify_sources }}' == 'true' ]]; then
+            echo "::group::makepkg --verifysource"
+            makepkg --verifysource --noconfirm --noprogressbar
+            echo "::endgroup::"
+            echo "::notice::Source checksum verification passed for package '${{ inputs.pkg_name }}'"
+          fi
+
+          echo "::notice::Package '${{ inputs.pkg_name }}' validated successfully"
