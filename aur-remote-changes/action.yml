@@ -71,6 +71,12 @@ outputs:
   combined_matrix:
     description: "JSON matrix for new and changed package directories combined in GitHub Actions include format"
     value: ${{ steps.get_changes.outputs.combined_matrix }}
+  count_combined:
+    description: "Count of new and changed package directories combined"
+    value: ${{ steps.get_changes.outputs.count_combined }}
+  count_removed:
+    description: "Count of removed package directories"
+    value: ${{ steps.get_removed.outputs.count_removed }}
 
 runs:
   using: composite
@@ -120,7 +126,8 @@ runs:
 
         removed_dirs_matrix=$(jq -Rn --arg dirs "$removed_dirs" '{include: ($dirs | split("\n") | map(select(length > 0)) | map({dir: .}))}')
         echo "removed_dirs_matrix=$removed_dirs_matrix" >> "$GITHUB_OUTPUT"
-
+        count_removed=$(printf '%s\n' "$removed_dirs" | awk 'NF > 0' | wc -l)
+        echo "count_removed=$count_removed" >> "$GITHUB_OUTPUT"
 
     - name: Get new package directories
       id: get_new
@@ -231,3 +238,6 @@ runs:
           )}
         ')
         echo "combined_matrix=$combined_matrix" >> "$GITHUB_OUTPUT"
+        
+        count_combined_matrix=$(jq -r '.include | length' <<< "$combined_matrix")
+        echo "count_combined=$count_combined" >> "$GITHUB_OUTPUT"
