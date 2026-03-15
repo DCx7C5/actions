@@ -56,26 +56,21 @@ inputs:
 outputs:
   commit_sha:
     description: "SHA of the created commit (empty if no commit was made)"
-    value: "${{ steps.final_outputs.outputs.commit_sha }}"
+    value: "${{ steps.commit.outputs.commit_sha }}"
   message:
     description: "Resolved commit message used by the action (input/copilot/fallback)"
-    value: "${{ steps.final_outputs.outputs.message }}"
+    value: "${{ steps.commit.outputs.message }}"
   committed:
     description: "Whether a commit was created (true/false)"
-    value: "${{ steps.final_outputs.outputs.committed }}"
+    value: "${{ steps.commit.outputs.committed }}"
   amended:
     description: "Whether the commit was an amendment of the previous commit (true/false)"
-    value: "${{ steps.final_outputs.outputs.amended }}"
+    value: "${{ steps.commit.outputs.amended }}"
 
 
 runs:
   using: composite
   steps:
-    - name: Install Copilot CLI (if needed)
-      if: inputs.copilot == 'true'
-      uses: ./git-install-copilot
-      with:
-        github_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
 
     - name: Generate commit message with Copilot (if enabled and no message provided)
       if: inputs.copilot == 'true' && inputs.message == ''
@@ -83,7 +78,7 @@ runs:
       shell: bash
       run: |
         echo "Generating commit message with GitHub Copilot CLI..."
-        GENERATED_MSG=$(copilot commit-message 2>/dev/null || echo "")
+        GENERATED_MSG=$(gh copilot -p "Summarize this week's commits" --allow-tool 'shell(git)')
         
         if [[ -n "$GENERATED_MSG" ]]; then
           echo "Generated commit message:"
@@ -172,7 +167,10 @@ runs:
         set -euo pipefail
         
         echo "Creating commit..."
-
+        
+        LAST_COMMIT_SHA=$(git log -1 --pretty=%H || git rev-parse --verify HEAD)
+        
+        
         FINAL_MSG="$COMMIT_MSG"
         if [[ -z "$FINAL_MSG" && -n "$COPILOT_MSG" ]]; then
           FINAL_MSG="$COPILOT_MSG"
@@ -216,19 +214,20 @@ runs:
         echo "committed=true" >> "$GITHUB_OUTPUT"
         echo "amended=${{ inputs.amend }}" >> "$GITHUB_OUTPUT"
         
-        echo "Commit created:"
-        git log -1 --pretty=fuller
-
-    - name: Set final outputs
-      id: final_outputs
-      if: always()
-      shell: bash
-      run: |
-        echo "commit_sha=${{ steps.commit.outputs.commit_sha || '' }}" >> "$GITHUB_OUTPUT"
         {
-          echo "message<<EOF"
-          echo "${{ steps.commit.outputs.message || steps.copilot_msg.outputs.message || inputs.message || '' }}"
+          echo "message<<<EOF"
+          echo "$FINAL_MSG"
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
-        echo "committed=${{ steps.commit.outputs.committed || steps.check_changes.outputs.committed || 'false' }}" >> "$GITHUB_OUTPUT"
-        echo "amended=${{ inputs.amend }}" >> "$GITHUB_OUTPUT"
+        
+        echo "::group::Commit details:"
+        if [[ "$COMMIT_SHA" != "$LAST_COMMIT_SHA" ]]; then
+          git log -1 --pretty=fuller
+          echo "✅ Commit created successfully: $COMMIT_SHA"
+        elif [[ "$COMMIT_SHA" == "$LAST_COMMIT_SHA" && ${{ inputs.amend }} == 'true' ]]; then
+          git log -1 --pretty=fuller
+          echo "✅ Commit amended successfully: $COMMIT_SHA"
+        else
+          echo "::warn::⚠️ No new commit created (SHA unchanged: $COMMIT_SHA)"
+        fi
+        echo "::endgroup::"
