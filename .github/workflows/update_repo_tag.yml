@@ -80,7 +80,6 @@ jobs:
         id: release_create
         uses: ./release-create
         with:
-          github_token: ${{ steps.app_token.outputs.token }}
           release_tag: ${{ steps.tag_create.outputs.tag_name }}
           release_name: ${{ steps.tag_create.outputs.tag_name }}
           generate_notes: 'true'
