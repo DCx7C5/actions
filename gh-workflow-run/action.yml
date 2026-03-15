@@ -17,7 +17,7 @@ inputs:
     required: false
     default: 'delete'
   workflow_status:
-    description: "New-line separated list of workflow statuses to delete (e.g. 'failure' or 'canceled')"
+    description: "New-line separated list of workflow statuses to delete (e.g. 'failure' or 'cancelled')"
     required: true
 
 
