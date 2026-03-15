@@ -43,11 +43,29 @@ runs:
         github_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
         gpg_key_id: ${{ inputs.gpg_key_id }}
         run: |
-          if [[ -n "${{ inputs.gpg_passphrase }}" && "${{ inputs.gpg_sign }}" == 'true' ]]; then
-            echo "::notice::GPG signing is enabled with passphrase (will use passphrase for signing)"
+          set -euo pipefail
+
+          PKG_NAME="${{ inputs.pkg_name }}"
+          GPG_SIGN="${{ inputs.gpg_sign }}"
+          GPG_KEY_ID="${{ inputs.gpg_key_id }}"
+          GPG_PASSPHRASE="${{ inputs.gpg_passhphrase }}"
+
+          if [[ ! -d "$PKG_NAME" ]]; then
+            echo "::error::Package directory '$PKG_NAME' not found."
+            exit 1
+          fi
+
+          cd "$PKG_NAME"
+
+          if [[ "$GPG_SIGN" == 'true' && -n "$GPG_KEY_ID" ]]; then
+            if [[ -n "$GPG_PASSPHRASE" ]]; then
+              echo "::notice::GPG signing is enabled with key ID and passphrase"
+            else
+              echo "::notice::GPG signing is enabled with key ID (no passphrase provided)"
+            fi
             makepkg -sr --sign -C -c --noconfirm --noprogressbar
           else
-            echo "::notice::GPG signing is disabled (no key ID provided)"
+            echo "::notice::GPG signing is disabled (requires gpg_sign=true and non-empty gpg_key_id)"
             makepkg -sr -C -c --noconfirm --noprogressbar
           fi
           
