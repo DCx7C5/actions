@@ -44,7 +44,7 @@ Composite GitHub Action to delete GitHub Actions workflow runs by status using t
 ```yaml
 - name: Delete cancelled workflow runs
   id: cleanup_cancelled
-  uses: ./gh-workflow-runs
+  uses: ./gh-workflow-run
   with:
     workflow_status: |
       cancelled
@@ -55,7 +55,7 @@ Composite GitHub Action to delete GitHub Actions workflow runs by status using t
 ```yaml
 - name: Delete failed and cancelled workflow runs
   id: cleanup_runs
-  uses: ./gh-workflow-runs
+  uses: ./gh-workflow-run
   with:
     workflow_status: |
       failure
