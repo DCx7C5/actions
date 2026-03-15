@@ -51,7 +51,7 @@ Composite GitHub Action to sync package directory changes from an upstream repos
 ```yaml
 - name: Sync non-custom package
   id: sync_pkg
-  uses: ./aur-sync-pkg
+  uses: ./aur-add-pkg
   with:
     pkg_name: my-package
     sync_type: update
@@ -66,7 +66,7 @@ Composite GitHub Action to sync package directory changes from an upstream repos
 
 ```yaml
 - name: Sync custom package
-  uses: ./aur-sync-pkg
+  uses: ./aur-add-pkg
   with:
     pkg_name: my-custom-package
     dir_name: base-package
