@@ -106,7 +106,7 @@ runs:
 
         echo "Creating release for tag: $TAG"
 
-        if gh release view "$TAG" >/dev/null 2>&1; then
+        if gh release view "${TAG}" >/dev/null 2>&1; then
           echo "Release $TAG already exists."
           if [ "$FAIL_IF_EXISTS" = "true" ]; then
             echo "::error::Release with tag $TAG already exists."
@@ -114,23 +114,23 @@ runs:
           else
             echo "Skipping creation (fail_if_exists=false)."
             echo "created=false" >> "$GITHUB_OUTPUT"
-            echo "release_id=$(gh release view "$TAG" --json id --jq .id)" >> "$GITHUB_OUTPUT"
-            echo "html_url=$(gh release view "$TAG" --json url --jq .url)" >> "$GITHUB_OUTPUT"
-            echo "upload_url=$(gh release view "$TAG" --json uploadUrl --jq .uploadUrl)" >> "$GITHUB_OUTPUT"
+            echo "release_id=$(gh release view "${TAG}" --json id --jq .id)" >> "$GITHUB_OUTPUT"
+            echo "html_url=$(gh release view "${TAG}" --json url --jq .url)" >> "$GITHUB_OUTPUT"
+            echo "upload_url=$(gh release view "${TAG}" --json uploadUrl --jq .uploadUrl)" >> "$GITHUB_OUTPUT"
             exit 0
           fi
         fi
 
         # Create the release
-        gh release create $TAG $FLAGS || {
+        gh release create "${TAG}" $FLAGS || {
           echo "::error::Failed to create release $TAG"
           exit 1
         }
 
         echo "created=true" >> "$GITHUB_OUTPUT"
-        echo "release_id=$(gh release view "$TAG" --json id --jq .id)" >> "$GITHUB_OUTPUT"
-        echo "html_url=$(gh release view "$TAG" --json url --jq .url)" >> "$GITHUB_OUTPUT"
-        echo "upload_url=$(gh release view "$TAG" --json uploadUrl --jq .uploadUrl)" >> "$GITHUB_OUTPUT"
+        echo "release_id=$(gh release view "${TAG}" --json id --jq .id)" >> "$GITHUB_OUTPUT"
+        echo "html_url=$(gh release view "${TAG}" --json url --jq .url)" >> "$GITHUB_OUTPUT"
+        echo "upload_url=$(gh release view "${TAG}" --json uploadUrl --jq .uploadUrl)" >> "$GITHUB_OUTPUT"
 
     - name: Upload assets (if provided)
       if: inputs.assets != ''
