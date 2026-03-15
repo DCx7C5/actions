@@ -79,14 +79,14 @@ runs:
         set -euo pipefail
         
         # Check if tag already exists
-        if git rev-parse "$TAG" >/dev/null 2>&1; then
+        if git rev-parse $TAG >/dev/null 2>&1; then
           echo "::error::Tag $TAG already exists" >&2
           exit 1
         fi
         
         echo "::notice::Creating unsigned tag: $TAG"
         
-        TAG_ARGS=(-l "$TAG")
+        TAG_ARGS=(-l $TAG)
         
         if [ -n "$COMMIT_MSG" ]; then
           TAG_ARGS+=(-m "$COMMIT_MSG")
@@ -100,7 +100,7 @@ runs:
         fi
         
         # Show tag details
-        git show --pretty=fuller "$TAG" 2>/dev/null || true
+        git show --pretty=fuller $TAG 2>/dev/null || true
         
         # Output
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
@@ -118,7 +118,7 @@ runs:
         set -euo pipefail
         
         # Check if tag already exists
-        if git rev-parse "$TAG" >/dev/null 2>&1; then
+        if git rev-parse $TAG >/dev/null 2>&1; then
           echo "::error::Tag $TAG already exists" >&2
           exit 1
         fi
@@ -126,7 +126,7 @@ runs:
         echo "::notice::Creating signed tag: $TAG"
         
         # Build git tag command
-        TAG_ARGS=(-a "$TAG")
+        TAG_ARGS=(-a $TAG)
         
         if [ -n "$COMMIT_MSG" ]; then
           TAG_ARGS+=(-m "$COMMIT_MSG")
@@ -148,7 +148,7 @@ runs:
         fi
         
         # Show tag details
-        git show --pretty=fuller "$TAG" 2>/dev/null || true
+        git show --pretty=fuller $TAG 2>/dev/null || true
         
         # Output
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
@@ -167,7 +167,7 @@ runs:
         set -euo pipefail
 
         # Check if tag already exists
-        if git rev-parse "$TAG" >/dev/null 2>&1; then
+        if git rev-parse $TAG >/dev/null 2>&1; then
           echo "::error::Tag $TAG already exists" >&2
           exit 1
         fi
@@ -186,7 +186,7 @@ runs:
         fi
         
         # Build git tag command
-        TAG_ARGS=(-a "$TAG")
+        TAG_ARGS=(-a $TAG)
 
         if [ -n "$COMMIT_MSG" ]; then
           TAG_ARGS+=(-m "$COMMIT_MSG")
@@ -211,7 +211,7 @@ runs:
         fi
 
         # Show tag details
-        git show --pretty=fuller "$TAG" 2>/dev/null || true
+        git show --pretty=fuller $TAG 2>/dev/null || true
 
         # Output
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
@@ -223,7 +223,7 @@ runs:
       run: |
         set -euo pipefail
         
-        if ! git push origin "$TAG"; then
+        if ! git push origin $TAG; then
           echo "::error::Failed to push tag to repository" >&2
           exit 1
         fi
