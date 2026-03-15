@@ -119,7 +119,7 @@ runs:
         passphrase: ${{ inputs.ssl_pass || inputs.gpg_pass }}
         type: ${{ steps.validate.outputs.is_file == 'true' && 'file' || 'inline' }}
         encoding: ${{ steps.validate.outputs.is_ssl_enc_binary_key == 'true' && 'binary' || 'text' }}
-        cleanup: 'true'
+        cleanup: true
 
     - name: Import from secret/variable/inline value
       id: inline_import
@@ -130,7 +130,7 @@ runs:
       with:
         gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.gpg_pass }}
-        type: 'auto'
+        type: auto
 
     - name: Import from file
       id: file_import
@@ -185,17 +185,17 @@ runs:
 
     - name: Configure Git client to sign with GPG
       id: git_config
-      if: inputs.configure_git == 'true'
+      if: (inputs.configure_git || inputs.configure_git == 'true')
       uses: ./git-configure-gnupg
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
         GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN }}
 
     - name: Preset passphrase with gpg-agent
-      if: inputs.preset_pass == 'true' && (steps.validate.outputs.is_secretkey == 'true' || steps.validate.outputs.is_ssl_enc_key == 'true')
+      if: (input.preset_pass || inputs.preset_pass == 'true') && (steps.validate.outputs.is_secretkey == 'true' || steps.validate.outputs.is_ssl_enc_key == 'true')
       uses: ./gpg-preset-pass
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
         pass: ${{ inputs.gpg_pass }}
-        forget: 'false'
+        forget: false
