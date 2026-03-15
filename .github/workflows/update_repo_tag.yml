@@ -78,7 +78,7 @@ jobs:
 
       - name: Create release on GitHub
         id: release_create
-        uses: ./release-create
+        uses: ./gh-release-create
         env:
           GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
         with:
