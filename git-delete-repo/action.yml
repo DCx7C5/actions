@@ -98,7 +98,7 @@ runs:
           exit 0
         fi
         
-        echo "::warning::⚠️  Deleting repository '$REPO_FULL_NAME'..."
+        echo "::warning::Deleting repository '$REPO_FULL_NAME'..."
         
         # Delete the repository
         if gh repo delete "$REPO_FULL_NAME" --yes 2>&1; then
