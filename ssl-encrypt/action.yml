@@ -128,6 +128,4 @@ runs:
             echo "::warning::Failed to securely delete encrypted file: ${{ steps.encrypt_ssl.outputs.encrypted_content }}"
           }
         fi
-        
         echo "::notice::Cleanup complete for encrypted file: ${{ steps.encrypt_ssl.outputs.encrypted_content }}"
-
