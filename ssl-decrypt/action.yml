@@ -125,7 +125,7 @@ runs:
         INPUT_ENCODING: ${{ steps.parse_encoding.outputs.encoding || inputs.encoding }}
       run: |
         set -euo pipefail
-
+        salt_input="${{ inputs.salt }}"
         if [[ -n "$salt_input" ]]; then
           # Sanitize salt: remove leading/trailing whitespace and newlines
           salt_input="${{ inputs.salt }}"
