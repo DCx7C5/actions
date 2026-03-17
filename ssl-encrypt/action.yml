@@ -1,0 +1,133 @@
+name: "SSL Encrypt File or Value"
+description: "Encrypts file or value using SSL/OpenSSL with provided password, with detection and security hardening for secrets"
+author: "DCx7C5"
+
+
+inputs:
+  in:
+    required: true
+    description: "File path or inline variable to encrypt"
+  passphrase:
+    required: true
+    description: "Password for SSL/OpenSSL encryption"
+  salt:
+    required: false
+    default: ''
+    description: "Optional salt value for encryption"
+  out_file:
+    required: false
+    default: ''
+    description: "Optional output file path for encrypted content (if not provided, encrypted content will be output as base64 string)"
+  encoding:
+    required: false
+    default: 'auto'
+    description: "Output format: 'auto' (detect based on input), 'binary' (raw encrypted bytes), or 'text' (base64 string output)"
+  cleanup:
+    required: false
+    default: 'false'
+    description: "Whether to securely delete the input file after encryption (only applies if inputs.in is a file path)"
+
+
+outputs:
+  encrypted_content:
+    description: "The encrypted content (base64 string if encoding is 'text' or 'auto' with non-file input; file path if out_file is provided)"
+    value: ${{ steps.encrypt_ssl.outputs.encrypted_content }}
+  type:
+    description: "Detected input type: 'file' or 'inline'"
+    value: ${{ steps.detect_type.outputs.type || (inputs.in && 'file' || 'inline') }}
+  encoding:
+    description: "Detected output format: 'binary' or 'text'"
+    value: ${{ steps.detect_encoding.outputs.encoding || inputs.encoding }}
+
+
+runs:
+  using: composite
+  steps:
+    - name: Mask password input
+      id: mask_and_validate
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -n '${{ inputs.in }}' ]; then
+          echo "::add-mask::${{ inputs.in }}"
+        fi
+        if [ -n '${{ inputs.passphrase }}' ]; then
+          echo "::add-mask::${{ inputs.passphrase }}"
+        fi
+        if [ -n '${{ inputs.salt }}' ]; then
+          echo "::add-mask::${{ inputs.salt }}"
+        fi
+
+    - name: Detect input type
+      id: detect_type_and_encoding
+      shell: bash
+      run: |
+        if [ -f "${{ inputs.in }}" ]; then
+          echo "type=file" >> "$GITHUB_OUTPUT"
+        else
+          echo "type=inline" >> "$GITHUB_OUTPUT"
+        fi
+        
+        if [ -n "${{ inputs.out_file }}" ]; then
+          echo "encoding=binary" >> "$GITHUB_OUTPUT"
+        else
+          echo "encoding=text" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Encrypt with OpenSSL
+      id: encrypt_ssl
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        input="${{ inputs.in }}"
+        passphrase="${{ inputs.passphrase }}"
+        salt="${{ inputs.salt }}"
+        out_file="${{ inputs.out_file }}"
+        encoding="${{ steps.detect_type_and_encoding.outputs.encoding || inputs.encoding }}"
+        
+        openssl_args=()
+        if [ -n "$salt" ]; then
+          openssl_args+=("-salt" "-S" "$salt")
+        fi
+        
+        if [ "${{ steps.detect_type_and_encoding.outputs.type || (inputs.in && 'file' || 'inline') }}" = "file" ]; then
+          if [ "$encoding" = "binary" ]; then
+            openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "$input" -out "$out_file" -pass pass:"$passphrase"
+            echo "encrypted_content=$out_file" >> "$GITHUB_OUTPUT"
+          else
+            encrypted=$(openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "$input" -pass pass:"$passphrase" | base64)
+            echo "encrypted_content=$encrypted" >> "$GITHUB_OUTPUT"
+          fi
+          
+          if [ "${{ inputs.cleanup }}" = "true" ]; then
+            shred -u "$input"
+          fi
+        else
+          if [ "$encoding" = "binary" ]; then
+            echo "${input}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$passphrase" -out "$out_file"
+            echo "encrypted_content=$out_file" >> "$GITHUB_OUTPUT"
+          else
+            encrypted=$(echo -n "${input}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$passphrase" | base64)
+            echo "encrypted_content=$encrypted" >> "$GITHUB_OUTPUT"
+          fi 
+        fi
+        
+        echo "type=${{ steps.detect_type_and_encoding.outputs.type || (inputs.in && 'file' || 'inline') }}" >> "$GITHUB_OUTPUT"
+        echo "encoding=$encoding" >> "$GITHUB_OUTPUT"
+        
+        echo "::notice::Encryption successful. Output type: ${{ steps.detect_type_and_encoding.outputs.type || (inputs.in && 'file' || 'inline') }}, encoding: $encoding"
+
+    - name: Cleanup encrypted file if output is a file and cleanup is enabled
+      if: steps.detect_type_and_encoding.outputs.encoding == 'binary' && inputs.cleanup == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -f "${{ steps.encrypt_ssl.outputs.encrypted_content }}" ]; then
+          shred -u "${{ steps.encrypt_ssl.outputs.encrypted_content }}" || rm -f "${{ steps.encrypt_ssl.outputs.encrypted_content }}" || {
+            echo "::warning::Failed to securely delete encrypted file: ${{ steps.encrypt_ssl.outputs.encrypted_content }}"
+          }
+        fi
+        
+        echo "::notice::Cleanup complete for encrypted file: ${{ steps.encrypt_ssl.outputs.encrypted_content }}"
+
