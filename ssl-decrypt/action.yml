@@ -136,20 +136,20 @@ runs:
         set -euo pipefail
         if [[ "$OUTPUT_ENCODING" == "base64" ]]; then
           if [[ "$INPUT_ENCODING" == "base64" ]]; then
-            decrypted_content="$((
+            decrypted_content="$(
               printf '%s' "${{ inputs.enc_input }}" \
                 | base64 -d \
                 | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
                   -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
                 | base64 -w0
-            ))"
+            )"
           else
-            decrypted_content="$((
+            decrypted_content="$(
               printf '%s' "${{ inputs.enc_input }}" \
                 | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
                   -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
                 | base64 -w0
-            ))"
+            )"
           fi
         elif [[ "$OUTPUT_ENCODING" == "raw" ]]; then
           if [[ "$INPUT_ENCODING" == "base64" ]]; then
@@ -228,71 +228,71 @@ runs:
         set -euo pipefail
         if [ "$OUTPUT_ENCODING" = "base64" ]; then
           if [ "$INPUT_ENCODING" = "base64" ]; then
-            decrypted_content="$((
+            decrypted_content="$(
               base64 -d < "${{ inputs.enc_input }}" \
                 | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
                   -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
                 | base64 -w0
-            ))"
+            )"
           else
-            decrypted_content="$((
+            decrypted_content="$(
               openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
                 -in "${{ inputs.enc_input }}" \
                 -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
               | base64 -w0
-            ))"
+            )"
           fi
         elif [ "$OUTPUT_ENCODING" = "raw" ]; then
           if [ "$INPUT_ENCODING" = "base64" ]; then
-            decrypted_content="$((
+            decrypted_content="$(
               base64 -d < "${{ inputs.enc_input }}" \
                 | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
                   -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
-            ))"
+            )"
           else
-            decrypted_content="$((
+            decrypted_content="$(
               openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
                 -in "${{ inputs.enc_input }}" \
                 -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
-            ))"
+            )"
           fi
         else
           if [ "$INPUT_ENCODING" = "base64" ]; then
             if [[ "$B64_OUTPUT" == "true" ]]; then
-              decrypted_content="$((
+              decrypted_content="$(
                 base64 -d < "${{ inputs.enc_input }}" \
                   | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
                     -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
                   | base64 -w0
-              ))"
+              )"
             else
-              decrypted_content="$((
+              decrypted_content="$(
                 base64 -d < "${{ inputs.enc_input }}" \
                   | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
                     -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
-              ))"
+              )"
             fi
           elif [ "$INPUT_ENCODING" = "binary" ]; then
             if [[ "$B64_OUTPUT" == "true" ]]; then
-              decrypted_content="$((
+              decrypted_content="$(
                 openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
                   -in "${{ inputs.enc_input }}" \
                   -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
                 | base64 -w0
-              ))"
+              )"
             else
-              decrypted_content="$((
+              decrypted_content="$(
                 openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
                   -in "${{ inputs.enc_input }}" \
                   -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
-              ))"
+              )"
             fi
           else
-            decrypted_content="$((
+            decrypted_content="$(
               openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
                 -in "${{ inputs.enc_input }}" \
                 -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
-            ))"
+            )"
           fi
         fi
         delim="__GHA_DELIM_$(date +%s%N)__"
