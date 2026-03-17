@@ -3,7 +3,7 @@ name: "Cleanup Repository Artifacts"
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *' # Run daily at midnight
+    - cron: '0 0 * * 0' # At 00:00 on Sunday.
 
 
 jobs:
@@ -41,10 +41,10 @@ jobs:
           keep: '10'
           github_token: ${{ steps.app_token.outputs.token }}
 
-      - name: Cleanup Successful Workflow Artifacts
-        uses: DCx7C5/actions/gh-workflow-run@v1
-        with:
-          action: 'delete'
-          workflow_status: 'success'
-          keep: '25'
-          github_token: ${{ steps.app_token.outputs.token }}
+      #- name: Cleanup Successful Workflow Artifacts
+      #  uses: DCx7C5/actions/gh-workflow-run@v1
+      #  with:
+      #    action: 'delete'
+      #    workflow_status: 'success'
+      #    keep: '25'
+      #    github_token: ${{ steps.app_token.outputs.token }}
