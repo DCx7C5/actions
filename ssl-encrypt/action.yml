@@ -138,21 +138,15 @@ runs:
           openssl_args+=("-salt" "-S" "$SALT")
         fi
         if [[ "$OUTPUT_ENCODING" == "base64" ]]; then
-          if ! echo -n "${{ inputs.input }}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$PASSPHRASE" 2>err_ssl.log | base64 -w0 > encrypted.b64; then
-            echo "::error::OpenSSL encryption failed. Details:" >&2
-            cat err_ssl.log >&2
+          if ! encrypted_content=$(echo -n "${{ inputs.input }}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$PASSPHRASE" 2>/dev/null | base64 -w0); then
+            echo "::error::OpenSSL encryption failed." >&2
             exit 1
           fi
-          encrypted_content="$(cat encrypted.b64)"
-          rm -f encrypted.b64 err_ssl.log
         else
-          if ! echo -n "${{ inputs.input }}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$PASSPHRASE" 2>err_ssl.log > encrypted.raw; then
-            echo "::error::OpenSSL encryption failed. Details:" >&2
-            cat err_ssl.log >&2
+          if ! encrypted_content=$(echo -n "${{ inputs.input }}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$PASSPHRASE" 2>/dev/null); then
+            echo "::error::OpenSSL encryption failed." >&2
             exit 1
           fi
-          encrypted_content="$(cat encrypted.raw)"
-          rm -f encrypted.raw err_ssl.log
         fi
         delim="__GHA_DELIM_$(date +%s%N)__"
         {
@@ -179,21 +173,15 @@ runs:
           openssl_args+=("-salt" "-S" "$SALT")
         fi
         if [[ "$OUTPUT_ENCODING" == "base64" ]]; then
-          if ! openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "${{ inputs.input }}" -pass pass:"$PASSPHRASE" 2>err_ssl.log | base64 -w0 > encrypted.b64; then
-            echo "::error::OpenSSL encryption failed. Details:" >&2
-            cat err_ssl.log >&2
+          if ! encrypted_content=$(openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "${{ inputs.input }}" -pass pass:"$PASSPHRASE" 2>/dev/null | base64 -w0); then
+            echo "::error::OpenSSL encryption failed." >&2
             exit 1
           fi
-          encrypted_content="$(cat encrypted.b64)"
-          rm -f encrypted.b64 err_ssl.log
         else
-          if ! openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "${{ inputs.input }}" -pass pass:"$PASSPHRASE" 2>err_ssl.log > encrypted.raw; then
-            echo "::error::OpenSSL encryption failed. Details:" >&2
-            cat err_ssl.log >&2
+          if ! encrypted_content=$(openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "${{ inputs.input }}" -pass pass:"$PASSPHRASE" 2>/dev/null); then
+            echo "::error::OpenSSL encryption failed." >&2
             exit 1
           fi
-          encrypted_content="$(cat encrypted.raw)"
-          rm -f encrypted.raw err_ssl.log
         fi
         delim="__GHA_DELIM_$(date +%s%N)__"
         {
