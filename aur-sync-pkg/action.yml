@@ -50,6 +50,16 @@ outputs:
 runs: 
   using: composite
   steps:
+    - name: Add package
+      id: add
+      if: inputs.sync_type == 'add' && (inputs.is_custom == 'false' || !inputs.is_custom)
+      uses: ./aur-sync-pkg/add-pkg
+      with:
+        pkg_name: ${{ inputs.pkg_name }}
+        remote_name: ${{ inputs.remote_name }}
+        remote_ref: ${{ inputs.remote_ref }}
+        remote_repo: ${{ inputs.remote_repo }}
+
     - name: Add Custom package
       id: add_custom
       if: inputs.sync_type == 'add' && (inputs.is_custom == 'true' || inputs.is_custom)
@@ -61,10 +71,10 @@ runs:
         remote_ref: ${{ inputs.remote_ref }}
         remote_repo: ${{ inputs.remote_repo }}
 
-    - name: Add package
-      id: add
-      if: inputs.sync_type == 'add' && (inputs.is_custom == 'false' || !inputs.is_custom)
-      uses: ./aur-sync-pkg/add-pkg
+    - name: Update package
+      id: update
+      if: inputs.sync_type == 'update' && (inputs.is_custom == 'false' || !inputs.is_custom)
+      uses: ./aur-sync-pkg/update-pkg
       with:
         pkg_name: ${{ inputs.pkg_name }}
         remote_name: ${{ inputs.remote_name }}
@@ -82,27 +92,8 @@ runs:
         remote_ref: ${{ inputs.remote_ref }}
         remote_repo: ${{ inputs.remote_repo }}
 
-    - name: Update package
-      id: update
-      if: inputs.sync_type == 'update' && (inputs.is_custom == 'false' || !inputs.is_custom)
-      uses: ./aur-sync-pkg/update-pkg
-      with:
-        pkg_name: ${{ inputs.pkg_name }}
-        remote_name: ${{ inputs.remote_name }}
-        remote_ref: ${{ inputs.remote_ref }}
-        remote_repo: ${{ inputs.remote_repo }}
-
-    - name: Add package custom type to packages.json
-      if: inputs.sync_type == 'add'
-      uses: ./json-packages
-      with:
-        action: 'add'
-        path: ${{ github.workspace }}/.ci/packages.json
-        pkg_name: ${{ inputs.pkg_name }}
-        key: '{"custom":${{ inputs.is_custom }},"dir":"${{ inputs.remote_pkg_name }}","upstream":"${{ inputs.remote_repo }}"}'
-
     - name: Stage changes
-      if: inputs.stage_change == 'true'
+      if: (inputs.stage_change || inputs.stage_change == 'true')
       uses: DCx7C5/actions/git-stage-changes@v1
       with:
         include_untracked: 'true'
