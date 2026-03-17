@@ -133,6 +133,10 @@ runs:
         OUTPUT_ENCODING: "${{ inputs.output_encoding }}"
       run: |
         set -euo pipefail
+        SALT_ARG=()
+        if [ -n "${{ inputs.salt }}" ]; then
+          SALT_ARG+=("-salt" "-S" "${{ inputs.salt }}")
+        fi
         if [[ "$OUTPUT_ENCODING" == "base64" ]]; then
           if [[ "$INPUT_ENCODING" == "base64" ]]; then
             decrypted_content="$(
@@ -184,6 +188,10 @@ runs:
         OUTPUT_ENCODING: "${{ inputs.output_encoding }}"
       run: |
         set -euo pipefail
+        SALT_ARG=()
+        if [ -n "${{ inputs.salt }}" ]; then
+          SALT_ARG+=("-salt" "-S" "${{ inputs.salt }}")
+        fi
         if [ "$OUTPUT_ENCODING" = "base64" ]; then
           if [ "$INPUT_ENCODING" = "base64" ]; then
             decrypted_content="$(
