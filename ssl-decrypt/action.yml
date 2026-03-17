@@ -150,7 +150,7 @@ runs:
               cat err_b64.log >&2
               exit 1
             fi
-            if ! openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" -in decoded_input.bin 2>err_ssl.log | base64 -w0 > decrypted.b64; then
+            if ! openssl enc -aes-256-cbc -pbkdf2 "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" -in decoded_input.bin 2>err_ssl.log | base64 -w0 > decrypted.b64; then
               echo "::error::OpenSSL decryption failed (base64 input). Details:" >&2
               cat err_ssl.log >&2
               exit 1
@@ -158,7 +158,7 @@ runs:
             decrypted_content="$(cat decrypted.b64)"
             rm -f decoded_input.bin decrypted.b64 err_b64.log err_ssl.log
           else
-            if ! printf '%s' "${{ inputs.enc_input }}" | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" 2>err_ssl.log | base64 -w0 > decrypted.b64; then
+            if ! printf '%s' "${{ inputs.enc_input }}" | openssl enc -aes-256-cbc -pbkdf2 "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" 2>err_ssl.log | base64 -w0 > decrypted.b64; then
               echo "::error::OpenSSL decryption failed. Details:" >&2
               cat err_ssl.log >&2
               exit 1
@@ -173,7 +173,7 @@ runs:
               cat err_b64.log >&2
               exit 1
             fi
-            if ! openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" -in decoded_input.bin 2>err_ssl.log > decrypted.raw; then
+            if ! openssl enc -aes-256-cbc -pbkdf2 "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" -in decoded_input.bin 2>err_ssl.log > decrypted.raw; then
               echo "::error::OpenSSL decryption failed (base64 input). Details:" >&2
               cat err_ssl.log >&2
               exit 1
@@ -181,7 +181,7 @@ runs:
             decrypted_content="$(cat decrypted.raw)"
             rm -f decoded_input.bin decrypted.raw err_b64.log err_ssl.log
           else
-            if ! printf '%s' "${{ inputs.enc_input }}" | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" 2>err_ssl.log > decrypted.raw; then
+            if ! printf '%s' "${{ inputs.enc_input }}" | openssl enc -aes-256-cbc -pbkdf2 "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" 2>err_ssl.log > decrypted.raw; then
               echo "::error::OpenSSL decryption failed. Details:" >&2
               cat err_ssl.log >&2
               exit 1
@@ -224,7 +224,7 @@ runs:
               cat err_b64.log >&2
               exit 1
             fi
-            if ! openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" -in decoded_input.bin 2>err_ssl.log | base64 -w0 > decrypted.b64; then
+            if ! openssl enc -aes-256-cbc -pbkdf2 "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" -in decoded_input.bin 2>err_ssl.log | base64 -w0 > decrypted.b64; then
               echo "::error::OpenSSL decryption failed (base64 input file). Details:" >&2
               cat err_ssl.log >&2
               exit 1
@@ -232,7 +232,7 @@ runs:
             decrypted_content="$(cat decrypted.b64)"
             rm -f decoded_input.bin decrypted.b64 err_b64.log err_ssl.log
           else
-            if ! openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d -in "${{ inputs.enc_input }}" -pass pass:"${{ inputs.passphrase }}" 2>err_ssl.log | base64 -w0 > decrypted.b64; then
+            if ! openssl enc -aes-256-cbc -pbkdf2 "${SALT_ARG[@]}" -d -in "${{ inputs.enc_input }}" -pass pass:"${{ inputs.passphrase }}" 2>err_ssl.log | base64 -w0 > decrypted.b64; then
               echo "::error::OpenSSL decryption failed. Details:" >&2
               cat err_ssl.log >&2
               exit 1
@@ -247,7 +247,7 @@ runs:
               cat err_b64.log >&2
               exit 1
             fi
-            if ! openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" -in decoded_input.bin 2>err_ssl.log > decrypted.raw; then
+            if ! openssl enc -aes-256-cbc -pbkdf2 "${SALT_ARG[@]}" -d -pass pass:"${{ inputs.passphrase }}" -in decoded_input.bin 2>err_ssl.log > decrypted.raw; then
               echo "::error::OpenSSL decryption failed (base64 input file). Details:" >&2
               cat err_ssl.log >&2
               exit 1
@@ -255,7 +255,7 @@ runs:
             decrypted_content="$(cat decrypted.raw)"
             rm -f decoded_input.bin decrypted.raw err_b64.log err_ssl.log
           else
-            if ! openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d -in "${{ inputs.enc_input }}" -pass pass:"${{ inputs.passphrase }}" 2>err_ssl.log > decrypted.raw; then
+            if ! openssl enc -aes-256-cbc -pbkdf2 "${SALT_ARG[@]}" -d -in "${{ inputs.enc_input }}" -pass pass:"${{ inputs.passphrase }}" 2>err_ssl.log > decrypted.raw; then
               echo "::error::OpenSSL decryption failed. Details:" >&2
               cat err_ssl.log >&2
               exit 1
