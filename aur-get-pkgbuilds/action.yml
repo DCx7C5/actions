@@ -35,7 +35,7 @@ runs:
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
         
-        if [[ "${{ inputs.matrix }}" ~= ^true$ ]]; then
+        if [[ "${{ inputs.matrix }}" =~ ^true$ ]]; then
           echo "::notice::PKGBUILD directories (matrix format):"
           MATRIX_JSON=$(jq -Rn --arg dirs "$PKGBUILD_DIRS" '[$dirs | split("\n") | map(select(length > 0)) | map({dir: .})]')
           echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
