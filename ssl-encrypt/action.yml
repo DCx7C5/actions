@@ -1,10 +1,9 @@
-name: "SSL Encrypt File or Value"
-description: "Encrypts file or value using SSL/OpenSSL with provided password, with detection and security hardening for secrets"
+name: "SSL Encrypt file or inline value"
+description: "Encrypts file or inline value using SSL/OpenSSL with provided password, with detection and security hardening for secrets"
 author: "DCx7C5"
 
-
 inputs:
-  in:
+  input:
     required: true
     description: "File path or inline variable to encrypt"
   passphrase:
@@ -14,42 +13,44 @@ inputs:
     required: false
     default: ''
     description: "Optional salt value for encryption"
-  out_file:
-    required: false
-    default: ''
-    description: "Optional output file path for encrypted content (if not provided, encrypted content will be output as base64 string)"
-  encoding:
+  input_type:
     required: false
     default: 'auto'
-    description: "Output format: 'auto' (detect based on input), 'binary' (raw encrypted bytes), or 'text' (base64 string output)"
+    description: "Input type: 'auto' (detect based on input), 'file' (treat input as file path), or 'inline' (treat input as inline variable)"
+  input_encoding:
+    required: false
+    default: 'auto'
+    description: "Input encoding: 'auto' (detect based on input), 'binary' (raw bytes), 'base64' (base64-codiert), 'text' (UTF-8-String), oder 'raw' (UTF-8-String, synonym zu text)"
+  output_encoding:
+    required: false
+    default: 'base64'
+    description: "Output encoding: 'base64' (base64-encoded) or 'raw' (always UTF-8-String)."
   cleanup:
     required: false
     default: 'false'
-    description: "Whether to securely delete the input file after encryption (only applies if inputs.in is a file path)"
-
+    description: "Whether to securely delete the input file after encryption (only applies if input_type is 'file')"
 
 outputs:
-  encrypted_content:
-    description: "The encrypted content (base64 string if encoding is 'text' or 'auto' with non-file input; file path if out_file is provided)"
-    value: ${{ steps.encrypt_ssl.outputs.encrypted_content }}
   type:
     description: "Detected input type: 'file' or 'inline'"
-    value: ${{ steps.detect_type.outputs.type || (inputs.in && 'file' || 'inline') }}
+    value: ${{ steps.parse_type.outputs.type || inputs.input_type }}
   encoding:
-    description: "Detected output format: 'binary' or 'text'"
-    value: ${{ steps.detect_encoding.outputs.encoding || inputs.encoding }}
+    description: "Detected output format: 'binary', 'base64', or 'text'"
+    value: ${{ steps.parse_encoding.outputs.encoding || inputs.input_encoding }}
+  encrypted_content:
+    description: "The encrypted content (base64 string, raw string, or file path depending on inputs and detection)"
+    value: ${{ steps.encrypt_ssl_file.outputs.encrypted_content || steps.encrypt_ssl_value.outputs.encrypted_content }}
 
 
 runs:
   using: composite
   steps:
     - name: Mask password input
-      id: mask_and_validate
+      id: mask_input
       shell: bash
       run: |
-        set -euo pipefail
-        if [ -n '${{ inputs.in }}' ]; then
-          echo "::add-mask::${{ inputs.in }}"
+        if [ -n '${{ inputs.input }}' ]; then
+          echo "::add-mask::${{ inputs.input }}"
         fi
         if [ -n '${{ inputs.passphrase }}' ]; then
           echo "::add-mask::${{ inputs.passphrase }}"
@@ -58,70 +59,166 @@ runs:
           echo "::add-mask::${{ inputs.salt }}"
         fi
 
-    - name: Detect input type
-      id: detect_type_and_encoding
-      shell: bash
-      run: |
-        if [ -f "${{ inputs.in }}" ]; then
-          echo "type=file" >> "$GITHUB_OUTPUT"
-        else
-          echo "type=inline" >> "$GITHUB_OUTPUT"
+        if [[ -z '${{ inputs.input }}' || -z '${{ inputs.passphrase }}' ]]; then
+          echo "::error::'input' cannot be empty." >&2
+          exit 1
         fi
-        
-        if [ -n "${{ inputs.out_file }}" ]; then
-          echo "encoding=binary" >> "$GITHUB_OUTPUT"
-        else
-          echo "encoding=text" >> "$GITHUB_OUTPUT"
+        if [[ "${{ inputs.input_type }}" != "auto" && "${{ inputs.input_type }}" != "file" && "${{ inputs.input_type }}" != "inline" ]]; then
+          echo "::error::Invalid 'input_type' input: '${{ inputs.input_type }}'. Must be 'auto', 'file', or 'inline'." >&2
+          exit 1
+        elif [[ "${{ inputs.input_encoding }}" != "auto" && "${{ inputs.input_encoding }}" != "binary" && "${{ inputs.input_encoding }}" != "text" && "${{ inputs.input_encoding }}" != "base64" && "${{ inputs.input_encoding }}" != "raw" ]]; then
+          echo "::error::Invalid 'input_encoding' input: '${{ inputs.input_encoding }}'. Must be 'auto', 'binary', 'text', 'base64', or 'raw'." >&2
+          exit 1
+        fi
+        if [[ "${{ inputs.output_encoding }}" != "base64" && "${{ inputs.output_encoding }}" != "raw" ]]; then
+          echo "::error::Invalid 'output_encoding' input: '${{ inputs.output_encoding }}'. Must be 'base64' or 'raw'." >&2
+          exit 1
+        fi
+        if [[ "${{ inputs.input_type }}" == "auto" && -z "${{ inputs.input }}" ]]; then
+          echo "::error::'input' cannot be empty when 'input_type' is set to 'auto'." >&2
+          exit 1
         fi
 
-    - name: Encrypt with OpenSSL
-      id: encrypt_ssl
+    - name: Parse Type
+      id: parse_type
+      if: inputs.input_type == 'auto'
       shell: bash
       run: |
-        set -euo pipefail
-        
-        input="${{ inputs.in }}"
-        passphrase="${{ inputs.passphrase }}"
-        salt="${{ inputs.salt }}"
-        out_file="${{ inputs.out_file }}"
-        encoding="${{ steps.detect_type_and_encoding.outputs.encoding || inputs.encoding }}"
-        
-        openssl_args=()
-        if [ -n "$salt" ]; then
-          openssl_args+=("-salt" "-S" "$salt")
+        if [[ -n "${{ inputs.input }}" && -f "${{ inputs.input }}" ]]; then
+          echo "type=file" >> "$GITHUB_OUTPUT"
+        elif [[ -n "${{ inputs.input }}" ]]; then
+          echo "type=inline" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::Unable to determine input type from 'input'. Please specify 'input_type' explicitly." >&2
+          exit 1
         fi
-        
-        if [ "${{ steps.detect_type_and_encoding.outputs.type || (inputs.in && 'file' || 'inline') }}" = "file" ]; then
-          if [ "$encoding" = "binary" ]; then
-            openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "$input" -out "$out_file" -pass pass:"$passphrase"
-            echo "encrypted_content=$out_file" >> "$GITHUB_OUTPUT"
+
+    - name: Parse Encoding
+      id: parse_encoding
+      if: inputs.input_encoding == 'auto'
+      shell: bash
+      env:
+        INPUT_TYPE: "${{ steps.parse_type.outputs.type || inputs.input_type }}"
+      run: |
+        if [[ "$INPUT_TYPE" == "file" && -f "${{ inputs.input }}" ]]; then
+          if grep -qP "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]" "${{ inputs.input }}"; then
+            echo "encoding=binary" >> "$GITHUB_OUTPUT"
+          elif grep -qP "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$" "${{ inputs.input }}"; then
+            echo "encoding=base64" >> "$GITHUB_OUTPUT"
           else
-            encrypted=$(openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "$input" -pass pass:"$passphrase" | base64)
-            echo "encrypted_content=$encrypted" >> "$GITHUB_OUTPUT"
+            echo "encoding=text" >> "$GITHUB_OUTPUT"
+          fi
+        elif [[ "$INPUT_TYPE" == "inline" ]]; then
+          if grep -qP "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]" <<< "${{ inputs.input }}"; then
+            echo "encoding=binary" >> "$GITHUB_OUTPUT"
+          elif grep -qP "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$" <<< "${{ inputs.input }}"; then
+            echo "encoding=base64" >> "$GITHUB_OUTPUT"
+          else
+            echo "encoding=text" >> "$GITHUB_OUTPUT"
           fi
         else
-          if [ "$encoding" = "binary" ]; then
-            echo "${input}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$passphrase" -out "$out_file"
-            echo "encrypted_content=$out_file" >> "$GITHUB_OUTPUT"
-          else
-            encrypted=$(echo -n "${input}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$passphrase" | base64)
-            echo "encrypted_content=$encrypted" >> "$GITHUB_OUTPUT"
-          fi 
+          echo "::error::Unable to determine encoding for input. Please specify 'input_encoding' explicitly." >&2
+          exit 1
         fi
-        
-        echo "type=${{ steps.detect_type_and_encoding.outputs.type || (inputs.in && 'file' || 'inline') }}" >> "$GITHUB_OUTPUT"
-        echo "encoding=$encoding" >> "$GITHUB_OUTPUT"
-        
-        echo "::notice::Encryption successful. Output type: ${{ steps.detect_type_and_encoding.outputs.type || (inputs.in && 'file' || 'inline') }}, encoding: $encoding"
 
-    - name: Cleanup encrypted file if output is a file and cleanup is enabled
-      if: steps.detect_type_and_encoding.outputs.encoding == 'binary' && inputs.cleanup == 'true'
+    - name: Encrypt SSL value
+      id: encrypt_ssl_value
+      if: steps.parse_type.outputs.type != 'file'
       shell: bash
+      env:
+        INPUT_TYPE: "${{ steps.parse_type.outputs.type || inputs.input_type }}"
+        INPUT_ENCODING: "${{ steps.parse_encoding.outputs.encoding || inputs.input_encoding }}"
+        OUTPUT_ENCODING: "${{ inputs.output_encoding }}"
+        SALT: "${{ inputs.salt }}"
+        PASSPHRASE: "${{ inputs.passphrase }}"
       run: |
         set -euo pipefail
-        if [ -f "${{ steps.encrypt_ssl.outputs.encrypted_content }}" ]; then
-          shred -u "${{ steps.encrypt_ssl.outputs.encrypted_content }}" || rm -f "${{ steps.encrypt_ssl.outputs.encrypted_content }}" || {
-            echo "::warning::Failed to securely delete encrypted file: ${{ steps.encrypt_ssl.outputs.encrypted_content }}"
-          }
+        openssl_args=()
+        if [ -n "$SALT" ]; then
+          openssl_args+=("-salt" "-S" "$SALT")
         fi
-        echo "::notice::Cleanup complete for encrypted file: ${{ steps.encrypt_ssl.outputs.encrypted_content }}"
+        if [[ "$OUTPUT_ENCODING" == "base64" ]]; then
+          encrypted_content="$(
+            echo -n "${{ inputs.input }}" \
+              | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$PASSPHRASE" \
+              | base64 -w0
+          )"
+        else
+          encrypted_content="$(
+            echo -n "${{ inputs.input }}" \
+              | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$PASSPHRASE"
+          )"
+        fi
+        delim="__GHA_DELIM_$(date +%s%N)__"
+        {
+          echo "encrypted_content<<$delim"
+          printf '%s\n' "$encrypted_content"
+          echo "$delim"
+        } >> "$GITHUB_OUTPUT"
+        echo "::notice::Encryption successful for inline input"
+
+    - name: Encrypt SSL file
+      id: encrypt_ssl_file
+      if: steps.parse_type.outputs.type == 'file'
+      shell: bash
+      env:
+        INPUT_TYPE: "${{ steps.parse_type.outputs.type || inputs.input_type }}"
+        INPUT_ENCODING: "${{ steps.parse_encoding.outputs.encoding || inputs.input_encoding }}"
+        OUTPUT_ENCODING: "${{ inputs.output_encoding }}"
+        SALT: "${{ inputs.salt }}"
+        PASSPHRASE: "${{ inputs.passphrase }}"
+      run: |
+        set -euo pipefail
+        openssl_args=()
+        if [ -n "$SALT" ]; then
+          openssl_args+=("-salt" "-S" "$SALT")
+        fi
+        if [[ "$OUTPUT_ENCODING" == "base64" ]]; then
+          encrypted_content="$(
+            openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "${{ inputs.input }}" -pass pass:"$PASSPHRASE" \
+              | base64 -w0
+          )"
+        else
+          encrypted_content="$(
+            openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "${{ inputs.input }}" -pass pass:"$PASSPHRASE"
+          )"
+        fi
+        delim="__GHA_DELIM_$(date +%s%N)__"
+        {
+          echo "encrypted_content<<$delim"
+          printf '%s\n' "$encrypted_content"
+          echo "$delim"
+        } >> "$GITHUB_OUTPUT"
+        echo "::notice::Encryption successful for file input: ${{ inputs.input }}"
+
+    - name: Cleanup
+      if: always() && steps.parse_type.outputs.type == 'file' && inputs.cleanup == 'true'
+      shell: bash
+      run: |
+        set +e
+        input_file="${{ inputs.input }}"
+        if [[ -f "$input_file" ]]; then
+          if command -v shred &> /dev/null; then
+            if shred -vfz -n 10 "$input_file" 2>/dev/null; then
+              echo "::notice::Securely deleted input file: $input_file"
+            else
+              echo "::warning::shred failed, attempting standard removal of: $input_file"
+              rm -f "$input_file" 2>/dev/null || {
+                echo "::warning::Failed to delete input file: $input_file"
+                exit 1
+              }
+            fi
+          else
+            if rm -f "$input_file" 2>/dev/null; then
+              echo "::notice::Deleted input file: $input_file"
+            else
+              echo "::warning::Failed to delete input file: $input_file"
+              exit 1
+            fi
+          fi
+        else
+          echo "::notice::Input file not found or already removed: $input_file"
+        fi
+        unset PASSPHRASE 2>/dev/null || true
+        unset SALT 2>/dev/null || true
+        echo "::notice::Cleanup completed"
