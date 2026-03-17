@@ -131,7 +131,6 @@ runs:
         INPUT_TYPE: "${{ steps.parse_type.outputs.type || inputs.input_type }}"
         INPUT_ENCODING: "${{ steps.parse_encoding.outputs.encoding || inputs.input_encoding }}"
         OUTPUT_ENCODING: "${{ inputs.output_encoding }}"
-        B64_OUTPUT: "${{ inputs.b64_output }}"
       run: |
         set -euo pipefail
         if [[ "$OUTPUT_ENCODING" == "base64" ]]; then
@@ -166,46 +165,6 @@ runs:
                   -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
             )"
           fi
-        else
-          if [[ "$INPUT_ENCODING" == "base64" ]]; then
-            if [[ "$B64_OUTPUT" == "true" ]]; then
-              decrypted_content="$(
-                printf '%s' "${{ inputs.enc_input }}" \
-                  | base64 -d \
-                  | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
-                    -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
-                  | base64 -w0
-              )"
-            else
-              decrypted_content="$(
-                printf '%s' "${{ inputs.enc_input }}" \
-                  | base64 -d \
-                  | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
-                    -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
-              )"
-            fi
-          elif [[ "$INPUT_ENCODING" == "binary" ]]; then
-            if [[ "$B64_OUTPUT" == "true" ]]; then
-              decrypted_content="$(
-                printf '%s' "${{ inputs.enc_input }}" \
-                  | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
-                    -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
-                  | base64 -w0
-              )"
-            else
-              decrypted_content="$(
-                printf '%s' "${{ inputs.enc_input }}" \
-                  | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
-                    -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
-              )"
-            fi
-          else
-            decrypted_content="$(
-              printf '%s' "${{ inputs.enc_input }}" \
-                | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
-                    -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
-            )"
-          fi
         fi
         delim="__GHA_DELIM_$(date +%s%N)__"
         {
@@ -223,7 +182,6 @@ runs:
         INPUT_TYPE: "${{ steps.parse_type.outputs.type || inputs.input_type }}"
         INPUT_ENCODING: "${{ steps.parse_encoding.outputs.encoding || inputs.input_encoding }}"
         OUTPUT_ENCODING: "${{ inputs.output_encoding }}"
-        B64_OUTPUT: "${{ inputs.b64_output }}"
       run: |
         set -euo pipefail
         if [ "$OUTPUT_ENCODING" = "base64" ]; then
@@ -256,44 +214,6 @@ runs:
                 -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
             )"
           fi
-        else
-          if [ "$INPUT_ENCODING" = "base64" ]; then
-            if [[ "$B64_OUTPUT" == "true" ]]; then
-              decrypted_content="$(
-                base64 -d < "${{ inputs.enc_input }}" \
-                  | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
-                    -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
-                  | base64 -w0
-              )"
-            else
-              decrypted_content="$(
-                base64 -d < "${{ inputs.enc_input }}" \
-                  | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
-                    -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
-              )"
-            fi
-          elif [ "$INPUT_ENCODING" = "binary" ]; then
-            if [[ "$B64_OUTPUT" == "true" ]]; then
-              decrypted_content="$(
-                openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
-                  -in "${{ inputs.enc_input }}" \
-                  -pass pass:"${{ inputs.passphrase }}" 2>/dev/null \
-                | base64 -w0
-              )"
-            else
-              decrypted_content="$(
-                openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
-                  -in "${{ inputs.enc_input }}" \
-                  -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
-              )"
-            fi
-          else
-            decrypted_content="$(
-              openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
-                -in "${{ inputs.enc_input }}" \
-                -pass pass:"${{ inputs.passphrase }}" 2>/dev/null
-            )"
-          fi
         fi
         delim="__GHA_DELIM_$(date +%s%N)__"
         {
@@ -302,7 +222,6 @@ runs:
           echo "$delim"
         } >> "$GITHUB_OUTPUT"
         echo "::notice::Decryption successful for file input: ${{ inputs.enc_input }}"
-        
 
     - name: Cleanup
       if: always() && steps.parse_type.outputs.type == 'file' && inputs.cleanup == 'true'
