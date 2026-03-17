@@ -36,9 +36,9 @@ jobs:
       - name: Cleanup Failed Workflow Artifacts
         uses: DCx7C5/actions/gh-workflow-run@v1
         with:
+          keep: '10'
           action: 'delete'
           workflow_status: 'failure'
-          keep: '10'
           github_token: ${{ steps.app_token.outputs.token }}
 
       #- name: Cleanup Successful Workflow Artifacts
