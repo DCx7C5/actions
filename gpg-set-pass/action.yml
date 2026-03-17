@@ -1,0 +1,45 @@
+name: "Set new GPG passphrase"
+description: "Set a new passphrase for a GPG key (using gpg)"
+author: "DCx7C5"
+
+
+inputs:
+    gpg_key_id:
+        required: true
+        description: "GPG key ID to set the new passphrase for"
+    new_passphrase:
+        required: false
+        description: "New passphrase to set for the GPG key"
+        default: ''
+    old_passphrase:
+        required: false
+        description: "Current passphrase for the GPG key (if needed)"
+        default: ''
+    gpg_home:
+        required: false
+        description: "Path to GPG home directory (optional, defaults to GNUPGHOME environment variable)"
+        default: ''
+    github_token:
+        required: false
+        default: ''
+        description: "GitHub token for API access (defaults to github.token)"
+
+runs:
+  using: composite
+  steps:
+    - name: Set new GPG passphrase
+      id: set_pass
+      shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+      run: |
+        set -euo pipefail
+        
+        gpg --batch --yes --no-tty --change-passphrase --pinentry-mode loopback --command-fd 0 <<'EOF'
+        ${{ inputs.old_passphrase }}
+        ${{ inputs.new_passphrase }}
+        ${{ inputs.new_passphrase }}
+        ${{ inputs.new_passphrase }}
+        EOF
+        
+        echo "::notice::Passphrase for GPG key ID '${{ inputs.gpg_key_id }}' has been updated successfully."
