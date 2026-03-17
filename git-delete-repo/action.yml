@@ -41,9 +41,9 @@ runs:
       id: validate
       shell: bash
       env:
-        REPOSITORY: ${{ inputs.repository }}
-        CONFIRM: ${{ inputs.confirm }}
-        OWNER: ${{ inputs.owner }}
+        REPOSITORY: "${{ inputs.repository }}"
+        CONFIRM: "${{ inputs.confirm }}"
+        OWNER: "${{ inputs.owner }}"
       run: |
         set -euo pipefail
         
@@ -83,10 +83,10 @@ runs:
       id: delete_repo
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github_token || env.GITHUB_TOKEN || github.token }}
-        REPO_OWNER: ${{ steps.validate.outputs.repo_owner }}
-        REPO_NAME: ${{ steps.validate.outputs.repo_name }}
-        REPO_FULL_NAME: ${{ steps.validate.outputs.repo_full_name }}
+        GH_TOKEN: "${{ inputs.github_token || env.GITHUB_TOKEN || github.token }}"
+        REPO_OWNER: "${{ steps.validate.outputs.repo_owner }}"
+        REPO_NAME: "${{ steps.validate.outputs.repo_name }}"
+        REPO_FULL_NAME: "${{ steps.validate.outputs.repo_full_name }}"
       run: |
         set -euo pipefail
         
