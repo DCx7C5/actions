@@ -71,4 +71,4 @@ runs:
     - if: failure()
       shell: bash
       run: |
-        echo "::error::❌ Failed to create issue with ${{ inputs.title }}. Please check the error messages above for details.'"
+        echo "::error::❌ Failed to create issue with ${{ inputs.title }}. Please check the error messages above for details.'" >&2

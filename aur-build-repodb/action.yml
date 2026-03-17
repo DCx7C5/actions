@@ -62,7 +62,7 @@ runs:
       if: inputs.gpg_sign == 'true' && inputs.gpg_key_id == ''
       shell: bash
       run: |
-        echo "::error::gpg_key_id is required when gpg_sign is set to 'true'."
+        echo "::error::gpg_key_id is required when gpg_sign is set to 'true'." >&2
         exit 1
 
     - name: Build unsigned repository database
@@ -81,12 +81,12 @@ runs:
           shopt -s nullglob
           pkgs=(*.pkg.tar.zst)
           if (( ${#pkgs[@]} == 0 )); then
-            echo "::error::No package files matching '*.pkg.tar.zst' found in working directory."
+            echo "::error::No package files matching '*.pkg.tar.zst' found in working directory." >&2
             exit 1
           fi
 
           repo-add --new --remove "${{ inputs.database_name }}.db.tar.gz" "${pkgs[@]}" || {
-            echo "::error::Failed to build repository database (GPG signing is disabled)"
+            echo "::error::Failed to build repository database (GPG signing is disabled)" >&2
             exit 1
           }
           
@@ -110,12 +110,12 @@ runs:
           shopt -s nullglob
           pkgs=(*.pkg.tar.zst)
           if (( ${#pkgs[@]} == 0 )); then
-            echo "::error::No package files matching '*.pkg.tar.zst' found in working directory."
+            echo "::error::No package files matching '*.pkg.tar.zst' found in working directory." >&2
             exit 1
           fi
 
           repo-add --sign --new --remove "${{ inputs.database_name }}.db.tar.gz" "${pkgs[@]}" || {
-            echo "::error::Failed to build and sign repository database with GPG key ID '${{ inputs.gpg_key_id }}'"
+            echo "::error::Failed to build and sign repository database with GPG key ID '${{ inputs.gpg_key_id }}'" >&2
             exit 1
           }
           

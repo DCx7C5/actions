@@ -39,12 +39,12 @@ runs:
         depth="${{ inputs.depth }}"
 
         if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-          echo "::error::Current workspace is not a Git repository."
+          echo "::error::Current workspace is not a Git repository." >&2
           exit 1
         fi
 
         if ! git remote get-url "$remote_name" >/dev/null 2>&1; then
-          echo "::error::Remote '$remote_name' is not configured."
+          echo "::error::Remote '$remote_name' is not configured." >&2
           exit 1
         fi
 
@@ -65,14 +65,14 @@ runs:
             # Default Git behavior
             ;;
           *)
-            echo "::error::Invalid tags option '$tags'. Allowed: auto, all, none."
+            echo "::error::Invalid tags option '$tags'. Allowed: auto, all, none." >&2
             exit 1
             ;;
         esac
 
         if [[ -n "$depth" ]]; then
           if ! [[ "$depth" =~ ^[0-9]+$ ]]; then
-            echo "::error::depth must be a positive integer, got '$depth'."
+            echo "::error::depth must be a positive integer, got '$depth'." >&2
             exit 1
           fi
           fetch_opts+=(--depth="$depth")

@@ -75,7 +75,7 @@ runs:
           chmod +x "$INSTALL_PATH"
           echo "::notice::GitHub Copilot CLI installed successfully at '$INSTALL_PATH'"
         else
-          echo "::error::Failed to find a compatible GitHub Copilot CLI release for platform '$PLATFORM' and architecture '$ARCH'"
+          echo "::error::Failed to find a compatible GitHub Copilot CLI release for platform '$PLATFORM' and architecture '$ARCH'" >&2
           exit 1
         fi
         

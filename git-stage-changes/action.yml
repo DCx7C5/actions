@@ -36,12 +36,12 @@ runs:
         set -euo pipefail
 
         if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-          echo "::error::Current directory is not a Git repository."
+          echo "::error::Current directory is not a Git repository." >&2
           exit 1
         fi
 
         if [[ "$INCLUDE_UNTRACKED" != "true" && "$INCLUDE_UNTRACKED" != "false" ]]; then
-          echo "::error::Invalid include_untracked='$INCLUDE_UNTRACKED'. Allowed values: true, false."
+          echo "::error::Invalid include_untracked='$INCLUDE_UNTRACKED'. Allowed values: true, false." >&2
           exit 1
         fi
 

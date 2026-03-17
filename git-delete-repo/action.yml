@@ -49,13 +49,13 @@ runs:
         
         # Check confirmation
         if [ "$CONFIRM" != "true" ]; then
-          echo "::error::Repository deletion requires explicit confirmation. Set 'confirm: true' to proceed."
+          echo "::error::Repository deletion requires explicit confirmation. Set 'confirm: true' to proceed." >&2
           exit 1
         fi
         
         # Validate repository format
         if [ -z "$REPOSITORY" ]; then
-          echo "::error::repository input is required and cannot be empty"
+          echo "::error::repository input is required and cannot be empty" >&2
           exit 1
         fi
         
@@ -69,7 +69,7 @@ runs:
         fi
         
         if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ]; then
-          echo "::error::Invalid repository format. Use 'owner/repo' or set owner explicitly"
+          echo "::error::Invalid repository format. Use 'owner/repo' or set owner explicitly" >&2
           exit 1
         fi
         
@@ -106,11 +106,11 @@ runs:
           echo "deleted=true" >> "$GITHUB_OUTPUT"
           echo "repository_full_name=$REPO_FULL_NAME" >> "$GITHUB_OUTPUT"
         else
-          echo "::error::❌ Failed to delete repository '$REPO_FULL_NAME'"
-          echo "::error::Possible reasons:"
-          echo "::error::  - Insufficient permissions (token needs 'delete_repo' scope)"
-          echo "::error::  - Repository is protected"
-          echo "::error::  - Repository does not exist"
+          echo "::error::❌ Failed to delete repository '$REPO_FULL_NAME'" >&2
+          echo "::error::Possible reasons:" >&2
+          echo "::error::  - Insufficient permissions (token needs 'delete_repo' scope)" >&2
+          echo "::error::  - Repository is protected" >&2
+          echo "::error::  - Repository does not exist" >&2
           echo "deleted=false" >> "$GITHUB_OUTPUT"
           echo "repository_full_name=$REPO_FULL_NAME" >> "$GITHUB_OUTPUT"
           exit 1

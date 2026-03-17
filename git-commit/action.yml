@@ -105,7 +105,7 @@ runs:
         
         if [[ "$AMEND" == "true" ]]; then
           if ! git rev-parse --verify HEAD >/dev/null 2>&1; then
-            echo "::error::Cannot amend – no previous commit exists"
+            echo "::error::Cannot amend – no previous commit exists" >&2
             exit 1
           fi
           commit_args+=("--amend" "--no-edit")
@@ -127,12 +127,12 @@ runs:
               gpg --batch --pinentry-mode=loopback --passphrase-fd 0 \
                   --sign --local-user "${GPG_KEYID:-default}" \
                   --output /dev/null --yes || {
-              echo "::error::GPG passphrase or key invalid – cannot sign commit"
+              echo "::error::GPG passphrase or key invalid – cannot sign commit" >&2
               exit 1
             }
           else
             echo "test" | gpg --batch --sign --output /dev/null || {
-              echo "::error::GPG signing requested but key requires passphrase (provide gpg_passphrase)"
+              echo "::error::GPG signing requested but key requires passphrase (provide gpg_passphrase)" >&2
               exit 1
             }
           fi
@@ -189,14 +189,14 @@ runs:
         if [[ -n "${GPG_PASSPHRASE}" ]]; then
           if [[ "${{ inputs.pre_cached_pass }}" == "true" ]]; then
             git commit ${COMMIT_ARGS} -m "${FINAL_MSG}" 2>&1 | tee commit.log || {
-              echo "::error::Commit failed (check GPG passphrase or key)"
+              echo "::error::Commit failed (check GPG passphrase or key)" >&2
               cat commit.log
               exit 1
             }
           else
             echo "${GPG_PASSPHRASE}" | \
               git commit ${COMMIT_ARGS} -m "${FINAL_MSG}" 2>&1 | tee commit.log || {
-              echo "::error::Commit failed (check GPG passphrase or key)"
+              echo "::error::Commit failed (check GPG passphrase or key)" >&2
               cat commit.log
               exit 1
             }
@@ -204,7 +204,7 @@ runs:
           
         else
           git commit ${COMMIT_ARGS} -m "${FINAL_MSG}" || {
-            echo "::error::Commit failed"
+            echo "::error::Commit failed" >&2
             exit 1
           }
         fi

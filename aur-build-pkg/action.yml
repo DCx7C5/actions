@@ -51,13 +51,13 @@ runs:
           GPG_PASSPHRASE="${{ inputs.gpg_passhphrase }}"
 
           if [[ ! -d "$PKG_NAME" ]]; then
-            echo "::error::Package directory '$PKG_NAME' not found."
+            echo "::error::Package directory '$PKG_NAME' not found." >&2
             exit 1
           fi
 
           cd "$PKG_NAME"
 
-          if [[ "$GPG_SIGN" ~= ^true$ && -n "$GPG_KEY_ID" ]]; then
+          if [[ "$GPG_SIGN" =~ ^true$ && -n "$GPG_KEY_ID" ]]; then
             if [[ -n "$GPG_PASSPHRASE" ]]; then
               echo "::notice::GPG signing is enabled with key ID and passphrase"
             else

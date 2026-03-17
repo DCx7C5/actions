@@ -37,7 +37,10 @@ runs:
       run: |
         set -euo pipefail
         pkg_name="${{ inputs.pkg_name }}"
-        [[ -n "$pkg_name" ]] || { echo "::error::pkg_name is required."; exit 1; }
+        [[ -n "$pkg_name" ]] || { 
+          echo "::error::pkg_name is required." >&2
+          exit 1
+        }
         rm -rf -- "$pkg_name"
 
     - name: Delete package from package.json

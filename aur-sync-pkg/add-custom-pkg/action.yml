@@ -69,7 +69,7 @@ runs:
         rm -rf -- "$PKG_NAME"
 
         if ! git cat-file -e "$REMOTE_NAME/$REMOTE_REF:$DIR_NAME/PKGBUILD" 2>/dev/null; then
-          echo "::error::Upstream package directory '$DIR_NAME' not found in $REMOTE_NAME/$REMOTE_REF."
+          echo "::error::Upstream package directory '$DIR_NAME' not found in $REMOTE_NAME/$REMOTE_REF." >&2
           exit 1
         fi
 

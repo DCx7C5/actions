@@ -91,7 +91,7 @@ runs:
             echo "::notice::Created detached signature: $sigfile"
             signed_list+=("$sigfile")
           else
-            echo "::error::Failed to create signature for $file"
+            echo "::error::Failed to create signature for $file" >&2
             exit 1
           fi
         done

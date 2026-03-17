@@ -44,7 +44,7 @@ runs:
 
         # Validate input
         if [ -z "$RELEASE_TAG" ]; then
-          echo "::error::release_tag input is required and cannot be empty"
+          echo "::error::release_tag input is required and cannot be empty" >&2
           exit 1
         fi
 
@@ -59,7 +59,7 @@ runs:
             echo "deleted=true" >> "$GITHUB_OUTPUT"
             echo "release_id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
           else
-            echo "::error::Failed to delete release '$RELEASE_TAG'"
+            echo "::error::Failed to delete release '$RELEASE_TAG'" >&2
             exit 1
           fi
         else
@@ -78,7 +78,7 @@ runs:
         
         # Validate input
         if [ -z "$TAG_NAME" ]; then
-          echo "::error::tag_name input is required and cannot be empty"
+          echo "::error::tag_name input is required and cannot be empty" >&2
           exit 1
         fi
         
@@ -93,7 +93,7 @@ runs:
           if git tag --delete "$TAG_NAME"; then
             echo "::notice::Local tag '$TAG_NAME' deleted successfully"
           else
-            echo "::error::Failed to delete local tag '$TAG_NAME'"
+            echo "::error::Failed to delete local tag '$TAG_NAME'" >&2
             exit 1
           fi
         else
