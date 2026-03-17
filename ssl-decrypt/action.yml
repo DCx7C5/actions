@@ -133,12 +133,21 @@ runs:
         OUTPUT_ENCODING: "${{ inputs.output_encoding }}"
       run: |
         set -euo pipefail
-        SALT_ARG=()
         if [ -n "${{ inputs.salt }}" ]; then
-          SALT_ARG+=("-salt" "-S" "${{ inputs.salt }}")
+          SALT_ARG=(-salt -S "${{ inputs.salt }}")
+        else
+          SALT_ARG=()
+        fi
+        if [ -z "${{ inputs.enc_input }}" ]; then
+          echo "::error::enc_input is empty. Cannot decrypt." >&2
+          exit 1
         fi
         if [[ "$OUTPUT_ENCODING" == "base64" ]]; then
           if [[ "$INPUT_ENCODING" == "base64" ]]; then
+            if ! printf '%s' "${{ inputs.enc_input }}" | base64 -d >/dev/null 2>&1; then
+              echo "::error::Input is not valid base64!" >&2
+              exit 1
+            fi
             decrypted_content="$(
               printf '%s' "${{ inputs.enc_input }}" \
                 | base64 -d \
@@ -188,12 +197,21 @@ runs:
         OUTPUT_ENCODING: "${{ inputs.output_encoding }}"
       run: |
         set -euo pipefail
-        SALT_ARG=()
         if [ -n "${{ inputs.salt }}" ]; then
-          SALT_ARG+=("-salt" "-S" "${{ inputs.salt }}")
+          SALT_ARG=(-salt -S "${{ inputs.salt }}")
+        else
+          SALT_ARG=()
+        fi
+        if [ ! -f "${{ inputs.enc_input }}" ]; then
+          echo "::error::enc_input file not found: '${{ inputs.enc_input }}'" >&2
+          exit 1
         fi
         if [ "$OUTPUT_ENCODING" = "base64" ]; then
           if [ "$INPUT_ENCODING" = "base64" ]; then
+            if ! base64 -d < "${{ inputs.enc_input }}" >/dev/null 2>&1; then
+              echo "::error::Input file is not valid base64!" >&2
+              exit 1
+            fi
             decrypted_content="$(
               base64 -d < "${{ inputs.enc_input }}" \
                 | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
@@ -210,6 +228,10 @@ runs:
           fi
         elif [ "$OUTPUT_ENCODING" = "raw" ]; then
           if [ "$INPUT_ENCODING" = "base64" ]; then
+            if ! base64 -d < "${{ inputs.enc_input }}" >/dev/null 2>&1; then
+              echo "::error::Input file is not valid base64!" >&2
+              exit 1
+            fi
             decrypted_content="$(
               base64 -d < "${{ inputs.enc_input }}" \
                 | openssl enc -aes-256-cbc "${SALT_ARG[@]}" -d \
