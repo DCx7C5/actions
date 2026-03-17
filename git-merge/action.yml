@@ -19,6 +19,16 @@ inputs:
     required: false
     default: "false"
     description: "Allow merging unrelated histories"
+  github_token:
+    required: false
+    default: "${{ secrets.GITHUB_TOKEN }}"
+    description: "GitHub token for authentication (if needed for private repos or API calls)"
+
+
+outputs:
+  merged:
+    description: "Whether the merge was successful"
+    value: ${{ steps.merge.outcome.success }}
 
 
 runs:
@@ -35,17 +45,17 @@ runs:
         allow_unrelated="${{ inputs.allow_unrelated }}"
 
         if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-          echo "::error::Current workspace is not a Git repository."
+          echo "::error::Current workspace is not a Git repository." >&2
           exit 1
         fi
 
         if [[ -n "$(git status --porcelain)" ]]; then
-          echo "::error::Working tree has uncommitted changes. Commit or stash first."
+          echo "::error::Working tree has uncommitted changes. Commit or stash first." >&2
           exit 1
         fi
 
         if ! git rev-parse --verify "$source" >/dev/null 2>&1; then
-          echo "::error::Source ref '$source' does not exist. Run git fetch first."
+          echo "::error::Source ref '$source' does not exist. Run git fetch first." >&2
           exit 1
         fi
 
@@ -59,24 +69,17 @@ runs:
         fi
 
         case "$strategy" in
-          merge)
-            git merge "${merge_opts[@]}" "$source"
-            ;;
-          ff-only)
-            git merge --ff-only "$source"
-            ;;
-          no-ff)
-            git merge --no-ff "${merge_opts[@]}" "$source"
-            ;;
+          merge) git merge "${merge_opts[@]}" "$source";;
+          ff-only) git merge --ff-only "$source";;
+          no-ff) git merge --no-ff "${merge_opts[@]}" "$source";;
           squash)
             git merge --squash "$source"
             echo "::notice::Squash merge completed. Changes staged; commit manually."
             ;;
           *)
-            echo "::error::Invalid strategy '$strategy'. Allowed: merge, ff-only, no-ff, squash."
+            echo "::error::Invalid strategy '$strategy'. Allowed: merge, ff-only, no-ff, squash." >&2
             exit 1
             ;;
         esac
 
         echo "::notice::Successfully merged '$source' using strategy '$strategy'."
-
