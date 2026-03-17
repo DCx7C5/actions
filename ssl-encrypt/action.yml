@@ -99,10 +99,6 @@ runs:
             encrypted=$(openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "$input" -pass pass:"$passphrase" | base64)
             echo "encrypted_content=$encrypted" >> "$GITHUB_OUTPUT"
           fi
-          
-          if [ "${{ inputs.cleanup }}" = "true" ]; then
-            shred -u "$input"
-          fi
         else
           if [ "$encoding" = "binary" ]; then
             echo "${input}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$passphrase" -out "$out_file"
