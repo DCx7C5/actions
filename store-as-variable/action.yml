@@ -12,7 +12,7 @@ inputs:
   token:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
-    default: ${{ secrets.GITHUB_TOKEN }} || ${{ github.token }}
+    default: ${{ secrets.GITHUB_TOKEN || github.token }}
   variable_type:
     required: false
     description: "Type of GitHub Variable (env or repo or org)"
