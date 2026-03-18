@@ -9,10 +9,6 @@ inputs:
   secret_name:
     required: true
     description: "Name of GitHub Secret to create or update"
-  github_token:
-    required: false
-    description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
-    default: ''
   secret_type:
     required: false
     description: "Type of GitHub Secret (repo or org or env)"
@@ -20,6 +16,10 @@ inputs:
   context:
     required: false
     description: "Name of the repository/organisation/environment to store the secret in (defaults to current repository/organisation/environment based on secret_type)"
+    default: ''
+  github_token:
+    required: false
+    description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
     default: ''
 
 
@@ -34,7 +34,7 @@ runs:
         if [[ -n "${{ inputs.value }} ]]; then
           echo "::add-mask::${{ inputs.value }}"
         fi
-        if [[ -n "${{ inputs.secret_name }}" ]]; then 
+        if [[ -n '${{ inputs.secret_name }}' ]]; then 
           echo "::add-mask::${{ inputs.secret_name }}"
         fi
         if [[ -n "${{ inputs.github_token }}" ]]; then 
@@ -48,10 +48,10 @@ runs:
             echo "::notice::No organisation input provided, using '${org_from_repo}' from repository context as organisation"
             echo "context=${org_from_repo}" >> "$GITHUB_OUTPUT"
           elif [ "${{ inputs.secret_type }}" = "env" && -n "${{ github.environment }}" ]; then
-            echo "::notice::No environment input provided, using '${{ github.environment }}' from repository context as environment"
+            echo "::notice::No environment input provided, using "${{ github.environment }}" from repository context as environment"
             echo "context=${{ github.environment }}" >> "$GITHUB_OUTPUT"
           elif [ "${{ inputs.secret_type }}" = "repo" ]; then
-            echo "::notice::No repository input provided, using '${{ github.repository }}' from repository context as repository"
+            echo "::notice::No repository input provided, using "${{ github.repository }}" from repository context as repository"
             echo "context=${{ github.repository }}" >> "$GITHUB_OUTPUT"
           else
             echo "::error::The 'context' input is required for the selected secret type '${{ inputs.secret_type }}'" >&2
@@ -67,7 +67,7 @@ runs:
         GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
         set -euo pipefail
-        gh secret set "${{ inputs.secret_name }}" --body "${{ inputs.value }}" --repo "${{ steps.mask_and_validate.outputs.context || inputs.context || github.repository }}" || {
+        gh secret set '${{ inputs.secret_name }}' --body "${{ inputs.value }}" --repo "${{ steps.mask_and_validate.outputs.context || inputs.context || github.repository }}" || {
           echo "::error::Failed to store secret" >&2
           exit 1
         }
@@ -80,7 +80,7 @@ runs:
         GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
       run: |
         set -euo pipefail
-        gh secret set "${{ inputs.secret_name }}" --body "${{ inputs.value }}" --org "${{ steps.mask_and_validate.outputs.context || inputs.context || github.repository_owner }}" || {
+        gh secret set '${{ inputs.secret_name }}' --body "${{ inputs.value }}" --org "${{ steps.mask_and_validate.outputs.context || inputs.context || github.repository_owner }}" || {
           echo "::error::Failed to store secret" >&2
           exit 1
         }
@@ -98,7 +98,7 @@ runs:
           exit 1
         fi
         
-        gh secret set "${{ inputs.secret_name }}" --body "${{ inputs.value }}" --env "${{ steps.mask_and_validate.outputs.context || inputs.context || github.environment }}" || {
+        gh secret set '${{ inputs.secret_name }}' --body "${{ inputs.value }}" --env "${{ steps.mask_and_validate.outputs.context || inputs.context || github.environment }}" || {
           echo "::error::Failed to store secret" >&2
           exit 1
         }
