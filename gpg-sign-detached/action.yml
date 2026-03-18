@@ -96,9 +96,11 @@ runs:
           fi
         done
         
-        echo "signed_files<<<EOF"
-        echo "${signed_list[*]}"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        {
+          echo "signed_files<<EOF"
+          echo "${signed_list[*]}"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
         
     - name: Create step summary
       if: always() && steps.sign_files.outputs.signed_files != ''
@@ -106,6 +108,8 @@ runs:
       run: |
         set -euo pipefail
         
-        echo "signed_files<<EOF"
-        echo "${{ steps.sign_files.outputs.signed_files }}"
-        echo "EOF" >> "$GITHUB_STEP_SUMMARY"
+        {
+          echo "signed_files<<EOF"
+          echo "${{ steps.sign_files.outputs.signed_files }}"
+          echo "EOF"
+        } >> "$GITHUB_STEP_SUMMARY"

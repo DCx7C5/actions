@@ -168,9 +168,11 @@ runs:
           fi
         fi
         
-        echo "out<<<EOF"
-        printf '%s\n' "$decrypted_content"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        {
+          echo "out<<EOF"
+          echo "$decrypted_content"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
         
         echo "::notice::Decryption successful for inline input "${{ inputs.in }}""
 
@@ -218,9 +220,11 @@ runs:
           fi
         fi
         
-        echo "out<<<EOF"
-        printf '%s\n' "$decrypted_content"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        {
+          echo "out<<EOF"
+          echo "$decrypted_content"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
         
         echo "::notice::Decryption successful for file input: "${{ inputs.in }}""
 

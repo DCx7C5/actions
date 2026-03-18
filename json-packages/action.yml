@@ -253,9 +253,11 @@ runs:
           exit 1
         fi
         
-        echo "packages<<<EOF"
-        echo "$matching_packages"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        {
+          echo "packages<<EOF"
+          echo "$matching_packages"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
 
     - name: Get all packages with key present
       id: get_packages_by_key
@@ -277,10 +279,12 @@ runs:
           echo "::error::File '$JSON_PATH' does not exist for get action." >&2
           exit 1
         fi
-
-        echo "packages<<<EOF"
-        echo "$matching_packages"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        
+        {
+          echo "packages<<EOF"
+          echo "$matching_packages"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
 
     - name: Save updated JSON to inline again
       id: save_updated_json
@@ -302,7 +306,9 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-
-        echo "updated_json<<EOF"
-        echo "${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}"
-        echo "EOF" >> "$GITHUB_STEP_SUMMARY"
+        
+        {
+          echo "updated_json<<EOF"
+          echo "${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}"
+          echo "EOF"
+        } >> "$GITHUB_STEP_SUMMARY"

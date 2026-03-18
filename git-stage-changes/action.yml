@@ -78,6 +78,8 @@ runs:
           echo "staged=false" >> "$GITHUB_OUTPUT"
         fi
 
-        echo "staged_files<<<EOF"
-        echo "$staged_files"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        {
+          echo "staged_files<<EOF"
+          echo "$staged_files"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"

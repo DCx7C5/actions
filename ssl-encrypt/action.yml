@@ -154,9 +154,11 @@ runs:
           fi
         fi
         
-        echo "out<<<EOF"
-        printf '%s\n' "$encrypted_content"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        {
+          echo "out<<EOF"
+          echo "$encrypted_content"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
         
         echo "::notice::Encryption successful for inline input: "${{ inputs.in }}""
 
@@ -188,9 +190,11 @@ runs:
           fi
         fi
         
-        echo "out<<<EOF"
-        printf '%s\n' "$encrypted_content"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        {
+          echo "out<<EOF"
+          printf '%s\n' "$encrypted_content"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
         
         echo "::notice::Encryption successful for file input: "${{ inputs.in }}""
 

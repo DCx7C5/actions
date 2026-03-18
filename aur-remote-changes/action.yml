@@ -118,9 +118,11 @@ runs:
         removed_files=$(git diff --no-renames --name-only --diff-filter=D HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- "${include_args[@]}" "${exclude_args[@]}")
         removed_dirs=$(printf '%s\n' "$removed_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
         
-        echo "removed_dirs<<<EOF"
-        echo "$removed_dirs"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        {
+          echo "removed_dirs<<EOF"
+          echo "$removed_dirs"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
 
         removed_dirs_matrix=$(jq -Rn --arg dirs "$removed_dirs" '{include: ($dirs | split("\n") | map(select(length > 0)) | map({dir: .}))}')
         echo "removed_dirs_matrix=$removed_dirs_matrix" >> "$GITHUB_OUTPUT"
@@ -165,10 +167,11 @@ runs:
         new_dirs=$(printf '%s\n' "$new_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
         
         # Save new directories to output variable
-        echo "new_dirs<<<EOF"
-        echo "$new_dirs"
-        echo "EOF" >> "$GITHUB_OUTPUT"
-        
+        {
+          echo "new_dirs<<EOF"
+          echo "$new_dirs"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
         new_dirs_matrix=$(jq -Rn --arg dirs "$new_dirs" '{include: ($dirs | split("\n") | map(select(length > 0)) | map({dir: .}))}')
         echo "new_dirs_matrix=$new_dirs_matrix" >> "$GITHUB_OUTPUT"
 
@@ -217,9 +220,11 @@ runs:
 
         changed_dirs_filtered=$(comm -23 <(printf '%s\n' "$changed_dirs" | sort -u) <(printf '%s\n' "$new_dirs" | sort -u))
 
-        echo "changed_dirs<<<EOF"
-        echo "$changed_dirs_filtered"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        {
+          echo "changed_dirs<<EOF"
+          echo "$changed_dirs_filtered"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
 
         changed_dirs_matrix=$(jq -Rn --arg dirs "$changed_dirs_filtered" '{include: ($dirs | split("\n") | map(select(length > 0)) | map({dir: .}))}')
         echo "changed_dirs_matrix=$changed_dirs_matrix" >> "$GITHUB_OUTPUT"
