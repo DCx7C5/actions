@@ -36,6 +36,10 @@ inputs:
     required: false
     default: 'JSON_PACKAGES'
     description: "Name of GitHub Variable to store updated JSON in"
+  steps_out:
+    required: false
+    default: 'false'
+    description: "Whether to set step output (true/false, default: false)"
   github_token:
     required: false
     default: ''
@@ -55,9 +59,6 @@ outputs:
   remote_type:
     description: "Remote type (e.g., 'PKG', 'GIT') for the specified package (only for 'get' action with pkg_name)"
     value: ${{ steps.get_pkg_value.outputs.refactor }}
-  success:
-    description: "Whether the action was successful (true/false)"
-    value: ${{ steps.remove_pkg.outputs.success || steps.add_update_pkg.outputs.success }}
 
 
 runs:
@@ -141,9 +142,9 @@ runs:
           pkg=$(jq --arg pkg "$PKG_NAME" '.[$pkg] // empty' <<< "$JSON_PATH")
         fi
 
-        echo "remote=$( jq -r '.remote // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
-        echo "custom=$( jq -r '.custom // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
-        echo "remote_type=$( jq -r '.remote_type // empty' <<< "$pkg" )" >> "$GITHUB_OUTPUT"
+        echo "remote=$(jq -r '.remote // empty' <<< "$pkg")" >> "$GITHUB_OUTPUT"
+        echo "custom=$(jq -r '.custom // empty' <<< "$pkg")" >> "$GITHUB_OUTPUT"
+        echo "remote_type=$(jq -r '.remote_type // empty' <<< "$pkg")" >> "$GITHUB_OUTPUT"
 
     - name: Add package entry if not exists
       id: add_pkg
@@ -156,7 +157,7 @@ runs:
       run: |
         set -euo pipefail
 
-        if [[ -z "$PKG_NAME" ]]; then
+        if [ -z "$PKG_NAME" ]; then
           echo "::error::'pkg_name' is required for action=add." >&2
           exit 1
         fi
@@ -166,7 +167,7 @@ runs:
           exit 1
         fi
         
-        if [[ -f "$JSON_PATH" ]]; then
+        if [ -f "$JSON_PATH" ]; then
           jq --arg pkg "$PKG_NAME" --argjson val "$KEY_JSON" '
             if has($pkg) then . else . + {($pkg): $val} end
           ' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
@@ -175,8 +176,6 @@ runs:
             if has($pkg) then . else . + {($pkg): $val} end
           ' <<< "$JSON_PATH")" >> "$GITHUB_OUTPUT"
         fi
-        
-        echo "success=true" >> "$GITHUB_OUTPUT"
 
     - name: Update package entry
       id: add_update_pkg
@@ -191,11 +190,11 @@ runs:
       run: |
         set -euo pipefail
         
-        if [[ -f "$JSON_PATH" ]]; then
+        if [ -f "$JSON_PATH" ]; then
           jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
             'if has($pkg) then .[$pkg][$key] = $value else . end' \
             "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
-        elif [[ ! -f "$JSON_PATH" ]]; then
+        elif [ ! -f "$JSON_PATH" ]; then
           echo "new_json=$(jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
             'if has($pkg) then .[$pkg][$key] = $value else . + {($pkg): {($key): $value}} end' \
             <<< "$JSON_PATH")" >> "$GITHUB_OUTPUT"
@@ -204,7 +203,6 @@ runs:
           exit 1
         fi
         
-        echo "success=true" >> "$GITHUB_OUTPUT"
         echo "::notice::Updated '$JSON_PATH' with package '$PKG_NAME' ($KEY=$VALUE) for action '$ACTION'"
 
     - name: Remove package entry
@@ -233,8 +231,6 @@ runs:
           echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in inline JSON input"
         fi
 
-        echo "success=true" >> "$GITHUB_OUTPUT"
-
     - name: Get all packages with key == value
       id: get_packages_by_key_value
       if: inputs.action == 'get' && inputs.key != '' && inputs.value != '' && inputs.pkg_name == ''
@@ -248,9 +244,9 @@ runs:
 
         echo "::notice::Finding packages in '$JSON_PATH' where '$KEY' == '$VALUE'"
         
-        if [[ -f "$JSON_PATH" ]]; then
+        if [ -f "$JSON_PATH" ]; then
           matching_packages=$(jq -r --arg key "$KEY" --arg value "$VALUE" 'to_entries[] | select(.value[$key] == $value) | .key' "$JSON_PATH")
-        elif [[ ! -f "$JSON_PATH" ]]; then
+        elif [ ! -f "$JSON_PATH" ]; then
           matching_packages=$(jq -r --arg key "$KEY" --arg value "$VALUE" 'to_entries[] | select(.value[$key] == $value) | .key' <<< "$JSON_PATH")
         else
           echo "::error::File '$JSON_PATH' does not exist for get action." >&2
@@ -273,9 +269,9 @@ runs:
 
         echo "::notice::Finding packages in '$JSON_PATH' where key '$KEY' is present"
         
-        if [[ -f "$JSON_PATH" ]]; then
+        if [ -f "$JSON_PATH" ]; then
           matching_packages=$(jq -r --arg key "$KEY" 'to_entries[] | select(.value[$key] != null) | .key // empty' "$JSON_PATH")
-        elif [[ ! -f "$JSON_PATH" ]]; then
+        elif [ ! -f "$JSON_PATH" ]; then
           matching_packages=$(jq -r --arg key "$KEY" 'to_entries[] | select(.value[$key] != null) | .key // empty' <<< "$JSON_PATH")
         else
           echo "::error::File '$JSON_PATH' does not exist for get action." >&2
@@ -289,9 +285,7 @@ runs:
     - name: Save updated JSON to inline again
       id: save_updated_json
       if: steps.validate_inputs.outputs.inline_json == 'true' && 
-         (steps.add_pkg.outputs.new_json != '' && steps.add_pkg.outputs.new_json || 
-          steps.add_update_pkg.outputs.new_json != '' && steps.add_update_pkg.outputs.new_json || 
-          steps.remove_pkg.outputs.new_json != '' && steps.remove_pkg.outputs.new_json)
+         (steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json)
       uses: ./store-as-variable
       env:
          GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
@@ -299,3 +293,16 @@ runs:
         value: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
         variable_name: ${{ inputs.variable_name }}
         variable_type: 'org'
+
+    - name: Set step output for updated JSON
+      id: set_output_updated_json
+      if: inputs.steps_out == 'true' && 
+          steps.validate_inputs.outputs.inline_json == 'true' && 
+         (steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json)
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        echo "updated_json<<EOF"
+        echo "${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}"
+        echo "EOF" >> "$GITHUB_STEP_SUMMARY"
