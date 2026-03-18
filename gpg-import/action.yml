@@ -115,11 +115,11 @@ runs:
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
-        enc_input: ${{ steps.validate.outputs.gpg_key }}
         passphrase: ${{ inputs.ssl_pass || inputs.gpg_pass }}
-        type: ${{ steps.validate.outputs.is_file == 'true' && 'file' || 'inline' }}
-        encoding: ${{ steps.validate.outputs.is_ssl_enc_binary_key == 'true' && 'binary' || 'text' }}
+        input_type: ${{ steps.validate.outputs.is_file == 'true' && 'file' || 'inline' }}
+        input_encoding: ${{ steps.validate.outputs.is_ssl_enc_binary_key == 'true' && 'binary' || 'text' }}
         cleanup: 'true'
+        in: ${{ steps.validate.outputs.gpg_key }}
 
     - name: Import from secret/variable/inline value
       id: inline_import
@@ -128,7 +128,7 @@ runs:
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
-        gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
+        gpg_key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.gpg_pass }}
         type: 'auto'
 
@@ -139,7 +139,7 @@ runs:
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
-        gpg_key: ${{ steps.decrypt_ssl.outputs.decrypted_content || steps.validate.outputs.gpg_key }}
+        gpg_key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.gpg_pass }}
         delete_after_import: ${{ inputs.delete_after_import }}
 
@@ -169,11 +169,9 @@ runs:
         echo "keys_secret=$SEC" >> "$GITHUB_OUTPUT"
         echo "keys_total=$TOT" >> "$GITHUB_OUTPUT"
         
-        {
-            echo "key_grips<<EOF"
-            echo "$GRPS"
-            echo "EOF"
-        } >> "$GITHUB_OUTPUT"
+        echo "key_grips<<EOF"
+        echo "$GRPS"
+        echo "EOF" >> "$GITHUB_OUTPUT"
 
     - name: Set Owner Trust (if private key imported)
       if: (inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true') && steps.validate.outputs.is_publickey == 'true'
