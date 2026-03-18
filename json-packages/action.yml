@@ -28,14 +28,18 @@ inputs:
     required: false
     default: ''
     description: "Value to set for the specified key when adding or updating a package entry"
-  secret_type:
+  variable_type:
     required: false
     default: 'repo'
-    description: "Type of GitHub Secret to store updated JSON in (repo, env or org)"
-  secret_name:
+    description: "Type of GitHub Variable to store updated JSON in (repo, env or org)"
+  variable_name:
     required: false
     default: 'JSON_PACKAGES'
-    description: "Name of GitHub Secret to store updated JSON in (required if secret_type is org or env, optional for repo - will use repository context if not provided)"
+    description: "Name of GitHub Variable to store updated JSON in"
+  github_token:
+    required: false
+    default: ''
+    description: "GitHub Token with permissions to manage variables (usually GITHUB_TOKEN)"
 
 
 outputs:
@@ -62,9 +66,9 @@ runs:
     - id: validate_inputs
       shell: bash
       env:
-        ACTION: ${{ inputs.action }}
-        PKG_NAME: ${{ inputs.pkg_name }}
-        JSON_PATH: ${{ inputs.path }}
+        ACTION: "${{ inputs.action }}"
+        PKG_NAME: "${{ inputs.pkg_name }}"
+        JSON_PATH: "${{ inputs.path }}"
       run: |
         set -euo pipefail
 
@@ -95,9 +99,9 @@ runs:
           echo "inline_json=false" >> "$GITHUB_OUTPUT"
         elif [[ -n "$JSON_PATH" && ! -f "$JSON_PATH" && ]]; then
           echo "inline_json=true" >> "$GITHUB_OUTPUT"
-          if [[ -z "${{ secrets.JSON_PACKAGES }}" && -z "${{ secrets[format('{0}', inputs.secret_name)] }}" ]]; then
-            echo "::error::'path' input is set to a non-file value, but 'JSON_PACKAGES' secret is not set. \
-            Please provide valid JSON input via the 'JSON_PACKAGES' secret or point 'path' to a valid file." >&2
+          if [[ -z "${{ vars.JSON_PACKAGES }}" && -z "${{ vars[format('{0}', inputs.variable_name)] }}" ]]; then
+            echo "::error::'path' input is set to a non-file value, but 'JSON_PACKAGES' variable is not set. \
+            Please provide valid JSON input via the 'JSON_PACKAGES' variable or point 'path' to a valid file." >&2
             exit 1
           fi
         else
@@ -110,7 +114,7 @@ runs:
       if: inputs.action == 'get' && inputs.pkg_name == ''
       shell: bash
       env:
-        JSON_PATH: ${{ inputs.path }}
+        JSON_PATH: "${{ inputs.path }}"
       run: |
         set -euo pipefail
         echo "::notice::Contents of '$JSON_PATH':"
@@ -126,8 +130,8 @@ runs:
       if: inputs.pkg_name != ''
       shell: bash
       env:
-        JSON_PATH: ${{ inputs.path }}
-        PKG_NAME: ${{ inputs.pkg_name }}
+        JSON_PATH: "${{ inputs.path }}"
+        PKG_NAME: "${{ inputs.pkg_name }}"
       run: |
         set -euo pipefail
 
@@ -146,9 +150,9 @@ runs:
       if: inputs.action == 'add' && inputs.pkg_name != '' && (inputs.key != '' || inputs.value != '')
       shell: bash
       env:
-        JSON_PATH: ${{ inputs.path }}
-        PKG_NAME: ${{ inputs.pkg_name }}
-        KEY_JSON: ${{ inputs.key }}
+        JSON_PATH: "${{ inputs.path }}"
+        PKG_NAME: "${{ inputs.pkg_name }}"
+        KEY_JSON: "${{ inputs.key }}"
       run: |
         set -euo pipefail
 
@@ -179,11 +183,11 @@ runs:
       if: inputs.action == 'update' && inputs.pkg_name != '' && inputs.key != '' && inputs.value != ''
       shell: bash
       env:
-        JSON_PATH: ${{ inputs.path }}
-        PKG_NAME: ${{ inputs.pkg_name }}
-        ACTION: ${{ inputs.action }}
-        KEY: ${{ inputs.key }}
-        VALUE: ${{ inputs.value }}
+        JSON_PATH: "${{ inputs.path }}"
+        PKG_NAME: "${{ inputs.pkg_name }}"
+        ACTION: "${{ inputs.action }}"
+        KEY: "${{ inputs.key }}"
+        VALUE: "${{ inputs.value }}"
       run: |
         set -euo pipefail
         
@@ -208,10 +212,10 @@ runs:
       if: inputs.action == 'remove' || inputs.action == 'delete'
       shell: bash
       env:
-        JSON_PATH: ${{ inputs.path }}
-        PKG_NAME: ${{ inputs.pkg_name }}
-        ACTION: ${{ inputs.action }}
-        KEY: ${{ inputs.key }}
+        JSON_PATH: "${{ inputs.path }}"
+        PKG_NAME: "${{ inputs.pkg_name }}"
+        ACTION: "${{ inputs.action }}"
+        KEY: "${{ inputs.key }}"
       run: |
         set -euo pipefail
 
@@ -236,9 +240,9 @@ runs:
       if: inputs.action == 'get' && inputs.key != '' && inputs.value != '' && inputs.pkg_name == ''
       shell: bash
       env:
-        JSON_PATH: ${{ inputs.path }}
-        KEY: ${{ inputs.key }}
-        VALUE: ${{ inputs.value }}
+        JSON_PATH: "${{ inputs.path }}"
+        KEY: "${{ inputs.key }}"
+        VALUE: "${{ inputs.value }}"
       run: |
         set -euo pipefail
 
@@ -262,8 +266,8 @@ runs:
       if: inputs.action == 'get' && inputs.key != '' && inputs.value == '' && inputs.pkg_name == ''
       shell: bash
       env:
-        JSON_PATH: ${{ inputs.path }}
-        KEY: ${{ inputs.key }}
+        JSON_PATH: "${{ inputs.path }}"
+        KEY: "${{ inputs.key }}"
       run: |
         set -euo pipefail
 
@@ -285,11 +289,13 @@ runs:
     - name: Save updated JSON to inline again
       id: save_updated_json
       if: steps.validate_inputs.outputs.inline_json == 'true' && 
-        (steps.add_pkg.outputs.new_json != '' && steps.add_pkg.outputs.new_json || 
-         steps.add_update_pkg.outputs.new_json != '' && steps.add_update_pkg.outputs.new_json || 
-         steps.remove_pkg.outputs.new_json != '' && steps.remove_pkg.outputs.new_json)
-      uses: ./store-as-secret
+         (steps.add_pkg.outputs.new_json != '' && steps.add_pkg.outputs.new_json || 
+          steps.add_update_pkg.outputs.new_json != '' && steps.add_update_pkg.outputs.new_json || 
+          steps.remove_pkg.outputs.new_json != '' && steps.remove_pkg.outputs.new_json)
+      uses: ./store-as-variable
+      env:
+         GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
       with:
-        secret_name: ${{ inputs.secret_name }}
         value: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
-        secret_type: ${{ inputs.secret_type || 'repo' }}
+        variable_name: ${{ inputs.variable_name }}
+        variable_type: 'org'
