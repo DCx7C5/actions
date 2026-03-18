@@ -169,8 +169,8 @@ runs:
         echo "keys_secret=$SEC" >> "$GITHUB_OUTPUT"
         echo "keys_total=$TOT" >> "$GITHUB_OUTPUT"
         
-        echo "key_grips<<EOF"
-        echo "$GRPS"
+        echo "key_grips<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$GRPS" >> "$GITHUB_OUTPUT"
         echo "EOF" >> "$GITHUB_OUTPUT"
 
     - name: Set Owner Trust (if private key imported)
