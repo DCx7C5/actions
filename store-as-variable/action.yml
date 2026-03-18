@@ -9,9 +9,9 @@ inputs:
   variable_name:
     required: true
     description: "Name of GitHub Variable to create or update"
-  variable_type:
+  scope:
     required: false
-    description: "Type of GitHub Variable (env or repo or org)"
+    description: "Scope of GitHub Variable (env or repo or org)"
     default: 'org'
   context:
     required: false
@@ -27,7 +27,7 @@ runs:
   using: composite
   steps:
     - name: Store as GitHub Repo Variable
-      if: inputs.variable_type == 'repo'
+      if: inputs.scope == 'repo'
       id: store_as_repo_variable
       shell: bash
       env:
@@ -35,13 +35,13 @@ runs:
       run: |
         set -euo pipefail
         # Store as GitHub Variable using gh CLI
-        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --repo "${{ inputs.context || github.repository }}" || {
+        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --repo "${{ inputs.context || github.repository }}" --visibility all || {
           echo "::error::Failed to store variable ${{ inputs.variable_name }}" >&2
           exit 1 
         }
         
     - name: Store as GitHub Organisation Variable
-      if: inputs.variable_type == 'org'
+      if: inputs.scope == 'org'
       id: store_as_org_variable
       shell: bash
       env:
@@ -55,7 +55,7 @@ runs:
         }
 
     - name: Store as GitHub Environment Variable
-      if: inputs.variable_type == 'env'
+      if: inputs.scope == 'env'
       id: store_as_env_variable
       shell: bash
       env:

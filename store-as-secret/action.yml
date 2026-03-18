@@ -9,9 +9,9 @@ inputs:
   secret_name:
     required: true
     description: "Name of GitHub Secret to create or update"
-  secret_type:
+  scope:
     required: false
-    description: "Type of GitHub Secret (repo or org or env)"
+    description: "Scope of GitHub Secret (repo or org or env)"
     default: 'org'
   context:
     required: false
@@ -42,25 +42,25 @@ runs:
         fi
         
         if [[ -z "${{ inputs.context }} ]]; then
-          if [ "${{ inputs.secret_type }}" = "org" && "${{ github.repository }}" =~ ^.*/.*$ ]; then
+          if [ "${{ inputs.scope }}" = "org" && "${{ github.repository }}" =~ ^.*/.*$ ]; then
             org_from_repo="${{ github.repository }}" 
             org_from_repo="${org_from_repo%%/*}" 
             echo "::notice::No organisation input provided, using '${org_from_repo}' from repository context as organisation"
             echo "context=${org_from_repo}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ inputs.secret_type }}" = "env" && -n "${{ github.environment }}" ]; then
+          elif [ "${{ inputs.scope }}" = "env" && -n "${{ github.environment }}" ]; then
             echo "::notice::No environment input provided, using "${{ github.environment }}" from repository context as environment"
             echo "context=${{ github.environment }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ inputs.secret_type }}" = "repo" ]; then
+          elif [ "${{ inputs.scope }}" = "repo" ]; then
             echo "::notice::No repository input provided, using "${{ github.repository }}" from repository context as repository"
             echo "context=${{ github.repository }}" >> "$GITHUB_OUTPUT"
           else
-            echo "::error::The 'context' input is required for the selected secret type '${{ inputs.secret_type }}'" >&2
+            echo "::error::The 'context' input is required for the selected secret type '${{ inputs.scope }}'" >&2
             exit 1
           fi
         fi
 
     - name: Store as GitHub Repository Secret
-      if: inputs.secret_type == 'repo'
+      if: inputs.scope == 'repo'
       id: store_as_repo_secret
       shell: bash
       env:
@@ -73,7 +73,7 @@ runs:
         }
 
     - name: Store as GitHub Organisation Secret
-      if: inputs.secret_type == 'org'
+      if: inputs.scope == 'org'
       id: store_as_org_secret
       shell: bash
       env:
@@ -86,7 +86,7 @@ runs:
         }
 
     - name: Store as GitHub Environment Secret
-      if: inputs.secret_type == 'env'
+      if: inputs.scope == 'env'
       id: store_as_env_secret
       shell: bash
       env:
