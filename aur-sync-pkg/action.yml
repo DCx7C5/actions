@@ -87,7 +87,7 @@ runs:
       uses: ./aur-sync-pkg/update-custom-pkg
       with:
         pkg_name: ${{ inputs.pkg_name }}
-        remote_pkg_name: '${{ inputs.remote_pkg_name }}'
+        remote_pkg_name: ${{ inputs.remote_pkg_name }}
         remote_name: ${{ inputs.remote_name }}
         remote_ref: ${{ inputs.remote_ref }}
         remote_repo: ${{ inputs.remote_repo }}

@@ -70,9 +70,6 @@ runs:
           echo "keys_total=${keys_total}"
           echo "keys_public=${keys_public}"
           echo "keys_secret=${keys_secret}"
-        } >> "$GITHUB_OUTPUT"
-        
-        {
           echo "key_grips<<EOF"
           echo "$key_grips"
           echo "EOF"

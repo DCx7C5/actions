@@ -180,11 +180,9 @@ runs:
           echo "::notice::No commit message provided/generated; using fallback message."
         fi
 
-        {
-          echo "message<<EOF"
-          echo "$FINAL_MSG"
-          echo "EOF"
-        } >> "$GITHUB_OUTPUT"
+        echo "message<<EOF"
+        echo "$FINAL_MSG"
+        echo "EOF" >> "$GITHUB_OUTPUT"
         
         if [[ -n "${GPG_PASSPHRASE}" ]]; then
           if [[ "${{ inputs.pre_cached_pass }}" == "true" ]]; then
@@ -214,11 +212,9 @@ runs:
         echo "committed=true" >> "$GITHUB_OUTPUT"
         echo "amended=${{ inputs.amend }}" >> "$GITHUB_OUTPUT"
         
-        {
-          echo "message<<<EOF"
-          echo "$FINAL_MSG"
-          echo "EOF"
-        } >> "$GITHUB_OUTPUT"
+        echo "message<<<EOF"
+        echo "$FINAL_MSG"
+        echo "EOF" >> "$GITHUB_OUTPUT"
         
         echo "::group::Commit details:"
         if [[ "$COMMIT_SHA" != "$LAST_COMMIT_SHA" ]]; then

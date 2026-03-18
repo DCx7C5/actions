@@ -73,11 +73,11 @@ runs:
 
         if [[ "$STAGE_CHANGES" == "true" ]]; then
           echo "changed=${{ steps.stage.outputs.staged || 'false' }}" >> "$GITHUB_OUTPUT"
-          {
-            echo "staged_files<<EOF"
-            echo "${{ steps.stage.outputs.staged_files || '' }}"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          
+          echo "staged_files<<EOF"
+          echo "${{ steps.stage.outputs.staged_files || '' }}"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          
           exit 0
         fi
 
