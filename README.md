@@ -28,12 +28,13 @@ jobs:
             dist/app.tar.gz 
 ```
 
-## Conventions
+
+## Conventions & Documentation
 
 - Inputs that behave like booleans are passed as strings (`'true'` / `'false'`).
 - Composite actions call other local actions with `uses: ./<action-name>`.
 - Actions should fail with clear `::error::...` messages for invalid input states.
-- Keep each action self-documented (`action.yml` + `README.md` for non-trivial logic).
+- Each action is self-documented: see the `README.md` in each action folder for a detailed description, input/output tables, dependencies, operation flow, usage examples, common failures, and quick verification steps. All READMEs follow a unified template for consistency and easy onboarding.
 
 ## Action catalog
 
@@ -42,7 +43,8 @@ jobs:
 | Action                                         | Purpose                                                                 |
 |------------------------------------------------|-------------------------------------------------------------------------|
 | [`gh-create-release`](./gh-create-release)     | Create or verify GitHub release for a tag and optionally upload assets. |
-| [`upload-assets`](gh-upload-assets)             | Upload one or more files to an existing release tag.                    |
+| [`gh-create-issue`](./gh-create-issue)         | Create a new GitHub issue in the repository.                            |
+| [`gh-upload-assets`](./gh-upload-assets)       | Upload one or more files to an existing release tag.                    |
 | [`gh-workflow-run`](./gh-workflow-run)         | Delete workflow runs by status (`failure`, `cancelled`, ...).           |
 | [`gh-delete-release`](./gh-delete-release)     | Delete an existing GitHub release.                                      |
 | [`tag-create-and-push`](./tag-create-and-push) | Create and push git tags.                                               |
@@ -53,14 +55,14 @@ jobs:
 
 | Action | Purpose |
 |---|---|
-| [`aur-sync-pkg`](./aur-sync-pkg) | Sync package content from upstream repository into PKGBUILDs repo. |
-| [`aur-delete-pkg`](./aur-delete-pkg) | Delete package directory and remove metadata entry. |
+| [`aur-sync-pkg`](./aur-sync-pkg)         | Sync package content from upstream repository into PKGBUILDs repo. |
+| [`aur-delete-pkg`](./aur-delete-pkg)     | Delete package directory and remove metadata entry. |
 | [`aur-create-srcinfo`](./aur-create-srcinfo) | Generate `.SRCINFO` from `PKGBUILD`. |
-| [`aur-updpkgsums`](./aur-updpkgsums) | Update checksum fields in `PKGBUILD` via `updpkgsums`. |
-| [`aur-build-pkg`](./aur-build-pkg) | Build package artifacts in Arch environment. |
+| [`aur-updpkgsums`](./aur-updpkgsums)     | Update checksum fields in `PKGBUILD` via `updpkgsums`. |
+| [`aur-build-pkg`](./aur-build-pkg)       | Build package artifacts in Arch environment. |
 | [`aur-build-repodb`](./aur-build-repodb) | Build (and optionally sign) repository database via `repo-add`. |
 | [`aur-get-pkgbuilds`](./aur-get-pkgbuilds) | Retrieve/prepare PKGBUILD sources from upstream. |
-| [`aur-get-version`](./aur-get-version) | Resolve package version metadata. |
+| [`aur-get-version`](./aur-get-version)   | Resolve package version metadata. |
 | [`aur-remote-changes`](./aur-remote-changes) | Detect upstream remote changes for package trees. |
 | [`aur-validate-pkg`](./aur-validate-pkg) | Validate package structure/required files. |
 
@@ -69,6 +71,7 @@ jobs:
 | Action                                         | Purpose                                           |
 |------------------------------------------------|---------------------------------------------------|
 | [`git-add-remote`](./git-add-remote)           | Add/configure git remotes used by automation.     |
+| [`git-configure-gnupg`](./git-configure-gnupg) | Configure GnuPG for use with Git.                |
 | [`git-fetch`](./git-fetch)                     | Fetch refs from configured remotes.               |
 | [`git-find-changed`](./git-find-changed)       | Detect changed files/paths for conditional steps. |
 | [`git-stage-changes`](./git-stage-changes)     | Stage selected paths before commit.               |
@@ -95,6 +98,7 @@ jobs:
 | [`gpg-decrypt`](./gpg-decrypt)               | Decrypt encrypted files for CI tasks.               |
 | [`gpg-cleanup`](./gpg-cleanup)               | Best-effort cleanup of temporary key material.      |
 | [`ssl-decrypt`](./ssl-decrypt)               | SSL-related decryption helper for secret workflows. |
+| [`ssl-encrypt`](./ssl-encrypt)               | SSL-related encryption helper for secret workflows. |
 
 ### Containers, packaging, misc
 
@@ -105,7 +109,7 @@ jobs:
 | [`tar-create`](./tar-create)               | Build tar archives from selected files.                      |
 | [`store-as-secret`](./store-as-secret)     | Store generated values as GitHub secret.                     |
 | [`store-as-variable`](./store-as-variable) | Store generated values as GitHub Actions variable.           |
-| [`upload-assets`](gh-upload-assets)         | Release asset upload helper (also used by release creation). |
+| [`gh-upload-assets`](./gh-upload-assets)   | Release asset upload helper (also used by release creation). |
 | [`tg-notify`](./tg-notify)                 | Send Telegram notifications.                                 |
 | [`tg-notify-release`](./tg-notify-release) | Send Telegram release notifications.                         |
 
