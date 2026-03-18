@@ -253,7 +253,7 @@ runs:
           exit 1
         fi
         
-        echo "packages<<EOF"
+        echo "packages<<<EOF"
         echo "$matching_packages"
         echo "EOF" >> "$GITHUB_OUTPUT"
 
@@ -278,7 +278,7 @@ runs:
           exit 1
         fi
 
-        echo "packages<<EOF"
+        echo "packages<<<EOF"
         echo "$matching_packages"
         echo "EOF" >> "$GITHUB_OUTPUT"
 

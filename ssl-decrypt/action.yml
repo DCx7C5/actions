@@ -168,7 +168,7 @@ runs:
           fi
         fi
         
-        echo "out<<EOF"
+        echo "out<<<EOF"
         printf '%s\n' "$decrypted_content"
         echo "EOF" >> "$GITHUB_OUTPUT"
         
@@ -218,7 +218,7 @@ runs:
           fi
         fi
         
-        echo "out<<EOF"
+        echo "out<<<EOF"
         printf '%s\n' "$decrypted_content"
         echo "EOF" >> "$GITHUB_OUTPUT"
         

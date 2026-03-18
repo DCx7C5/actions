@@ -1,0 +1,133 @@
+name: "Testing things"
+
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_input:
+        description: "A test input for the workflow"
+        required: false
+        default: "default value"
+        type: string
+
+jobs:
+  test-json:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Test JSON_PACKAGES
+        uses: ./json-packages
+        with:
+          path: '${{ github.workspace }}/.ci/packages.json'
+
+
+  test-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print test input
+        run: |
+          echo "The test input is: ${{ inputs.test_input }}"
+
+      - name: Run a simple command
+        run: |
+          echo "Running a simple command..."
+          if command -v gh >/dev/null 2>&1; then
+            echo "gh is available"
+          else
+            echo "gh is not available"
+          fi
+          if gh copilot --help >/dev/null 2>&1; then
+            echo "gh copilot is available"
+          else
+            echo "gh copilot is not available"
+          fi
+          if command -v copilot >/dev/null 2>&1; then
+            echo "copilot is available"
+          else
+            echo "copilot is not available"
+          fi
+          if command -v copilot-cli >/dev/null 2>&1; then
+            echo "copilot-cli is available"
+          else
+            echo "copilot-cli is not available"
+          fi
+
+      - name: Check SSLencryption
+        id: ssl_encrypt
+        uses: DCx7C5/actions/ssl-encrypt@v1
+        with:
+          input: ${{ inputs.test_input }}
+          input_encoding: 'raw'
+          input_type: 'inline'
+          output_encoding: 'base64'
+          passphrase: 'pass'
+          cleanup: 'false'
+
+      - name: Check
+        shell: bash
+        run: |
+          echo "::notice::${{ steps.ssl_encrypt.outputs.encrypted_content }}"
+          echo "::notice::${{ steps.ssl_encrypt.outputs.type }}"
+          echo "::notice::${{ steps.ssl_encrypt.outputs.encoding }}"
+          echo "::notice::${{ steps.ssl_encrypt.outputs.encrypted_content }}"
+          
+          echo "::notice::Decrypting content..."
+          echo "${{ steps.ssl_encrypt.outputs.encrypted_content }}" | base64 -d | openssl enc -aes-256-cbc -d -pass pass:pass -pbkdf2 || {
+            echo "::error::Decryption failed" >&2
+            exit 1
+          }
+
+      - name: Check Decryption
+        id: ssl_decrypt
+        uses: DCx7C5/actions/ssl-decrypt@v1
+        with:
+          enc_input: ${{ steps.ssl_encrypt.outputs.encrypted_content }}
+          input_encoding: 'base64'
+          input_type: 'inline'
+          passphrase: 'pass'
+          output_encoding: 'raw'
+
+      - name: Print decrypted content
+        shell: bash
+        run: |
+          echo "${{ steps.ssl_decrypt.outputs.decrypted_content }}" > test.txt
+          test=$(cat test.txt)
+          echo "::notice::Decrypted content: ${test:0:-1}r"
+
+      - name: Unique test input
+        run: |
+          unique_value="test-$(date +%s%N)-foobar"
+          echo "::notice::Unique test input: $unique_value"
+          echo "unique_value=$unique_value" >> $GITHUB_ENV
+
+      - name: Encrypt unique value
+        id: ssl_encrypt_unique
+        uses: DCx7C5/actions/ssl-encrypt@v1
+        with:
+          input: ${{ env.unique_value }}
+          input_encoding: 'raw'
+          input_type: 'inline'
+          output_encoding: 'base64'
+          passphrase: 'pass'
+          cleanup: 'false'
+
+      - name: Decrypt unique value
+        id: ssl_decrypt_unique
+        uses: DCx7C5/actions/ssl-decrypt@v1
+        with:
+          enc_input: ${{ steps.ssl_encrypt_unique.outputs.encrypted_content }}
+          input_encoding: 'base64'
+          input_type: 'inline'
+          passphrase: 'pass'
+          output_encoding: 'raw'
+
+      - name: Print decrypted unique value
+        shell: bash
+        run: |
+          echo "${{ steps.ssl_decrypt_unique.outputs.decrypted_content }}" > test_unique.txt
+          test_unique=$(cat test_unique.txt)
+          echo "::notice::Decrypted unique content: $(echo -n "${test_unique:0:-1}r")"
