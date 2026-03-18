@@ -91,6 +91,7 @@ jobs:
 | [`gpg-setup-home`](./gpg-setup-home)         | Prepare GnuPG home for CI usage.                    |
 | [`gpg-import`](./gpg-import)                 | Import armored/binary key material.                 |
 | [`gpg-export-key`](./gpg-export-key)         | Export selected key material.                       |
+ | [`gpg-set-pass`](./gpg-set-pass)         | Set passphrase for a key in GPG home.              |
 | [`gpg-preset-pass`](./gpg-preset-pass)       | Preload passphrase cache for signing.               |
 | [`gpg-create-subkey`](./gpg-create-subkey)   | Create subkeys for CI signing/encryption flows.     |
 | [`gpg-set-ownertrust`](./gpg-set-ownertrust) | Set ownertrust for imported keys.                   |
