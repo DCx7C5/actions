@@ -2,8 +2,9 @@ name: "SSL Encrypt file or inline value"
 description: "Encrypts file or inline value using SSL/OpenSSL with provided password, with detection and security hardening for secrets"
 author: "DCx7C5"
 
+
 inputs:
-  input:
+  in:
     required: true
     description: "File path or inline variable to encrypt"
   passphrase:
@@ -30,6 +31,7 @@ inputs:
     default: 'false'
     description: "Whether to securely delete the input file after encryption (only applies if input_type is 'file')"
 
+
 outputs:
   type:
     description: "Detected input type: 'file' or 'inline'"
@@ -37,9 +39,9 @@ outputs:
   encoding:
     description: "Detected output format: 'binary', 'base64', or 'text'"
     value: ${{ steps.parse_encoding.outputs.encoding || inputs.input_encoding }}
-  encrypted_content:
+  out:
     description: "The encrypted content (base64 string, raw string, or file path depending on inputs and detection)"
-    value: ${{ steps.encrypt_ssl_file.outputs.encrypted_content || steps.encrypt_ssl_value.outputs.encrypted_content }}
+    value: ${{ steps.encrypt_ssl_file.outputs.out || steps.encrypt_ssl_value.outputs.out }}
 
 
 runs:
@@ -49,20 +51,17 @@ runs:
       id: mask_input
       shell: bash
       run: |
-        if [ -n '${{ inputs.input }}' ]; then
-          echo "::add-mask::${{ inputs.input }}"
-        fi
-        if [ -n '${{ inputs.passphrase }}' ]; then
-          echo "::add-mask::${{ inputs.passphrase }}"
-        fi
-        if [ -n '${{ inputs.salt }}' ]; then
-          echo "::add-mask::${{ inputs.salt }}"
-        fi
+        set -euo pipefail
+        
+        [ -n "${{ inputs.in }}" ] && echo "::add-mask::${{ inputs.in }}"
+        [ -n '${{ inputs.passphrase }}' ] && echo '::add-mask::${{ inputs.passphrase }}'
+        [ -n '${{ inputs.salt }}' ] && echo "::add-mask::${{ inputs.salt }}"
 
-        if [[ -z '${{ inputs.input }}' || -z '${{ inputs.passphrase }}' ]]; then
+        if [[ -z "${{ inputs.in }}" || -z '${{ inputs.passphrase }}' ]]; then
           echo "::error::'input' cannot be empty." >&2
           exit 1
         fi
+        
         if [[ "${{ inputs.input_type }}" != "auto" && "${{ inputs.input_type }}" != "file" && "${{ inputs.input_type }}" != "inline" ]]; then
           echo "::error::Invalid 'input_type' input: '${{ inputs.input_type }}'. Must be 'auto', 'file', or 'inline'." >&2
           exit 1
@@ -70,11 +69,13 @@ runs:
           echo "::error::Invalid 'input_encoding' input: '${{ inputs.input_encoding }}'. Must be 'auto', 'binary', 'text', 'base64', or 'raw'." >&2
           exit 1
         fi
+        
         if [[ "${{ inputs.output_encoding }}" != "base64" && "${{ inputs.output_encoding }}" != "raw" ]]; then
           echo "::error::Invalid 'output_encoding' input: '${{ inputs.output_encoding }}'. Must be 'base64' or 'raw'." >&2
           exit 1
         fi
-        if [[ "${{ inputs.input_type }}" == "auto" && -z "${{ inputs.input }}" ]]; then
+        
+        if [[ "${{ inputs.input_type }}" == "auto" && -z "${{ inputs.in }}" ]]; then
           echo "::error::'input' cannot be empty when 'input_type' is set to 'auto'." >&2
           exit 1
         fi
@@ -84,9 +85,11 @@ runs:
       if: inputs.input_type == 'auto'
       shell: bash
       run: |
-        if [[ -n "${{ inputs.input }}" && -f "${{ inputs.input }}" ]]; then
+        set -euo pipefail
+        
+        if [[ -n "${{ inputs.in }}" && -f "${{ inputs.in }}" ]]; then
           echo "type=file" >> "$GITHUB_OUTPUT"
-        elif [[ -n "${{ inputs.input }}" ]]; then
+        elif [[ -n "${{ inputs.in }}" ]]; then
           echo "type=inline" >> "$GITHUB_OUTPUT"
         else
           echo "::error::Unable to determine input type from 'input'. Please specify 'input_type' explicitly." >&2
@@ -100,8 +103,10 @@ runs:
       env:
         INPUT_TYPE: "${{ steps.parse_type.outputs.type || inputs.input_type }}"
       run: |
-        if [[ "$INPUT_TYPE" == "file" && -f "${{ inputs.input }}" ]]; then
-          if grep -qP "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]" "${{ inputs.input }}"; then
+        set -euo pipefail
+        
+        if [[ "$INPUT_TYPE" == "file" && -f "${{ inputs.in }}" ]]; then
+          if grep -qP "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]" "${{ inputs.in }}"; then
             echo "encoding=binary" >> "$GITHUB_OUTPUT"
           elif grep -qP "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$" "${{ inputs.input }}"; then
             echo "encoding=base64" >> "$GITHUB_OUTPUT"
@@ -109,7 +114,7 @@ runs:
             echo "encoding=text" >> "$GITHUB_OUTPUT"
           fi
         elif [[ "$INPUT_TYPE" == "inline" ]]; then
-          if grep -qP "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]" <<< "${{ inputs.input }}"; then
+          if grep -qP "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]" <<< "${{ inputs.in }}"; then
             echo "encoding=binary" >> "$GITHUB_OUTPUT"
           elif grep -qP "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$" <<< "${{ inputs.input }}"; then
             echo "encoding=base64" >> "$GITHUB_OUTPUT"
@@ -133,28 +138,27 @@ runs:
         PASSPHRASE: "${{ inputs.passphrase }}"
       run: |
         set -euo pipefail
+        
         openssl_args=()
-        if [ -n "$SALT" ]; then
-          openssl_args+=("-salt" "-S" "$SALT")
-        fi
+        [ -n "$SALT" ] && openssl_args+=("-salt" "-S" "$SALT")
+        
         if [[ "$OUTPUT_ENCODING" == "base64" ]]; then
-          if ! encrypted_content=$(echo -n "${{ inputs.input }}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$PASSPHRASE" 2>/dev/null | base64 -w0); then
+          if ! encrypted_content=$(echo -n "${{ inputs.in }}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$PASSPHRASE" 2>/dev/null | base64 -w0); then
             echo "::error::OpenSSL encryption failed." >&2
             exit 1
           fi
         else
-          if ! encrypted_content=$(echo -n "${{ inputs.input }}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$PASSPHRASE" 2>/dev/null); then
+          if ! encrypted_content=$(echo -n "${{ inputs.in }}" | openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -pass pass:"$PASSPHRASE" 2>/dev/null); then
             echo "::error::OpenSSL encryption failed." >&2
             exit 1
           fi
         fi
-        delim="__GHA_DELIM_$(date +%s%N)__"
-        {
-          echo "encrypted_content<<$delim"
-          printf '%s\n' "$encrypted_content"
-          echo "$delim"
-        } >> "$GITHUB_OUTPUT"
-        echo "::notice::Encryption successful for inline input"
+        
+        echo "out<<EOF"
+        printf '%s\n' "$encrypted_content"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+        
+        echo "::notice::Encryption successful for inline input: "${{ inputs.in }}""
 
     - name: Encrypt SSL file
       id: encrypt_ssl_file
@@ -168,35 +172,36 @@ runs:
         PASSPHRASE: "${{ inputs.passphrase }}"
       run: |
         set -euo pipefail
+        
         openssl_args=()
-        if [ -n "$SALT" ]; then
-          openssl_args+=("-salt" "-S" "$SALT")
-        fi
+        [ -n "$SALT" ] && openssl_args+=("-salt" "-S" "$SALT")
+        
         if [[ "$OUTPUT_ENCODING" == "base64" ]]; then
-          if ! encrypted_content=$(openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "${{ inputs.input }}" -pass pass:"$PASSPHRASE" 2>/dev/null | base64 -w0); then
+          if ! encrypted_content=$(openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "${{ inputs.in }}" -pass pass:"$PASSPHRASE" 2>/dev/null | base64 -w0); then
             echo "::error::OpenSSL encryption failed." >&2
             exit 1
           fi
         else
-          if ! encrypted_content=$(openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "${{ inputs.input }}" -pass pass:"$PASSPHRASE" 2>/dev/null); then
+          if ! encrypted_content=$(openssl enc -aes-256-cbc -pbkdf2 "${openssl_args[@]}" -in "${{ inputs.in }}" -pass pass:"$PASSPHRASE" 2>/dev/null); then
             echo "::error::OpenSSL encryption failed." >&2
             exit 1
           fi
         fi
-        delim="__GHA_DELIM_$(date +%s%N)__"
-        {
-          echo "encrypted_content<<$delim"
-          printf '%s\n' "$encrypted_content"
-          echo "$delim"
-        } >> "$GITHUB_OUTPUT"
-        echo "::notice::Encryption successful for file input: ${{ inputs.input }}"
+        
+        echo "out<<EOF"
+        printf '%s\n' "$encrypted_content"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+        
+        echo "::notice::Encryption successful for file input: "${{ inputs.in }}""
 
     - name: Cleanup
       if: always() && steps.parse_type.outputs.type == 'file' && inputs.cleanup == 'true'
       shell: bash
       run: |
         set +e
-        input_file="${{ inputs.input }}"
+        
+        input_file="${{ inputs.in }}"
+        
         if [[ -f "$input_file" ]]; then
           if command -v shred &> /dev/null; then
             if shred -vfz -n 10 "$input_file" 2>/dev/null; then
@@ -219,6 +224,13 @@ runs:
         else
           echo "::notice::Input file not found or already removed: $input_file"
         fi
+        
         unset PASSPHRASE 2>/dev/null || true
         unset SALT 2>/dev/null || true
+        unset encrypted_content 2>/dev/null || true
+        unset input_file 2>/dev/null || true
+        unset openssl_args 2>/dev/null || true
+        unset INPUT_TYPE 2>/dev/null || true
+        unset INPUT_ENCODING 2>/dev/null || true
+        unset OUTPUT_ENCODING 2>/dev/null || true
         echo "::notice::Cleanup completed"
