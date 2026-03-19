@@ -186,19 +186,18 @@ runs:
         VALUE: "${{ inputs.value }}"
       run: |
         set -euo pipefail
-        
-        
-        
+               
         if [ -f "$JSON_PATH" ]; then
           jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
             'if has($pkg) then .[$pkg][$key] = $value else . end' \
             "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
         elif [ ! -f "$JSON_PATH" ]; then
-          echo "new_json<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$(jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
-            'if has($pkg) then .[$pkg][$key] = $value else . + {($pkg): {($key): $value}} end' \
-            <<< "$JSON_PATH")" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          { echo "new_json<<EOF"
+            jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
+              'if has($pkg) then .[$pkg][$key] = $value else . + {($pkg): {($key): $value}} end' \
+              <<< "$JSON_PATH"
+            echo "EOF" 
+          } >> "$GITHUB_OUTPUT"
         else
           echo "::error::File '$JSON_PATH' does not exist for update." >&2
           exit 1
@@ -226,13 +225,13 @@ runs:
             echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in '$JSON_PATH'"
         elif [[ -z "$KEY" && ! -f "$JSON_PATH" ]]; then
           { echo "new_json<<EOF"
-            echo "$(jq --arg pkg "$PKG_NAME" 'del(.[$pkg])' <<< "$JSON_PATH")"
+            jq --arg pkg "$PKG_NAME" 'del(.[$pkg])' <<< "$JSON_PATH"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
           echo "::notice::Removed package '$PKG_NAME' from inline JSON input"
         elif [[ -n "$KEY" && ! -f "$JSON_PATH" ]]; then
           { echo "new_json<<EOF"
-            echo "$(jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' <<< "$JSON_PATH")"
+            jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' <<< "$JSON_PATH"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
           echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in inline JSON input"
