@@ -32,6 +32,10 @@ inputs:
     required: false
     default: 'repo'
     description: "GitHub variable scope to store updated JSON: repo, env, or org."
+  scope_context:
+    required: false
+    default: 'auto'
+    description: "Context for variable scope (repository name for repo scope, organisation name for org scope, environment name for env scope). Defaults to current context."
   steps_out:
     required: false
     default: 'false'
@@ -70,6 +74,8 @@ runs:
         PKG_NAME: "${{ inputs.pkg_name }}"
         JSON_PATH: "${{ inputs.json_file }}"
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+        SCOPE: "${{ inputs.variable_scope }}"
+        CONTEXT: "${{ inputs.scope_context }}"
       run: |
         set -euo pipefail
 
@@ -103,6 +109,16 @@ runs:
         else
           echo "::error::'json_file' input is required and must point to a valid file or variable name." >&2
           exit 1
+        fi
+        
+        if [[ "$SCOPE" = "org" && "$CONTEXT" = "auto" ]]; then
+          scope_context="${{ github.repository_owner }}"
+        elif [[ "$SCOPE" = "env" && "$CONTEXT" = "auto" ]]; then
+          scope_context="${{ github.environment }}"
+        elif [[ "$SCOPE" = "repo" && "$CONTEXT" = "auto" ]]; then
+          scope_context="${{ github.repository }}"
+        else
+          scope_context="$CONTEXT"
         fi
 
     - name: Get all package names
@@ -304,12 +320,13 @@ runs:
       if: steps.validate_inputs.outputs.inline_json == 'true' && 
          (steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json)
       uses: DCx7C5/actions/store-as-variable@v1
-      env:
-         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}"
       with:
-        value: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
         variable_name: ${{ inputs.json_file }}
+        value: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
         scope: ${{ inputs.variable_scope }}
+        context: ''
+        github_token: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
+
 
     - name: Set step output for updated JSON
       id: set_output_updated_json
