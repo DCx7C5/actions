@@ -31,11 +31,11 @@ runs:
       id: store_as_repo_variable
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
       run: |
         set -euo pipefail
         # Store as GitHub Variable using gh CLI
-        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --repo "${{ inputs.context || github.repository }}" --visibility all || {
+        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --repo "${{ inputs.context || github.repository }}" || {
           echo "::error::Failed to store variable ${{ inputs.variable_name }}" >&2
           exit 1 
         }
@@ -45,7 +45,7 @@ runs:
       id: store_as_org_variable
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
       run: |
         set -euo pipefail
         # Store as GitHub Variable using gh CLI
@@ -59,7 +59,7 @@ runs:
       id: store_as_env_variable
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
       run: |
         set -euo pipefail
         # Store as GitHub Variable using gh CLI
