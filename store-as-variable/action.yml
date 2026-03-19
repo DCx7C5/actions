@@ -47,16 +47,21 @@ runs:
           echo "::error::The 'context' input is required for the selected variable scope '${{ inputs.scope }}'" >&2
           exit 1
         fi
+        
+        if [[ -n "${{ inputs.value }}" ]]; then
+          echo "inputs_value=$(echo "${{ inputs.value }}" | jq '@json')" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Store as GitHub Repo Variable
       if: inputs.scope == 'repo'
       id: store_as_repo_variable
       shell: bash
       env:
+        INPUT_VALUE: "${{ steps.get_scope_context.outputs.inputs_value || inputs.value }}"
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
-        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --repo "${{ steps.get_scope_context.outputs.context || inputs.context || github.repository }}" || {
+        gh variable set "${{ inputs.variable_name }}" --body "${INPUT_VALUE}" --repo "${{ steps.get_scope_context.outputs.context || inputs.context || github.repository }}" || {
           echo "::error::Failed to store variable ${{ inputs.variable_name }}" >&2
           exit 1 
         }
@@ -66,10 +71,12 @@ runs:
       id: store_as_org_variable
       shell: bash
       env:
+        INPUT_VALUE: "${{ steps.get_scope_context.outputs.inputs_value || inputs.value }}"
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
-        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --org "${{ steps.get_scope_context.outputs.context || inputs.context || github.repository_owner }}" --visibility all || {
+        
+        gh variable set "${{ inputs.variable_name }}" --body "${INPUT_VALUE}" --org "${{ steps.get_scope_context.outputs.context || inputs.context || github.repository_owner }}" --visibility all || {
           echo "::error::Failed to store variable ${{ inputs.variable_name }}" >&2
           exit 1 
         }
@@ -79,10 +86,11 @@ runs:
       id: store_as_env_variable
       shell: bash
       env:
+        INPUT_VALUE: "${{ steps.get_scope_context.outputs.inputs_value || inputs.value }}"
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
-        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --env "${{ steps.get_scope_context.outputs.context || inputs.context || github.environment }}" || {
+        gh variable set "${{ inputs.variable_name }}" --body "${INPUT_VALUE}" --env "${{ steps.get_scope_context.outputs.context || inputs.context || github.environment }}" || {
           echo "::error::Failed to store variable ${{ inputs.variable_name }}" >&2
           exit 1
         }
