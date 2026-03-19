@@ -3,12 +3,12 @@ description: "Store as GitHub Variable from GitHub Actions"
 author: "DCx7C5"
 
 inputs:
-  value:
-    required: true
-    description: "Value to store as GitHub Secret (can be multiline, e.g. for GPG keys)"
   variable_name:
     required: true
     description: "Name of GitHub Variable to create or update"
+  value:
+    required: true
+    description: "Value to store as GitHub Secret (can be multiline, e.g. for GPG keys)"
   scope:
     required: false
     description: "Scope of GitHub Variable (env or repo or org)"
