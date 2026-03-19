@@ -137,8 +137,8 @@ runs:
         echo "::notice::Contents of '$JSON_PATH':"
         
         { echo "packages<<EOF"
-          [[ -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key' "$JSON_PATH"
-          [[ ! -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key' <<< "$JSON_PATH"
+          [[ -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key' "$JSON_PATH" | jq -c '@json'
+          [[ ! -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key' <<< "$JSON_PATH" | jq -c '@json'
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
 
@@ -188,9 +188,11 @@ runs:
             if has($pkg) then . else . + {($pkg): $val} end
           ' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
         else
-          echo "new_json=$(jq --arg pkg "$PKG_NAME" --argjson val "$KEY_JSON" '
-            if has($pkg) then . else . + {($pkg): $val} end
-          ' <<< "$JSON_PATH")" >> "$GITHUB_OUTPUT"
+          {
+            echo "new_json<<EOF"
+            jq --arg pkg "$PKG_NAME" --argjson val "$KEY_JSON" 'if has($pkg) then . else . + {($pkg): $val} end' <<< "$JSON_PATH" | jq -c '@json'
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
         fi
 
     - name: Update package entry
@@ -215,7 +217,7 @@ runs:
           { echo "new_json<<EOF"
             jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
               'if has($pkg) then .[$pkg][$key] = $value else . + {($pkg): {($key): $value}} end' \
-              <<< "$JSON_PATH"
+              <<< "$JSON_PATH" | jq -c '@json'
             echo "EOF" 
           } >> "$GITHUB_OUTPUT"
         else
@@ -248,7 +250,7 @@ runs:
         elif [[ -z "$KEY" && ! -f "$JSON_PATH" ]]; then
           { 
             echo "new_json<<EOF"
-            jq --arg pkg "$PKG_NAME" 'del(.[$pkg])' <<< "$JSON_PATH"
+            jq --arg pkg "$PKG_NAME" 'del(.[$pkg])' <<< "$JSON_PATH" | jq -c '@json'
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
           echo "::notice::Removed package '$PKG_NAME' from inline JSON input"
@@ -256,7 +258,7 @@ runs:
         elif [[ -n "$KEY" && ! -f "$JSON_PATH" ]]; then
           { 
             echo "new_json<<EOF"
-            jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' <<< "$JSON_PATH"
+            jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' <<< "$JSON_PATH" | jq -c '@json'
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
           echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in inline JSON input"
@@ -286,7 +288,7 @@ runs:
         fi
         
         { echo "packages<<EOF"
-          echo "$matching_packages"
+          echo "$matching_packages" | jq -c '@json'
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
 
@@ -313,7 +315,7 @@ runs:
         fi
         
         { echo "packages<<EOF"
-          echo "$matching_packages"
+          echo "$matching_packages" | jq -c '@json'
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
 
@@ -338,7 +340,7 @@ runs:
       run: |
         set -euo pipefail
         
-        { echo "updated_json<<EOF"
-          echo "${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}"
-          echo "EOF"
-        } >> "$GITHUB_STEP_SUMMARY"
+        cat << 'EOF' >> "$GITHUB_STEP_SUMMARY"
+        ## Updated JSON Output
+        ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
+        EOF
