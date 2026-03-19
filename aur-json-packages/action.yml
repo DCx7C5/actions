@@ -79,7 +79,7 @@ runs:
           exit 1
         fi
 
-        if [[ ! -f "$JSON_PATH" ]]; then
+        if [[ -z "$JSON_PATH" && ! -f "$JSON_PATH" ]]; then
           echo "::error::File '$JSON_PATH' does not exist." >&2
           exit 1
         fi
