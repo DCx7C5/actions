@@ -137,8 +137,8 @@ runs:
         echo "::notice::Contents of '$JSON_PATH':"
         
         { echo "packages<<EOF"
-          [[ -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key' "$JSON_PATH" | jq -c '@json'
-          [[ ! -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key' <<< "$JSON_PATH" | jq -c '@json'
+          [[ -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key | @json' "$JSON_PATH"
+          [[ ! -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key | @json' <<< "$JSON_PATH"
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
 
@@ -190,7 +190,7 @@ runs:
         else
           {
             echo "new_json<<EOF"
-            jq --arg pkg "$PKG_NAME" --argjson val "$KEY_JSON" 'if has($pkg) then . else . + {($pkg): $val} end' <<< "$JSON_PATH" | jq -c '@json'
+            jq --arg pkg "$PKG_NAME" --argjson val "$KEY_JSON" 'if has($pkg) then . else . + {($pkg): $val} end | @json' <<< "$JSON_PATH"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
         fi
@@ -216,8 +216,8 @@ runs:
         elif [ ! -f "$JSON_PATH" ]; then
           { echo "new_json<<EOF"
             jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
-              'if has($pkg) then .[$pkg][$key] = $value else . + {($pkg): {($key): $value}} end' \
-              <<< "$JSON_PATH" | jq -c '@json'
+              'if has($pkg) then .[$pkg][$key] = $value else . + {($pkg): {($key): $value}} end | @json' \
+              <<< "$JSON_PATH"
             echo "EOF" 
           } >> "$GITHUB_OUTPUT"
         else
@@ -250,7 +250,7 @@ runs:
         elif [[ -z "$KEY" && ! -f "$JSON_PATH" ]]; then
           { 
             echo "new_json<<EOF"
-            jq --arg pkg "$PKG_NAME" 'del(.[$pkg])' <<< "$JSON_PATH" | jq -c '@json'
+            jq --arg pkg "$PKG_NAME" 'del(.[$pkg]) | @json' <<< "$JSON_PATH"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
           echo "::notice::Removed package '$PKG_NAME' from inline JSON input"
@@ -258,7 +258,7 @@ runs:
         elif [[ -n "$KEY" && ! -f "$JSON_PATH" ]]; then
           { 
             echo "new_json<<EOF"
-            jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' <<< "$JSON_PATH" | jq -c '@json'
+            jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key]) | @json' <<< "$JSON_PATH"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
           echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in inline JSON input"
@@ -288,7 +288,7 @@ runs:
         fi
         
         { echo "packages<<EOF"
-          echo "$matching_packages" | jq -c '@json'
+          echo "$matching_packages"
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
 
@@ -315,7 +315,7 @@ runs:
         fi
         
         { echo "packages<<EOF"
-          echo "$matching_packages" | jq -c '@json'
+          echo "$matching_packages"
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
 
