@@ -97,7 +97,7 @@ runs:
         
         if [[ -n "$JSON_PATH" && -f "$JSON_PATH" ]]; then
           echo "inline_json=false" >> "$GITHUB_OUTPUT"
-        elif [[ -n "$JSON_PATH" && ! -f "$JSON_PATH" && ]]; then
+        elif [[ -n "$JSON_PATH" && ! -f "$JSON_PATH" ]]; then
           echo "inline_json=true" >> "$GITHUB_OUTPUT"
           if [[ -z "${{ vars.JSON_PACKAGES }}" && -z "${{ vars[format('{0}', inputs.json_file)] }}" ]]; then
             echo "::error::'path' input is set to a non-file value, but 'JSON_PACKAGES' variable is not set. \
