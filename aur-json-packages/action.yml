@@ -115,11 +115,11 @@ runs:
           exit 1
         fi
         
-        if [[ "$SCOPE" = "org" && "$CONTEXT" = "auto" ]]; then
+        if [[ "$SCOPE" == "org" && "$CONTEXT" == "auto" ]]; then
           scope_context="${{ github.repository_owner }}"
-        elif [[ "$SCOPE" = "env" && "$CONTEXT" = "auto" ]]; then
+        elif [[ "$SCOPE" == "env" && "$CONTEXT" == "auto" ]]; then
           scope_context="${{ github.environment }}"
-        elif [[ "$SCOPE" = "repo" && "$CONTEXT" = "auto" ]]; then
+        elif [[ "$SCOPE" == "repo" && "$CONTEXT" == "auto" ]]; then
           scope_context="${{ github.repository }}"
         else
           scope_context="$CONTEXT"
