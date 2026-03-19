@@ -69,6 +69,7 @@ runs:
         ACTION: "${{ inputs.action }}"
         PKG_NAME: "${{ inputs.pkg_name }}"
         JSON_PATH: "${{ inputs.json_file }}"
+        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
 
