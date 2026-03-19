@@ -9,9 +9,9 @@ branding:
 
 inputs:
   json_file:
-    required: false
+    required: true
     default: '${{ github.workspace }}/.ci/packages.json'
-    description: "Path to the packages.json file to manage (default: .ci/packages.json). Contains all package metadata."
+    description: "Path to the packages.json file to manage. Can also be GitHub Actions Variable string (default: .ci/packages.json)."
   action:
     required: false
     default: 'get'
@@ -32,10 +32,6 @@ inputs:
     required: false
     default: 'repo'
     description: "GitHub variable scope to store updated JSON: repo, env, or org."
-  variable_name:
-    required: false
-    default: 'JSON_PACKAGES'
-    description: "Name of the GitHub variable to store the updated JSON."
   steps_out:
     required: false
     default: 'false'
@@ -103,7 +99,7 @@ runs:
           echo "inline_json=false" >> "$GITHUB_OUTPUT"
         elif [[ -n "$JSON_PATH" && ! -f "$JSON_PATH" && ]]; then
           echo "inline_json=true" >> "$GITHUB_OUTPUT"
-          if [[ -z "${{ vars.JSON_PACKAGES }}" && -z "${{ vars[format('{0}', inputs.variable_name)] }}" ]]; then
+          if [[ -z "${{ vars.JSON_PACKAGES }}" && -z "${{ vars[format('{0}', inputs.json_file)] }}" ]]; then
             echo "::error::'path' input is set to a non-file value, but 'JSON_PACKAGES' variable is not set. \
             Please provide valid JSON input via the 'JSON_PACKAGES' variable or point 'path' to a valid file." >&2
             exit 1
@@ -300,7 +296,7 @@ runs:
          GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}"
       with:
         value: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
-        variable_name: ${{ inputs.variable_name }}
+        variable_name: ${{ inputs.json_file }}
         scope: ${{ inputs.variable_scope }}
 
     - name: Set step output for updated JSON
