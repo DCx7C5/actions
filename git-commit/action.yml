@@ -223,10 +223,10 @@ runs:
         echo "::group::Commit details:"
         if [[ "$COMMIT_SHA" != "$LAST_COMMIT_SHA" ]]; then
           git log -1 --pretty=fuller
-          echo "✅ Commit created successfully: $COMMIT_SHA"
+          echo "\e[1;32m✓\e[0m Commit created successfully: $COMMIT_SHA"
         elif [[ "$COMMIT_SHA" == "$LAST_COMMIT_SHA" && ${{ inputs.amend }} == 'true' ]]; then
           git log -1 --pretty=fuller
-          echo "✅ Commit amended successfully: $COMMIT_SHA"
+          echo "\e[1;32m✓\e[0m Commit amended successfully: $COMMIT_SHA"
         else
           echo "::warn::⚠️ No new commit created (SHA unchanged: $COMMIT_SHA)"
         fi

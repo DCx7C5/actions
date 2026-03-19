@@ -102,7 +102,7 @@ runs:
         
         # Delete the repository
         if gh repo delete "$REPO_FULL_NAME" --yes 2>&1; then
-          echo "::notice::✅ Repository '$REPO_FULL_NAME' deleted successfully"
+          echo "::notice::\e[1;32m✓\e[0m Repository '$REPO_FULL_NAME' deleted successfully"
           echo "deleted=true" >> "$GITHUB_OUTPUT"
           echo "repository_full_name=$REPO_FULL_NAME" >> "$GITHUB_OUTPUT"
         else

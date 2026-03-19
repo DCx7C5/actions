@@ -132,7 +132,7 @@ runs:
         echo "html_url=$(gh release view "${TAG}" --json url --jq .url)" >> "$GITHUB_OUTPUT"
         echo "upload_url=$(gh release view "${TAG}" --json uploadUrl --jq .uploadUrl)" >> "$GITHUB_OUTPUT"
         
-        echo "::notice::✅ Release $TAG created successfully: ${{ steps.create.outputs.html_url }}"
+        echo "::notice::\e[1;32m✓\e[0m Release $TAG created successfully: ${{ steps.create.outputs.html_url }}"
 
 
     - name: Upload assets (if provided)

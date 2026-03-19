@@ -53,7 +53,7 @@ runs:
           echo "::notice::Deleting release for tag '$RELEASE_TAG' (ID: $RELEASE_ID)"
           
           if gh release delete "$RELEASE_TAG" --yes 2>&1; then
-            echo "::notice::✅ Release '$RELEASE_TAG' deleted successfully"
+            echo "::notice::\e[1;32m✓\e[0m Release '$RELEASE_TAG' deleted successfully"
             echo "deleted=true" >> "$GITHUB_OUTPUT"
             echo "release_id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
           else
@@ -117,7 +117,7 @@ runs:
         # Set outputs - Action succeeds if ANYTHING was deleted
         if [ "$TAG_EXISTS" = true ] || [ "$PUSH_SUCCESS" = true ]; then
           echo "deleted=true" >> "$GITHUB_OUTPUT"
-          echo "::notice::✅ Tag deletion completed successfully"
+          echo "::notice::\e[1;32m✓\e[0m Tag deletion completed successfully"
         else
           echo "deleted=false" >> "$GITHUB_OUTPUT"
           echo "::notice::Tag '$TAG_NAME' did not exist locally or remotely - no action taken"

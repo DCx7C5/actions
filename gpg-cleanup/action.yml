@@ -46,4 +46,4 @@ runs:
           rmdir "${GNUPGHOME}"
         fi
         
-        echo "::notice::✅ GPG cleanup complete"
+        echo "::notice::\e[1;32m✓\e[0m GPG cleanup complete"
