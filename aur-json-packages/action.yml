@@ -197,7 +197,7 @@ runs:
         else
           {
             echo "new_json<<EOF"
-            jq "${JQ_ARGS[@]}" 'if has($pkg) then . else . + {($pkg): $val} end | @json' <<< "$JSON_PATH"
+            jq "${JQ_ARGS[@]}" 'if has($pkg) then . else . + {($pkg): $val} end' <<< "$JSON_PATH"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
         fi
@@ -333,7 +333,7 @@ runs:
       uses: DCx7C5/actions/store-as-variable@v1
       with:
         variable_name: ${{ inputs.variable_name }}
-        value: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
+        value: '${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json }}'
         scope: ${{ inputs.variable_scope }}
         context: ${{ steps.validate_inputs.outputs.scope_context || inputs.scope_context }}
         github_token: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
