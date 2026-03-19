@@ -69,7 +69,7 @@ runs:
         ACTION: "${{ inputs.action }}"
         PKG_NAME: "${{ inputs.pkg_name }}"
         JSON_PATH: "${{ inputs.json_file }}"
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}"
+        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
 
@@ -100,7 +100,7 @@ runs:
           echo "inline_json=false" >> "$GITHUB_OUTPUT"
         elif [[ -n "$JSON_PATH" && ! -f "$JSON_PATH" ]]; then
           echo "inline_json=true" >> "$GITHUB_OUTPUT"
-          if [[ -z "${{ vars.JSON_PACKAGES }}" && -z "${{ vars[format('{0}', inputs.json_file)] }}" ]]; then
+          if [[ -z "${{ inputs.json_file }}" ]]; then
             echo "::error::'json_file' input is set to a non-file value, but variable is not set." >&2
             exit 1
           fi
