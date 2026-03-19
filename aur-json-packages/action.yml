@@ -32,6 +32,10 @@ inputs:
     required: false
     default: 'repo'
     description: "GitHub variable scope to store updated JSON: repo, env, or org."
+  variable_name:
+    required: false
+    default: 'JSON_PACKAGES'
+    description: "Name of the GitHub variable to store the updated JSON."
   scope_context:
     required: false
     default: 'auto'
@@ -321,7 +325,7 @@ runs:
          (steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json)
       uses: DCx7C5/actions/store-as-variable@v1
       with:
-        variable_name: ${{ inputs.json_file }}
+        variable_name: ${{ inputs.variable_name }}
         value: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
         scope: ${{ inputs.variable_scope }}
         context: ''
