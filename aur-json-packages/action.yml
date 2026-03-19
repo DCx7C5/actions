@@ -320,20 +320,20 @@ runs:
     - name: Save updated JSON to inline again
       id: save_updated_json
       if: steps.validate_inputs.outputs.inline_json == 'true' && 
-         (steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json)
+         (steps.add_pkg.outputs.new_json != '' || steps.add_update_pkg.outputs.new_json != '' || steps.remove_pkg.outputs.new_json != '')
       uses: DCx7C5/actions/store-as-variable@v1
       with:
         variable_name: ${{ inputs.variable_name }}
         value: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
         scope: ${{ inputs.variable_scope }}
-        context: 'org'
+        context: ${{ steps.validate_inputs.outputs.scope_context || inputs.scope_context }}
         github_token: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
 
     - name: Set step output for updated JSON
       id: set_output_updated_json
       if: inputs.steps_out == 'true' && 
           steps.validate_inputs.outputs.inline_json == 'true' && 
-         (steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json)
+         (steps.add_pkg.outputs.new_json != '' || steps.add_update_pkg.outputs.new_json != '' || steps.remove_pkg.outputs.new_json != '')
       shell: bash
       run: |
         set -euo pipefail
