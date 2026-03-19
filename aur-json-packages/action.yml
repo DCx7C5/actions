@@ -221,10 +221,18 @@ runs:
           jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
             echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in '$JSON_PATH'"
         elif [[ -z "$KEY" && ! -f "$JSON_PATH" ]]; then
-          echo "new_json=$(jq --arg pkg "$PKG_NAME" 'del(.[$pkg])' <<< "$JSON_PATH")" >> "$GITHUB_OUTPUT"
+          {
+            echo "new_json<<EOF"
+            echo "$(jq --arg pkg "$PKG_NAME" 'del(.[$pkg])' <<< "$JSON_PATH")"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
           echo "::notice::Removed package '$PKG_NAME' from inline JSON input"
         elif [[ -n "$KEY" && ! -f "$JSON_PATH" ]]; then
-          echo "new_json=$(jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' <<< "$JSON_PATH")" >> "$GITHUB_OUTPUT"
+          {
+            echo "new_json<<EOF"}
+            echo "$(jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' <<< "$JSON_PATH")"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
           echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in inline JSON input"
         fi
 
