@@ -177,21 +177,27 @@ runs:
         KEY_JSON: "${{ inputs.key }}"
       run: |
         set -euo pipefail
-
         if [ -z "$PKG_NAME" ]; then
           echo "::error::'pkg_name' is required for action=add." >&2
           exit 1
         fi
-        KEY_JSON="$(echo "$KEY_JSON" | jq '@json')"
+        
+        JQ_ARGS=(--arg pkg "$PKG_NAME")
+        
+        if [[ "$KEY_JSON" =~ ^\{.*\}$ ]]; then
+          KEY_JSON="$(echo "$KEY_JSON" | jq '@json')"
+          JQ_ARGS+=(--argjson val "$KEY_JSON")
+        else
+          JQ_ARGS+=(--arg val "$KEY_JSON")
+        fi
         
         if [ -f "$JSON_PATH" ]; then
-          jq --arg pkg "$PKG_NAME" --argjson val "$KEY_JSON" '
-            if has($pkg) then . else . + {($pkg): $val} end
-          ' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
+          jq "${JQ_ARGS[@]}" 'if has($pkg) then . else . + {($pkg): $val} end' \
+            "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
         else
           {
             echo "new_json<<EOF"
-            jq --arg pkg "$PKG_NAME" --argjson val "$KEY_JSON" 'if has($pkg) then . else . + {($pkg): $val} end | @json' <<< "$JSON_PATH"
+            jq "${JQ_ARGS[@]}" 'if has($pkg) then . else . + {($pkg): $val} end | @json' <<< "$JSON_PATH"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
         fi
