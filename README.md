@@ -106,7 +106,7 @@ jobs:
 | Action                                     | Purpose                                                      |
 |--------------------------------------------|--------------------------------------------------------------|
 | [`arch-run-cmd`](./arch-run-cmd)           | Run commands in a controlled Arch Linux container/toolchain. |
-| [`json-packages`](./json-packages)         | Query and mutate `.ci/packages.json` with `jq`.              |
+| [`json-packages`](aur-json-packages)         | Query and mutate `.ci/packages.json` with `jq`.              |
 | [`tar-create`](./tar-create)               | Build tar archives from selected files.                      |
 | [`store-as-secret`](./store-as-secret)     | Store generated values as GitHub secret.                     |
 | [`store-as-variable`](./store-as-variable) | Store generated values as GitHub Actions variable.           |

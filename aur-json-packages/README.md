@@ -51,7 +51,7 @@ Composite GitHub Action to read and mutate a `packages.json` document with `jq`.
 ```yaml
 - name: Read packages
   id: pkgs
-  uses: ./json-packages
+  uses: ./aur-json-packages
   with:
     action: get
     path: ${{ github.workspace }}/.ci/packages.json
@@ -64,7 +64,7 @@ Composite GitHub Action to read and mutate a `packages.json` document with `jq`.
 
 ```yaml
 - name: Add package upstream
-  uses: ./json-packages
+  uses: ./aur-json-packages
   with:
     action: add
     package_name: my-package
@@ -76,7 +76,7 @@ Composite GitHub Action to read and mutate a `packages.json` document with `jq`.
 
 ```yaml
 - name: Remove package key
-  uses: ./json-packages
+  uses: ./aur-json-packages
   with:
     action: remove
     package_name: my-package
