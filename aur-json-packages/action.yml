@@ -11,54 +11,57 @@ inputs:
   json_file:
     required: false
     default: '${{ github.workspace }}/.ci/packages.json'
-    description: "Path to the packages.json file to manage (default: 'packages.json')"
+    description: "Path to the packages.json file to manage (default: .ci/packages.json). Contains all package metadata."
   action:
     required: false
     default: 'get'
-    description: "Action to perform on the packages.json file (e.g.,'get', 'add', 'update', 'remove')"
+    description: "Action to perform on packages.json: get (read), add, update, or remove a package entry."
   pkg_name:
     required: false
     default: ''
-    description: "Name of the package to manage in the packages.json file"
+    description: "Name of the package to operate on. Required for targeted actions."
   key:
     required: false
     default: ''
-    description: "Key to add or update in the package entry (format: 'key=value')"
+    description: "Key in the package object to add, update, or remove (e.g. 'repository', 'custom')."
   value:
     required: false
     default: ''
-    description: "Value to set for the specified key when adding or updating a package entry"
-  variable_type:
+    description: "Value to set for the given key. Used for add/update actions."
+  variable_scope:
     required: false
     default: 'repo'
-    description: "Type of GitHub Variable to store updated JSON in (repo, env or org)"
+    description: "GitHub variable scope to store updated JSON: repo, env, or org."
   variable_name:
     required: false
     default: 'JSON_PACKAGES'
-    description: "Name of GitHub Variable to store updated JSON in"
+    description: "Name of the GitHub variable to store the updated JSON."
   steps_out:
     required: false
     default: 'false'
-    description: "Whether to set step output (true/false, default: false)"
+    description: "Whether to set the updated JSON as a step output (true/false)."
   github_token:
     required: false
     default: ''
-    description: "GitHub Token with permissions to manage variables (usually GITHUB_TOKEN)"
+    description: "GitHub token with permission to manage variables. Required for write operations."
 
 
 outputs:
   packages:
-    description: "List of all package names in the packages.json file (only for 'get' action without pkg_name)"
+    description: "All package names from packages.json (for 'get' without pkg_name). Returns a list of all managed packages."
     value: ${{ steps.get_all_packages.outputs.packages }}
-  remote:
-    description: "Remote repository URL for the specified package (only for 'get' action with pkg_name)"
-    value: ${{ steps.get_pkg_value.outputs.remote }}
+  repository:
+    description: "Repository URL for the package (for 'get' with pkg_name). Shows the upstream repository."
+    value: ${{ steps.get_pkg_value.outputs.repository }}
   custom:
-    description: "Custom flag value for the specified package (only for 'get' action with pkg_name)"
+    description: "Custom flag for the package (for 'get' with pkg_name). Indicates if the package is marked as custom."
     value: ${{ steps.get_pkg_value.outputs.custom }}
-  remote_type:
-    description: "Remote type (e.g., 'PKG', 'GIT') for the specified package (only for 'get' action with pkg_name)"
-    value: ${{ steps.get_pkg_value.outputs.refactor }}
+  remote_dir:
+    description: "Remote type for the package (for 'get' with pkg_name). E.g. 'PKG' or 'GIT'."
+    value: ${{ steps.get_pkg_value.outputs.remote_dir }}
+  submodule:
+    description: "Submodule info for the package (for 'get' with pkg_name). Shows submodule if present."
+    value: ${{ steps.get_pkg_value.outputs.submodule }}
 
 
 runs:
@@ -136,15 +139,17 @@ runs:
       run: |
         set -euo pipefail
 
-        if [[ -f "$JSON_PATH" ]]; then
+        if [ -f "$JSON_PATH" ]; then
           pkg=$(jq --arg pkg "$PKG_NAME" '.[$pkg] // empty' "$JSON_PATH")
         else
           pkg=$(jq --arg pkg "$PKG_NAME" '.[$pkg] // empty' <<< "$JSON_PATH")
         fi
-
-        echo "remote=$(jq -r '.remote // empty' <<< "$pkg")" >> "$GITHUB_OUTPUT"
-        echo "custom=$(jq -r '.custom // empty' <<< "$pkg")" >> "$GITHUB_OUTPUT"
-        echo "remote_type=$(jq -r '.remote_type // empty' <<< "$pkg")" >> "$GITHUB_OUTPUT"
+        
+        { echo "repository=$(jq -r '.repository // empty' <<< "$pkg")"
+          echo "custom=$(jq -r '.custom // empty' <<< "$pkg")"
+          echo "remote_dir=$(jq -r '.remote_dir // empty' <<< "$pkg")"
+          echo "submodule=$(jq -r '.submodule // empty' <<< "$pkg")"
+        } >> "$GITHUB_OUTPUT"
 
     - name: Add package entry if not exists
       id: add_pkg
@@ -292,11 +297,11 @@ runs:
          (steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json)
       uses: ./store-as-variable
       env:
-         GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN || secrets.GITHUB_TOKEN }}"
       with:
         value: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
         variable_name: ${{ inputs.variable_name }}
-        scope: 'org'
+        scope: ${{ inputs.variable_scope }}
 
     - name: Set step output for updated JSON
       id: set_output_updated_json
@@ -307,8 +312,7 @@ runs:
       run: |
         set -euo pipefail
         
-        {
-          echo "updated_json<<EOF"
+        { echo "updated_json<<EOF"
           echo "${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}"
           echo "EOF"
         } >> "$GITHUB_STEP_SUMMARY"
