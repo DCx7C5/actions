@@ -13,20 +13,16 @@ inputs:
   env:
     required: false
     description: "Set deployment environment secret"
-    default: 'false'
+    default: ''
   org:
     required: false
     description: "Name of the repository/organisation/environment to store the secret in (defaults to current repository/organisation/environment based on variable_type)"
-    default: 'false'
+    default: ''
   repo:
     required: false
     description: "Set repository secret (defaults to current repository)"
-    default: 'false'
-  ctx_name:
-    required: false
-    description: "Name of the repository/organisation/environment to store the secret in (defaults to current repository/organisation/environment based on variable_type)"
-    default: 'auto'
-  repositories:
+    default: ${{ github.repository }}
+  repos:
     required: false
     description: "New-line separated list of repositories to set the secret in (only for organisation secrets, defaults to all repositories in the organisation)"
     default: ''
@@ -64,8 +60,11 @@ runs:
         if [[ -n "${{ inputs.github_token }}" ]]; then 
           echo "::add-mask::${{ inputs.github_token }}"
         fi
-
-        
+      
+        if [[ ! "${{ inputs.env != '' && 'true' }}${{ inputs.repo != '' && 'true' }}${{ inputs.org != '' && 'true' }}" =~ ^true$ ]]; then
+          echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to true or a non-empty value" >&2
+          exit 1
+        fi
         
 
     - name: Set GitHub Secret
@@ -75,10 +74,10 @@ runs:
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         SECRET_NAME: "${{ inputs.secret_name }}"
         TYPE: ${{ case(
-          inputs.env == 'true', 'env', 
-          inputs.org == 'true', 'org', 
-          inputs.repo == 'true', 'repo',
-          'repo'
+          inputs.env == 'true', "--env ${{ inputs.env || github.environment }}",
+          inputs.org == 'true', "--org ${{ inputs.org || github.repository_owner }}", 
+          inputs.repo == 'true', "--repo ${{ inputs.repo }}",
+          '--repo ${{ inputs.repo }}' # default to repository secret if no type is explicitly set, for backward compatibility
           ) }}
       run: |
         set -euo pipefail
