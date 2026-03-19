@@ -341,7 +341,13 @@ runs:
       run: |
         set -euo pipefail
         
+        JSON="${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}"
+        
         cat << 'EOF' >> "$GITHUB_STEP_SUMMARY"
         ## Updated JSON Output
-        ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
+        
+        ```json
         EOF
+        JSON_PRETTY=$(echo "$JSON" | jq .)
+        printf '%s\n' "$JSON_PRETTY" >> "$GITHUB_STEP_SUMMARY"
+        echo '```' >> "$GITHUB_STEP_SUMMARY"
