@@ -101,7 +101,7 @@ runs:
         elif [[ -z "${{ inputs.key }}" && -n "${{ inputs.value }}" ]]; then
           echo "::error::Both 'key' and 'value' inputs must be provided together for add/update actions." >&2
           exit 1
-        elif [[ -n "${{ inputs.key }}" && -n "${{ inputs.value }}" && ! "$ACTION" =~ ^add|update$ ]]; then
+        elif [[ -n "${{ inputs.key }}" && -n "${{ inputs.value }}" && ! "$ACTION" =~ ^add|update|get$ ]]; then
           echo "::error::'key' and 'value' inputs are only valid for 'add' and 'update' actions." >&2
           exit 1
         fi
