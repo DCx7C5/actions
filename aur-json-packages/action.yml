@@ -158,11 +158,6 @@ runs:
           echo "::error::'pkg_name' is required for action=add." >&2
           exit 1
         fi
-
-        if ! jq -e 'type == "object"' <<< "$KEY_JSON" >/dev/null 2>&1; then
-          echo "::error::inputs.key must be a valid JSON object." >&2
-          exit 1
-        fi
         
         if [ -f "$JSON_PATH" ]; then
           jq --arg pkg "$PKG_NAME" --argjson val "$KEY_JSON" '
