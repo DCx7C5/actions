@@ -100,12 +100,11 @@ runs:
         elif [[ -n "$JSON_PATH" && ! -f "$JSON_PATH" ]]; then
           echo "inline_json=true" >> "$GITHUB_OUTPUT"
           if [[ -z "${{ vars.JSON_PACKAGES }}" && -z "${{ vars[format('{0}', inputs.json_file)] }}" ]]; then
-            echo "::error::'path' input is set to a non-file value, but 'JSON_PACKAGES' variable is not set. \
-            Please provide valid JSON input via the 'JSON_PACKAGES' variable or point 'path' to a valid file." >&2
+            echo "::error::'json_file' input is set to a non-file value, but variable is not set." >&2
             exit 1
           fi
         else
-          echo "::error::'path' input is required and must point to a valid file." >&2
+          echo "::error::'json_file' input is required and must point to a valid file or variable name." >&2
           exit 1
         fi
 
