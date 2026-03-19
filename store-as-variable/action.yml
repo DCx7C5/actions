@@ -16,7 +16,7 @@ inputs:
   context:
     required: false
     description: "Name of the repository/organisation/environment to store the variable in (defaults to current repository/organisation/environment based on variable_type)"
-    default: ''
+    default: 'auto'
   github_token:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
@@ -26,6 +26,28 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Get scope context
+      if: inputs.context == 'auto'
+      id: get_scope_context
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [[ "${{ inputs.scope }}" = "org" && "${{ github.repository }}" =~ ^.*/.*$ ]]; then
+          org_from_repo="${{ github.repository }}" 
+          org_from_repo="${org_from_repo%%/*}" 
+          echo "::notice::No organisation input provided, using '${org_from_repo}' from repository context as organisation"
+          echo "context=${org_from_repo}" >> "$GITHUB_OUTPUT"
+        elif [[ "${{ inputs.scope }}" = "env" && -n "${{ github.environment }}" ]]; then
+          echo "::notice::No environment input provided, using "${{ github.environment }}" from repository context as environment"
+          echo "context=${{ github.environment }}" >> "$GITHUB_OUTPUT"
+        elif [ "${{ inputs.scope }}" = "repo" ]; then
+          echo "::notice::No repository input provided, using "${{ github.repository }}" from repository context as repository"
+          echo "context=${{ github.repository }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::The 'context' input is required for the selected variable scope '${{ inputs.scope }}'" >&2
+          exit 1
+        fi
+
     - name: Store as GitHub Repo Variable
       if: inputs.scope == 'repo'
       id: store_as_repo_variable
@@ -34,7 +56,7 @@ runs:
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
-        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --repo "${{ inputs.context || github.repository }}" || {
+        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --repo "${{ steps.get_scope_context.outputs.context || inputs.context || github.repository }}" || {
           echo "::error::Failed to store variable ${{ inputs.variable_name }}" >&2
           exit 1 
         }
@@ -47,7 +69,7 @@ runs:
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
-        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --org "${{ inputs.context || github.repository_owner }}" --visibility all || {
+        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --org "${{ steps.get_scope_context.outputs.context || inputs.context || github.repository_owner }}" --visibility all || {
           echo "::error::Failed to store variable ${{ inputs.variable_name }}" >&2
           exit 1 
         }
@@ -60,7 +82,7 @@ runs:
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
-        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --env "${{ inputs.context || github.environment }}" || {
+        gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --env "${{ steps.get_scope_context.outputs.context || inputs.context || github.environment }}" || {
           echo "::error::Failed to store variable ${{ inputs.variable_name }}" >&2
           exit 1
         }
