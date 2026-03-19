@@ -69,7 +69,7 @@ runs:
       env:
         ACTION: "${{ inputs.action }}"
         PKG_NAME: "${{ inputs.pkg_name }}"
-        JSON_PATH: "${{ inputs.path }}"
+        JSON_PATH: "${{ inputs.json_file }}"
       run: |
         set -euo pipefail
 
@@ -115,7 +115,7 @@ runs:
       if: inputs.action == 'get' && inputs.pkg_name == ''
       shell: bash
       env:
-        JSON_PATH: "${{ inputs.path }}"
+        JSON_PATH: "${{ inputs.json_file }}"
       run: |
         set -euo pipefail
         echo "::notice::Contents of '$JSON_PATH':"
@@ -131,7 +131,7 @@ runs:
       if: inputs.pkg_name != ''
       shell: bash
       env:
-        JSON_PATH: "${{ inputs.path }}"
+        JSON_PATH: "${{ inputs.json_file }}"
         PKG_NAME: "${{ inputs.pkg_name }}"
       run: |
         set -euo pipefail
@@ -151,7 +151,7 @@ runs:
       if: inputs.action == 'add' && inputs.pkg_name != '' && (inputs.key != '' || inputs.value != '')
       shell: bash
       env:
-        JSON_PATH: "${{ inputs.path }}"
+        JSON_PATH: "${{ inputs.json_file }}"
         PKG_NAME: "${{ inputs.pkg_name }}"
         KEY_JSON: "${{ inputs.key }}"
       run: |
@@ -182,7 +182,7 @@ runs:
       if: inputs.action == 'update' && inputs.pkg_name != '' && inputs.key != '' && inputs.value != ''
       shell: bash
       env:
-        JSON_PATH: "${{ inputs.path }}"
+        JSON_PATH: "${{ inputs.json_file }}"
         PKG_NAME: "${{ inputs.pkg_name }}"
         ACTION: "${{ inputs.action }}"
         KEY: "${{ inputs.key }}"
@@ -210,7 +210,7 @@ runs:
       if: inputs.action == 'remove' || inputs.action == 'delete'
       shell: bash
       env:
-        JSON_PATH: "${{ inputs.path }}"
+        JSON_PATH: "${{ inputs.json_file }}"
         PKG_NAME: "${{ inputs.pkg_name }}"
         ACTION: "${{ inputs.action }}"
         KEY: "${{ inputs.key }}"
@@ -236,7 +236,7 @@ runs:
       if: inputs.action == 'get' && inputs.key != '' && inputs.value != '' && inputs.pkg_name == ''
       shell: bash
       env:
-        JSON_PATH: "${{ inputs.path }}"
+        JSON_PATH: "${{ inputs.json_file }}"
         KEY: "${{ inputs.key }}"
         VALUE: "${{ inputs.value }}"
       run: |
@@ -264,7 +264,7 @@ runs:
       if: inputs.action == 'get' && inputs.key != '' && inputs.value == '' && inputs.pkg_name == ''
       shell: bash
       env:
-        JSON_PATH: "${{ inputs.path }}"
+        JSON_PATH: "${{ inputs.json_file }}"
         KEY: "${{ inputs.key }}"
       run: |
         set -euo pipefail
@@ -296,7 +296,7 @@ runs:
       with:
         value: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
         variable_name: ${{ inputs.variable_name }}
-        variable_type: 'org'
+        scope: 'org'
 
     - name: Set step output for updated JSON
       id: set_output_updated_json

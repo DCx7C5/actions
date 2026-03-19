@@ -49,7 +49,7 @@ This action does not define outputs.
     variable_name: BUILD_CHANNEL
     value: stable
     token: ${{ secrets.GITHUB_TOKEN }}
-    variable_type: repo
+    scope: repo
 ```
 
 ## Example: store environment variable
@@ -61,7 +61,7 @@ This action does not define outputs.
     variable_name: DEPLOY_REGION
     value: eu-central
     token: ${{ secrets.GITHUB_TOKEN }}
-    variable_type: env
+    scope: env
 ```
 
 ## Common failures

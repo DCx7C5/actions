@@ -49,7 +49,7 @@ This action does not define outputs.
     secret_name: MY_TOKEN
     value: ${{ secrets.MY_TOKEN_VALUE }}
     token: ${{ secrets.GITHUB_TOKEN }}
-    secret_type: repo
+    scope: repo
 ```
 
 ## Example: store organization secret
@@ -61,7 +61,7 @@ This action does not define outputs.
     secret_name: SHARED_SIGNING_KEY
     value: ${{ secrets.SIGNING_KEY }}
     token: ${{ secrets.ORG_ADMIN_TOKEN }}
-    secret_type: org
+    scope: org
 ```
 
 ## Common failures
