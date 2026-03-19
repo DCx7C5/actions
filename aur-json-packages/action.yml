@@ -107,7 +107,8 @@ runs:
 
     - name: Get all package names
       id: get_all_packages
-      if: inputs.action == 'get' && inputs.pkg_name == ''
+      if: inputs.action == 'get' && inputs.pkg_name == '' && 
+          inputs.key == '' && inputs.value == ''
       shell: bash
       env:
         JSON_PATH: "${{ inputs.json_file }}"
@@ -123,7 +124,8 @@ runs:
 
     - name: Get package values
       id: get_pkg_value
-      if: inputs.pkg_name != ''
+      if: inputs.pkg_name != '' && inputs.action == 'get' && 
+          inputs.key == '' && inputs.value == ''
       shell: bash
       env:
         JSON_PATH: "${{ inputs.json_file }}"
@@ -145,7 +147,9 @@ runs:
 
     - name: Add package entry if not exists
       id: add_pkg
-      if: inputs.action == 'add' && inputs.pkg_name != '' && (inputs.key != '' || inputs.value != '')
+      if: inputs.action == 'add' && 
+          inputs.pkg_name != '' && 
+         (inputs.key != '' || inputs.value != '')
       shell: bash
       env:
         JSON_PATH: "${{ inputs.json_file }}"
@@ -171,7 +175,8 @@ runs:
 
     - name: Update package entry
       id: add_update_pkg
-      if: inputs.action == 'update' && inputs.pkg_name != '' && inputs.key != '' && inputs.value != ''
+      if: inputs.action == 'update' && inputs.pkg_name != '' &&
+          inputs.key != '' && inputs.value != ''
       shell: bash
       env:
         JSON_PATH: "${{ inputs.json_file }}"
@@ -225,7 +230,8 @@ runs:
 
     - name: Get all packages with key == value
       id: get_packages_by_key_value
-      if: inputs.action == 'get' && inputs.key != '' && inputs.value != '' && inputs.pkg_name == ''
+      if: inputs.action == 'get' && inputs.key != '' &&
+          inputs.value != '' && inputs.pkg_name == ''
       shell: bash
       env:
         JSON_PATH: "${{ inputs.json_file }}"
@@ -253,7 +259,8 @@ runs:
 
     - name: Get all packages with key present
       id: get_packages_by_key
-      if: inputs.action == 'get' && inputs.key != '' && inputs.value == '' && inputs.pkg_name == ''
+      if: inputs.action == 'get' && inputs.key != '' &&
+          inputs.value == '' && inputs.pkg_name == ''
       shell: bash
       env:
         JSON_PATH: "${{ inputs.json_file }}"
