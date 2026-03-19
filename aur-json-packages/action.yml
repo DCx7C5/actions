@@ -135,8 +135,8 @@ runs:
       run: |
         set -euo pipefail
         echo "::notice::Contents of '$JSON_PATH':"
-        {
-          echo "packages<<EOF"
+        
+        { echo "packages<<EOF"
           [[ -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key' "$JSON_PATH"
           [[ ! -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key' <<< "$JSON_PATH"
           echo "EOF"
@@ -285,8 +285,7 @@ runs:
           exit 1
         fi
         
-        {
-          echo "packages<<EOF"
+        { echo "packages<<EOF"
           echo "$matching_packages"
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
@@ -313,8 +312,7 @@ runs:
           exit 1
         fi
         
-        {
-          echo "packages<<EOF"
+        { echo "packages<<EOF"
           echo "$matching_packages"
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
@@ -328,9 +326,8 @@ runs:
         variable_name: ${{ inputs.variable_name }}
         value: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json || '' }}
         scope: ${{ inputs.variable_scope }}
-        context: ''
+        context: 'org'
         github_token: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
-
 
     - name: Set step output for updated JSON
       id: set_output_updated_json

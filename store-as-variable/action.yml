@@ -31,7 +31,7 @@ runs:
       id: store_as_repo_variable
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
+        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
         gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --repo "${{ inputs.context || github.repository }}" || {
@@ -44,7 +44,7 @@ runs:
       id: store_as_org_variable
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
+        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
         gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --org "${{ inputs.context || github.repository_owner }}" --visibility all || {
@@ -57,7 +57,7 @@ runs:
       id: store_as_env_variable
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
+        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
         gh variable set "${{ inputs.variable_name }}" --body "${{ inputs.value }}" --env "${{ inputs.context || github.environment }}" || {
