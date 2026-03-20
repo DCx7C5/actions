@@ -44,7 +44,7 @@ inputs:
   json:
     required: false
     description: "Output JSON with the specified fields"
-    default: ''
+    default: 'value'
   gh-token:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
@@ -124,18 +124,10 @@ runs:
         if [[ -n "$INPUTS_ORG" && -n "$INPUTS_REPOS" && -z "$INPUTS_VISIBILITY" ]]; then
           echo "::warning::Repos specified without visibility defaults to 'all', which may not be intended"
         fi
-        
-        if [[ -n "$INPUTS_ORG" && -n "$INPUTS_JSON" ]]; then
-          echo 'json=--repos $(echo "$INPUTS_REPOS" | tr '\n\ ' ',' | sed 's/,$//")' >> "$GITHUB_OUTPUT"
-        fi
-        
-        if [[ -n "$INPUTS_ORG" && -n "$INPUTS_REPOS" && -n "$INPUTS_VISIBILITY" ]]; then
-          echo "::error::Cannot specify repos and visibility at the same time. Please specify either repos or visibility, but not both." >&2
-          [[ "$EONERROR" =~ ^true$ ]] && exit 1
-        fi
-        
-        if [[ -n "$INPUTS_ORG" && -n "$INPUTS_VISIBILITY" ]]; then
-          echo "visibility=--visibility $INPUTS_VISIBILITY" >> "$GITHUB_OUTPUT"
+
+        if [[ -n "$INPUTS_ORG" && ! "$INPUTS_ORG" =~ ^true$ && -n "$INPUTS_VISIBILITY" ]]; then
+          VISIBILITY="--visibility $INPUTS_VISIBILITY"
+          echo "visibility=$VISIBILITY" >> "$GITHUB_OUTPUT"
         fi
         
         [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
@@ -148,8 +140,8 @@ runs:
       env:
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         TYPE: "${{ steps.validate_and_parse.outputs.type }}"
-        TYPE_OPT: "${{ steps.validate_and_parse.outputs.type_opt }}"
-        VISIBILITY: "${{ steps.validate_and_parse.outputs.visibility }}"
+        TYPE_OPT: "${{ steps.validate_and_parse.outputs.type_opt || '' }}"
+        VISIBILITY: "${{ steps.validate_and_parse.outputs.visibility || '' }}"
         JSON: "${{ steps.validate_and_parse.outputs.json }}"
         OUT_VAR: "${{ inputs.json != '' && 'json' || 'value' }}"
         EONERROR: "${{ inputs.exit-on-error }}"
@@ -169,17 +161,19 @@ runs:
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
         [[ $status -eq 0 && -n "$value" ]] && {
-          echo "success=true" >> "$GITHUB_OUTPUT"
           { echo "$OUT_VAR<<EOF"
             echo "$value"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
+          echo "success=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::\e[1;32m✓\e[0m GitHub Variable '$INPUTS_VARIABLE_NAME' retrieved successfully"
         } || { 
-          echo "success=false" >> "$GITHUB_OUTPUT" 
+          echo "success=false" >> "$GITHUB_OUTPUT"
+          echo "::warning::GitHub Variable '$INPUTS_VARIABLE_NAME' not found or has no value"
         }
         
         echo "::debug::Successfully executed: gh variable get '$INPUTS_VARIABLE_NAME' ${GH_CMD[*]}"
-
+        
     - name: Set GitHub Variable
       id: set_variable
       if: inputs.action == 'set'
@@ -203,8 +197,9 @@ runs:
         
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
-        [ $status -eq 0 ] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { 
+        [ $status -eq 0 ] && { echo "success=true" >> "$GITHUB_OUTPUT" ; } || { 
           echo "success=false" >> "$GITHUB_OUTPUT"
         }
         
         echo "::debug::Successfully executed: printf '%s' '<body>' | gh variable set $INPUTS_VARIABLE_NAME' ${GH_CMD[*]}"
+        echo "::notice::\e[1;32m✓\e[0m GitHub Variable '$INPUTS_VARIABLE_NAME' set successfully"

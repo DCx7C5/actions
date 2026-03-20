@@ -105,7 +105,7 @@ runs:
       shell: bash
       env:
         EONERROR: "${{ inputs.exit_on_error }}"
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+        GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         TYPE: >-
           ${{ case(
             inputs.env == 'true', '--env ${{ github.environment }}',
@@ -138,6 +138,7 @@ runs:
         [[ $status -eq 0 ]] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { echo "success=false" >> "$GITHUB_OUTPUT"; }
         
         echo "::debug::Successfully set GitHub Secret '${{ inputs.secret-name }}' with arguments: ${GH_CMD[*]}"
+        echo "::notice::\e[1;32m✓\e[0m Successfully set GitHub Secret '${{ inputs.secret-name }}'"
 
     - name: Print encrypted, base64-encoded value
       if: inputs.print == 'true'
@@ -145,9 +146,10 @@ runs:
       shell: bash
       env:
         EONERROR: "${{ inputs.exit_on_error }}"
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+        GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         
         echo "secret_value=$(printf '%s' "${{ inputs.body }}" | gh secret set --no-store)" >> "$GITHUB_OUTPUT"
         
         echo "::debug::Successfully printed encrypted, base64-encoded value of the secret to outputs.secret_value"
+        echo "::notice::\e[1;32m✓\e[0m Encrypted, base64-encoded value of the secret is available in 'encrypted-value' output"
