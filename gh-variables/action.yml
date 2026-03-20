@@ -37,14 +37,18 @@ inputs:
   jq:
     required: false
     default: ''
-    description: >-
-      Filter JSON output using a jq expression.
-      JSON FIELDS
-           createdAt, name, numSelectedRepos, selectedReposURL, updatedAt, value, visibility
+    description: "Filter JSON output using a jq expression."
+  jq_decode:
+    required: false
+    default: 'false'
+    description: "jq filter suffix to decode JSON values (defaults to ' | fromjson? | fromjson? // .value | fromjson? // .value // . // empty')"
   json:
     required: false
-    description: "Output JSON with the specified fields"
     default: 'value'
+    description: >-
+      Output JSON with the specified fields
+      JSON FIELDS
+        createdAt, name, numSelectedRepos, selectedReposURL, updatedAt, value, visibility
   gh-token:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
@@ -53,6 +57,10 @@ inputs:
     required: false
     description: "Whether the action should fail if the variable cannot be retrieved or set (true/false, defaults to 'true')"
     default: 'true'
+  json_encode:
+    required: false
+    description: "Whether to JSON-encode the value before storing it (true/false, defaults to 'false')"
+    default: 'false'
 
 
 outputs:
@@ -82,9 +90,11 @@ runs:
           ${{ case(
             inputs.env == 'true', '--env ${{ github.environment }}',
             inputs.org == 'true', '--org ${{ github.repository_owner }}',
+            inputs.repo == 'true', '--repo ${{ github.repository }}',
             inputs.env != '', '--env ${{ inputs.env }}',
             inputs.org != '', '--org ${{ inputs.org }}', 
-            '--repo ${{ inputs.repo }}'
+            inputs.repo != '', '--repo ${{ inputs.repo }}',
+            '--repo ${{ github.repository }}'
           ) }}
         TYPE_OPT: >-
           ${{ case( 
@@ -95,23 +105,28 @@ runs:
         INPUTS_ACTION: "${{ inputs.action }}"
         INPUTS_REPOS: "${{ inputs.repos }}"
         INPUTS_ORG: "${{ inputs.org }}"
+        GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+        INPUTS_JQ_DECODE: "${{ inputs.jq_decode }}"
       run: |
-        if [[ -n "${{ inputs.gh-token }}" ]]; then 
-          echo "::add-mask::${{ inputs.gh-token }}"
+        if [[ -n "$GH_TOKEN" ]]; then 
+          echo "::add-mask::$GH_TOKEN"
         fi
 
         if [[ ! "${{ inputs.env != '' && 'true' }}${{ inputs.repo != '' && 'true' }}${{ inputs.org != '' && 'true' }}" =~ ^true$ ]]; then
           echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
-          [[ "$EONERROR" =~ ^true$ ]] && exit 1
+          exit 1
         elif [[ -n "$INPUTS_VISIBILITY" && ! "$INPUTS_VISIBILITY" =~ ^all|private|selected$ ]]; then
           echo "::error::Invalid visibility '$INPUTS_VISIBILITY'. Valid options are: all, private, selected" >&2
-          [[ "$EONERROR" =~ ^true$ ]] && exit 1
+          exit 1
         elif [[ "EONERROR" =~ ^true|false$ ]]; then
           echo "::error::Invalid value for 'exit_on_error': '$EONERROR'. Valid options are: true, false" >&2
-          [[ "$EONERROR" =~ ^true$ ]] && exit 1
+          exit 1
         elif [[ "$INPUTS_ACTION" =~ ^get|set$ ]]; then
           echo "::error::Invalid action '$INPUTS_ACTION'. Valid actions are: get, set" >&2
-          [[ "$EONERROR" =~ ^true$ ]] && exit 1
+          exit 1
+        elif [[ "$INPUTS_JQ_DECODE" =~ ^true|false$ ]]; then
+          echo "::error::Invalid value for 'jq_decode': '$INPUTS_JQ_DECODE'. Valid options are: true, false" >&2
+          exit 1
         fi
         
         if [[ "$INPUTS_VISIBILITY" == "selected" && -z "$INPUTS_REPOS" ]]; then
@@ -129,12 +144,21 @@ runs:
           VISIBILITY="--visibility $INPUTS_VISIBILITY"
           echo "visibility=$VISIBILITY" >> "$GITHUB_OUTPUT"
         fi
-        
-        if [[ "$INPUTS_JSON" =~ ^value|true$ && -z "${{ inputs.jq }} ]]; then
-          JQ_FILTER='.value | fromjson? // .'
-          echo "jq_filter=$JQ_FILTER" >> "$GITHUB_OUTPUT"
+
+        if [[ "$INPUTS_JSON" =~ ^value|true$ ]]; then
+
+          if [[ "${{ inputs.jq_decode }}" =~ ^true$ && -z "${{ inputs.jq }}" ]]; then
+            jq_decode_suffix='(.value | fromjson? | fromjson?) // (.value | fromjson?) // .value | '
+            echo "jq_filter=$jq_decode_suffix." >> "$GITHUB_OUTPUT"
+          elif [[ "${{ inputs.jq_decode }}" =~ ^true$ && -n "${{ inputs.jq }}" ]]; then
+            jq_decode_suffix='(.value | fromjson? | fromjson?) // (.value | fromjson?) // .value | '
+            echo "jq_filter=$jq_decode_suffix${{ inputs.jq }}" >> "$GITHUB_OUTPUT"
+          elif [ -z "${{ inputs.jq }}" ]; then
+            echo "jq_filter=.value" >> "$GITHUB_OUTPUT"
+          fi
         fi
         
+
 
     - name: Get GitHub Variable
       id: get_variable
@@ -149,45 +173,75 @@ runs:
         OUT_VAR: "${{ inputs.json != '' && 'json' || 'value' }}"
         EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_VARIABLE_NAME: "${{ inputs.variable-name }}"
-        JQ_FILTER: "${{ steps.validate_and_parse.outputs.jq_filter || inputs.jq || '' }}"
+        JQ_FILTER: '${{ steps.validate_and_parse.outputs.jq_filter || inputs.jq }}'
       run: |
         GH_CMD=(${TYPE})
         
         [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
         [ -n "${VISIBILITY}" ] && GH_CMD+=(--visibility "${VISIBILITY}")
-        [ -n "${{ steps.validate.outputs.json }}" ] && GH_CMD+=(--json "$(echo "${{ steps.validate.outputs.json }}" | tr '\n\ \,' ',' | sed 's/,$//')")
-        [ -n '${{ inputs.jq }}' ] && GH_CMD+=(-q '${{ inputs.jq }}')
+        [ -n "$JSON" ] && GH_CMD+=(--json "$(echo "$JSON" | tr '\n\ \,' ',' | sed 's/,$//')")
+        [ -n "$JQ_FILTER" ] && GH_CMD+=(-q "${JQ_FILTER}")
         
-        value=$(gh variable get '$INPUTS_VARIABLE_NAME' "${GH_CMD[@]}" || {
-          echo "::error::Failed to get variable '$INPUTS_VARIABLE_NAME' with type '${TYPE}'" >&2
-        })
+        value=$(gh variable get '$INPUTS_VARIABLE_NAME' "${GH_CMD[@]}")
         
         status=$?
-        [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
-        [[ $status -eq 0 && -n "$value" ]] && {
+        [ $status -ne 0 ] && {
+          echo "success=false" >> "$GITHUB_OUTPUT"
+          echo "::warning::GitHub Variable '$INPUTS_VARIABLE_NAME' not found or has no value"
+          [[ "$EONERROR" =~ ^true$ ]] && exit $status
+        }
+        
+        if [[ "$value" == *$'\n'* ]]; then
           { echo "$OUT_VAR<<EOF"
             echo "$value"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
-          echo "success=true" >> "$GITHUB_OUTPUT"
-          echo "::notice::\e[1;32m✓\e[0m GitHub Variable '$INPUTS_VARIABLE_NAME' retrieved successfully"
-        } || { 
-          echo "success=false" >> "$GITHUB_OUTPUT"
-          echo "::warning::GitHub Variable '$INPUTS_VARIABLE_NAME' not found or has no value"
-        }
+        else
+          echo "$OUT_VAR=$value" >> "$GITHUB_OUTPUT"
+        fi
+
+        echo "success=true" >> "$GITHUB_OUTPUT"
+        echo "::notice::\e[1;32m✓\e[0m GitHub Variable '$INPUTS_VARIABLE_NAME' retrieved successfully"
+
+    - name: Validate Variable Body
+      id: validate_body
+      if: inputs.action == 'set' && inputs.json != ''
+      shell: bash
+      env:
+        BODY: "${{ inputs.body }}"
+      run: |
+        if [[ ! "$BODY" =~ \n ]]; then
+          echo "body_type=string" >> "$GITHUB_OUTPUT"
+        elif [[ "$BODY" =~ \n ]]; then
+          echo "body_type=multiline" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::Invalid body value. Body must be a string or multiline string." >&2
+          [[ "${{ inputs.exit-on-error }}" =~ ^true$ ]] && exit 1
+        fi
         
-        echo "::debug::Successfully executed: gh variable get '$INPUTS_VARIABLE_NAME' ${GH_CMD[*]}"
-        echo "::notice::\e[1;32m✓\e[0m Successfully retrieved GitHub Variable '$INPUTS_VARIABLE_NAME' with arguments: ${GH_CMD[*]}"
+        if printf '%s' "$BODY" | jq -e . >/dev/null 2>&1; then
+          echo "body_json=true" >> "$GITHUB_OUTPUT"
+          if printf '%s' "$BODY" | jq -e '. | fromjson' >/dev/null 2>&1; then
+            echo "encoded=true" >> "$GITHUB_OUTPUT"
+            if printf '%s' "$BODY" | jq -e '. | fromjson' >/dev/null 2>&1; then
+              echo "double_encoded=true" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+        else
+          echo "body_json=false" >> "$GITHUB_OUTPUT"
+        fi
+        
+        echo "::debug::Validated body for GitHub Variable. Type: ${body_type}, JSON: ${body_json:-false}, Encoded: ${encoded:-false}, Double Encoded: ${double_encoded:-false}"
 
     - name: Set GitHub Variable
       id: set_variable
-      if: inputs.action == 'set'
+      if: inputs.action == 'set' && steps.validate_body.outcome == 'success'
       shell: bash
       env:
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
-        TYPE: "${{ steps.validate.outputs.type }}"
-        TYPE_OPT: "${{ steps.validate.outputs.type_opt }}"
-        VISIBILITY: "${{ steps.validate.outputs.visibility }}"
+        TYPE: "${{ steps.validate_and_parse.outputs.type }}"
+        TYPE_OPT: "${{ steps.validate_and_parse.outputs.type_opt }}"
+        VISIBILITY: "${{ steps.validate_and_parse.outputs.visibility }}"
         EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_VARIABLE_NAME: "${{ inputs.variable-name }}"
       run: |
@@ -196,15 +250,16 @@ runs:
         [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
         [ -n "$VISIBILITY" ] && GH_CMD+=(--visibility "${VISIBILITY}")
                 
-        printf '%s' "${{ inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}" || {
-          echo "::error::Failed to set variable '$INPUTS_VARIABLE_NAME' with type '${TYPE} ${TYPE_OPT}'" >&2
-        }
+        printf '%s' "${{ steps.validate_body.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
         
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
-        [ $status -eq 0 ] && { echo "success=true" >> "$GITHUB_OUTPUT" ; } || { 
+        [ $status -eq 0 ] && { 
+          echo "success=true" >> "$GITHUB_OUTPUT"
+          echo "::debug::Successfully executed: printf '%s' $BODY | gh variable set $INPUTS_VARIABLE_NAME ${GH_CMD[*]}"
+          echo "::notice::\e[1;32m✓\e[0m GitHub Variable '$INPUTS_VARIABLE_NAME' set successfully"
+        } || { 
           echo "success=false" >> "$GITHUB_OUTPUT"
+          echo "::error::\e[1;31m✗\e[0m Failed to set GitHub Variable '$INPUTS_VARIABLE_NAME' with arguments: ${GH_CMD[*]}" >&2
+          [[ "$EONERROR" =~ ^true$ ]] && exit $status
         }
-        
-        echo "::debug::Successfully executed: printf '%s' '<body>' | gh variable set $INPUTS_VARIABLE_NAME' ${GH_CMD[*]}"
-        echo "::notice::\e[1;32m✓\e[0m GitHub Variable '$INPUTS_VARIABLE_NAME' set successfully"
