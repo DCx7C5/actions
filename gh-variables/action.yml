@@ -115,9 +115,6 @@ runs:
         elif [[ "$INPUTS_ACTION" =~ ^get|set$ ]]; then
           echo "::error::Invalid action '$INPUTS_ACTION'. Valid actions are: get, set" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
-        elif [[ "$INPUTS_ACTION" = 'set' && (-n "$INPUTS_JSON" || -n "${{ inputs.jq }}") ]]; then
-          echo "::error::Cannot use both 'json' and 'jq' inputs at the same time" >&2
-          [[ "$EONERROR" =~ ^true$ ]] && exit 1
         fi
         
         if [[ "$INPUTS_VISIBILITY" == "selected" && -z "$INPUTS_REPOS" ]]; then
@@ -132,8 +129,13 @@ runs:
           echo 'json=--repos $(echo "$INPUTS_REPOS" | tr '\n\ ' ',' | sed 's/,$//")' >> "$GITHUB_OUTPUT"
         fi
         
+        if [[ -n "$INPUTS_ORG" && -n "$INPUTS_REPOS" && -n "$INPUTS_VISIBILITY" ]]; then
+          echo "::error::Cannot specify repos and visibility at the same time. Please specify either repos or visibility, but not both." >&2
+          [[ "$EONERROR" =~ ^true$ ]] && exit 1
+        fi
+        
         if [[ -n "$INPUTS_ORG" && -n "$INPUTS_VISIBILITY" ]]; then
-          echo "json=--visibility $INPUTS_VISIBILITY" >> "$GITHUB_OUTPUT"
+          echo "visibility=--visibility $INPUTS_VISIBILITY" >> "$GITHUB_OUTPUT"
         fi
         
         [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
@@ -147,14 +149,18 @@ runs:
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         TYPE: "${{ steps.validate_and_parse.outputs.type }}"
         TYPE_OPT: "${{ steps.validate_and_parse.outputs.type_opt }}"
+        VISIBILITY: "${{ steps.validate_and_parse.outputs.visibility }}"
+        JSON: "${{ steps.validate_and_parse.outputs.json }}"
         OUT_VAR: "${{ inputs.json != '' && 'json' || 'value' }}"
         EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_VARIABLE_NAME: "${{ inputs.variable-name }}"
       run: |
-        GH_CMD=(${TYPE} ${TYPE_OPT})
-                
-        [ -n "${{ steps.validate.outputs.json }}" ] && GH_CMD+=($(echo "${{ steps.validate.outputs.json }}" | tr '\n\ \,' ',' | sed 's/,$//'))
-        [ -n "${{ inputs.jq }}" ] && GH_CMD+=(${{ inputs.jq }})
+        GH_CMD=(${TYPE})
+        
+        [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
+        [ -n "${VISIBILITY}" ] && GH_CMD+=(--visibility "${VISIBILITY}")
+        [ -n "${{ steps.validate.outputs.json }}" ] && GH_CMD+=(--json "$(echo "${{ steps.validate.outputs.json }}" | tr '\n\ \,' ',' | sed 's/,$//')")
+        [ -n '${{ inputs.jq }}' ] && GH_CMD+=(-q '${{ inputs.jq }}')
         
         value=$(gh variable get '$INPUTS_VARIABLE_NAME' "${GH_CMD[@]}" || {
           echo "::error::Failed to get variable '$INPUTS_VARIABLE_NAME' with type '${TYPE}'" >&2
@@ -162,14 +168,15 @@ runs:
         
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
-        [[ $status -eq 0 && -n "$value" ]] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { 
+        [[ $status -eq 0 && -n "$value" ]] && {
+          echo "success=true" >> "$GITHUB_OUTPUT"
+          { echo "$OUT_VAR<<EOF"
+            echo "$value"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+        } || { 
           echo "success=false" >> "$GITHUB_OUTPUT" 
         }
-        
-        { echo "$OUT_VAR<<EOF"
-          echo "$value"
-          echo "EOF"
-        } >> "$GITHUB_OUTPUT"
         
         echo "::debug::Successfully executed: gh variable get '$INPUTS_VARIABLE_NAME' ${GH_CMD[*]}"
 
@@ -181,14 +188,20 @@ runs:
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         TYPE: "${{ steps.validate.outputs.type }}"
         TYPE_OPT: "${{ steps.validate.outputs.type_opt }}"
+        VISIBILITY: "${{ steps.validate.outputs.visibility }}"
         EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_VARIABLE_NAME: "${{ inputs.variable-name }}"
       run: |
-        GH_CMD=(${TYPE} ${TYPE_OPT})
+        GH_CMD=(${TYPE})
         
+        [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
+        [ -n "$VISIBILITY" ] && GH_CMD+=(--visibility "${VISIBILITY}")
+                
         printf '%s' "${{ inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}" || {
           echo "::error::Failed to set variable '$INPUTS_VARIABLE_NAME' with type '${TYPE} ${TYPE_OPT}'" >&2
         }
+                [ -n "$VISIBILITY" ] && GH_CMD+=(--visibility "${VISIBILITY}")
+
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
         [ $status -eq 0 ] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { 
