@@ -32,8 +32,8 @@ inputs:
     default: 'false'
   visibility:
     required: false
-    description: "Visibility of the secret in the selected repositories (only for organisation secrets, (all|private|selected) defaults to 'all')"
-    default: 'all'
+    description: "Visibility of the secret in the selected repositories (only for organisation secrets, (all|private|selected) defaults to 'selected')"
+    default: 'selected'
   user:
     required: false
     description: "Set a user secret (GitHub Enterprise Server only)"
@@ -120,6 +120,7 @@ runs:
           ${{ case( 
             inputs.org != '' && inputs.repos != '', '--repos $(echo "${{ inputs.repos }}" | tr '\n\ ' ',' | sed 's/,$//")',
             inputs.org != '' && inputs.no_repos_select == 'true', '--no-repos-select',
+            inputs.org != '' && inputs.visibility == 'selected' && inputs.repos == '', '--repos ${{ github.repository }}'
           ) }}
 
       run: |
@@ -133,12 +134,19 @@ runs:
         printf '%s' "${{ inputs.body }}" | gh secret set "${{ inputs.secret-name }}" "${GH_CMD[@]}" || {
           echo "::error::Failed to set GitHub Secret" >&2
         }
-        status=$?
-        [[ $status -ne 0 ]] && [[ "$EONERROR" =~ ^true$ ]] && exit $status
-        [[ $status -eq 0 ]] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { echo "success=false" >> "$GITHUB_OUTPUT"; }
         
-        echo "::debug::Successfully set GitHub Secret '${{ inputs.secret-name }}' with arguments: ${GH_CMD[*]}"
-        echo "::notice::\e[1;32m✓\e[0m Successfully set GitHub Secret '${{ inputs.secret-name }}'"
+        status=$?
+        [ $status -eq 0 ] && { 
+          echo "success=true" >> "$GITHUB_OUTPUT"
+          echo "::debug::Successfully set GitHub Secret '${{ inputs.secret-name }}' with arguments: ${GH_CMD[*]}"
+          echo "::notice::\e[1;32m✓\e[0m Successfully set GitHub Secret '${{ inputs.secret-name }}'"
+        } || { 
+          echo "success=false" >> "$GITHUB_OUTPUT"
+          echo "::error::Failed to set GitHub Secret '${{ inputs.secret-name }}' with arguments: ${GH_CMD[*]}" >&2
+          echo "::error::\e[1;31m✗\e[0m Failed to set GitHub Secret '${{ inputs.secret-name }}'"
+          [[ "$EONERROR" =~ ^true$ ]] && exit $status
+        }
+        
 
     - name: Print encrypted, base64-encoded value
       if: inputs.print == 'true'
@@ -151,5 +159,11 @@ runs:
         
         echo "secret_value=$(printf '%s' "${{ inputs.body }}" | gh secret set --no-store)" >> "$GITHUB_OUTPUT"
         
-        echo "::debug::Successfully printed encrypted, base64-encoded value of the secret to outputs.secret_value"
-        echo "::notice::\e[1;32m✓\e[0m Encrypted, base64-encoded value of the secret is available in 'encrypted-value' output"
+        status=$?
+        [ $status -ne 0 ] && {
+          echo "::error::Failed to print encrypted value of the secret" >&2
+          [[ "$EONERROR" =~ ^true$ ]] && exit $status
+        } || { 
+          echo "::debug::Successfully printed encrypted, base64-encoded value of the secret to outputs.secret_value"
+          echo "::notice::\e[1;32m✓\e[0m Encrypted, base64-encoded value of the secret is available in 'encrypted-value' output"
+        }

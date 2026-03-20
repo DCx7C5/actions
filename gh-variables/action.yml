@@ -25,7 +25,7 @@ inputs:
   repo:
     required: false
     description: "Set repository variable (defaults to current repository)"
-    default: ''
+    default: ${{ github.repository }}
   repos:
     required: false
     description: "New-line separated list of repositories to set the secret in (only for organisation secrets, defaults to all repositories in the organisation)"
@@ -82,16 +82,13 @@ runs:
           ${{ case(
             inputs.env == 'true', '--env ${{ github.environment }}',
             inputs.org == 'true', '--org ${{ github.repository_owner }}',
-            inputs.repo == 'true', '--repo ${{ github.repository }}',
             inputs.env != '', '--env ${{ inputs.env }}',
             inputs.org != '', '--org ${{ inputs.org }}', 
-            inputs.repo != '', '--repo ${{ inputs.repo }}',
-            '--repo ${{ github.repository }}'
+            '--repo ${{ inputs.repo }}'
           ) }}
         TYPE_OPT: >-
           ${{ case( 
             inputs.org != '' && inputs.repos != '', '--repos $(echo "${{ inputs.repos }}" | tr '\n\ \,' ',' | sed 's/,$//')',
-            inputs.org != '' && inputs.visibility != '', '--visibility ${{ inputs.visibility }}',
           ) }}
         INPUTS_JSON: "${{ inputs.json }}"
         INPUTS_VISIBILITY: "${{ inputs.visibility }}"
@@ -125,13 +122,19 @@ runs:
           echo "::warning::Repos specified without visibility defaults to 'all', which may not be intended"
         fi
 
+        [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+        [ -n "$TYPE_OPT" ] && echo "type_opt=$TYPE_OPT" >> "$GITHUB_OUTPUT"
+        
         if [[ -n "$INPUTS_ORG" && ! "$INPUTS_ORG" =~ ^true$ && -n "$INPUTS_VISIBILITY" ]]; then
           VISIBILITY="--visibility $INPUTS_VISIBILITY"
           echo "visibility=$VISIBILITY" >> "$GITHUB_OUTPUT"
         fi
         
-        [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
-        [ -n "$TYPE_OPT" ] && echo "type_opt=$TYPE_OPT" >> "$GITHUB_OUTPUT"
+        if [[ "$INPUTS_JSON" =~ ^value|true$ && -z "${{ inputs.jq }} ]]; then
+          JQ_FILTER='.value | fromjson? // .'
+          echo "jq_filter=$JQ_FILTER" >> "$GITHUB_OUTPUT"
+        fi
+        
 
     - name: Get GitHub Variable
       id: get_variable
@@ -146,6 +149,7 @@ runs:
         OUT_VAR: "${{ inputs.json != '' && 'json' || 'value' }}"
         EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_VARIABLE_NAME: "${{ inputs.variable-name }}"
+        JQ_FILTER: "${{ steps.validate_and_parse.outputs.jq_filter || inputs.jq || '' }}"
       run: |
         GH_CMD=(${TYPE})
         
@@ -173,7 +177,8 @@ runs:
         }
         
         echo "::debug::Successfully executed: gh variable get '$INPUTS_VARIABLE_NAME' ${GH_CMD[*]}"
-        
+        echo "::notice::\e[1;32m✓\e[0m Successfully retrieved GitHub Variable '$INPUTS_VARIABLE_NAME' with arguments: ${GH_CMD[*]}"
+
     - name: Set GitHub Variable
       id: set_variable
       if: inputs.action == 'set'
