@@ -1,0 +1,136 @@
+name: "Set GitHub Secret"
+description: "Set a GitHub Secret from GitHub Actions (supports repository, organisation and environment secrets)"
+author: "DCx7C5"
+
+
+inputs:
+  secret-name:
+    required: true
+    description: "Name of GitHub Secret to create or update"
+  body:
+    required: true
+    description: "The value for the secret (reads from standard input if not specified)"
+  repo:
+    required: false
+    description: "Set repository secret (defaults to current repository)"
+    default: ''
+  env:
+    required: false
+    description: "Set deployment environment secret"
+    default: ''
+  org:
+    required: false
+    description: "Name of the organisation to store the secret in (defaults to current organisation based on variable_type)"
+    default: ''
+  repos:
+    required: false
+    description: "New-line separated list of repositories to set the secret in (only for organisation secrets, defaults to all repositories in the organisation)"
+    default: ''
+  no_repos_select:
+    required: false
+    description: "Will not select any repositories to set the secret in"
+    default: 'false'
+  visibility:
+    required: false
+    description: "Visibility of the secret in the selected repositories (only for organisation secrets, (all|private|selected) defaults to 'all')"
+    default: 'all'
+  user:
+    required: false
+    description: "Set a user secret (GitHub Enterprise Server only)"
+    default: 'false'
+  app:
+    required: false
+    description: "Set the application for a secret: {actions|codespaces|dependabot}"
+    default: ''
+  print:
+    required: false
+    description: "Print the encrypted, base64-encoded value"
+    default: 'false'
+  github_token:
+    required: false
+    description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
+    default: ''
+
+outputs:
+  secret-name:
+    description: "Name of the GitHub Secret that was created or updated"
+    value: ${{ inputs.secret-name }}
+  encrypted-value:
+    description: "Value of the GitHub Secret that was created or updated (only if 'print' input is set to 'true')"
+    value: ${{ steps.print_value.outputs.secret_value || '' }}
+
+
+runs:
+  using: composite
+  steps:
+    - name: Validate & Mask Inputs
+      id: validate_and_mask
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [[ -n '${{ inputs.body }}' ]]; then
+          echo '::add-mask::${{ inputs.body }}'
+        fi
+        
+        if [[ -n "${{ inputs.github_token }}" ]]; then 
+          echo "::add-mask::${{ inputs.github_token }}"
+        fi
+        
+        if [[ ! "${{ inputs.env != '' && 'true' }}${{ inputs.repo != '' && 'true' }}${{ inputs.org != '' && 'true' }}" =~ ^true$ ]]; then
+          echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
+          exit 1
+        fi
+        
+        if [[ "${{ inputs.visibility }}" == "selected" && -z "${{ inputs.repos }}" ]]; then
+          echo "::warning::Visibility 'selected' has no repositories specified"
+        fi
+
+    - name: Set GitHub Secret
+      id: set_secret
+      shell: bash
+      env:
+        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+        TYPE: >-
+          ${{ case(
+            inputs.env == 'true', '--env ${{ inputs.env || github.environment }}',
+            inputs.org == 'true', '--org ${{ inputs.org || github.repository_owner }}', 
+            inputs.repo == 'true', '--repo ${{ inputs.repo || github.repository }}',
+            '--repo ${{ inputs.repo }}'
+          ) }}
+      run: |
+        set -euo pipefail
+        
+        GH_CMD+=(${TYPE})
+        if [[ "$TYPE" = 'org' ]]; then
+          if [[ -n "${{ inputs.repos }}" ]]; then
+            GPG_CMD+=(--repos "$(echo "${{ inputs.repos }}" | tr '\n' ',' | sed 's/,$//')")
+          elif [[ "${{ inputs.no_repos_select }}" =~ ^true$ ]]; then
+            GH_CMD+=(--no-repos-select)
+          fi
+          if [[ "${{ inputs.visibility }}" =~ ^(all|private|selected)$ ]]; then
+            GH_CMD+=(--visibility "${{ inputs.visibility }}")
+          fi
+        fi
+        
+        [[ "${{ inputs.user }}" == 'true' ]] && GH_CMD+=(--user)
+        [[ -n "${{ inputs.app }}" ]] && GH_CMD+=(--app "${{ inputs.app }}")
+        
+        printf '%s' "${{ inputs.body }}" | gh secret set "${{ inputs.secret-name }}" "${GH_CMD[@]}" || {
+          echo "::error::Failed to set GitHub Secret" >&2
+          exit 1
+        }
+        
+        echo "::debug::Successfully set GitHub Secret '${{ inputs.secret-name }}' with arguments: ${GH_CMD[*]}"
+
+    - name: Print encrypted, base64-encoded value
+      if: inputs.print == 'true'
+      id: print_value
+      shell: bash
+      env:
+        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+      run: |
+        set -euo pipefail
+        
+        echo "secret_value=$(printf '%s' "${{ inputs.body }}" | gh secret set --no-store)" >> "$GITHUB_OUTPUT"
+        
+        echo "::debug::Successfully printed encrypted, base64-encoded value of the secret to outputs.secret_value"
