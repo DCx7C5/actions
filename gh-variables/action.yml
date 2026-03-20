@@ -38,7 +38,7 @@ inputs:
     required: false
     default: ''
     description: "Filter JSON output using a jq expression."
-  jq_decode:
+  jq-decode:
     required: false
     default: 'false'
     description: "jq filter suffix to decode JSON values (defaults to ' | fromjson? | fromjson? // .value | fromjson? // .value // . // empty')"
@@ -106,7 +106,7 @@ runs:
         INPUTS_REPOS: "${{ inputs.repos }}"
         INPUTS_ORG: "${{ inputs.org }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
-        INPUTS_JQ_DECODE: "${{ inputs.jq_decode }}"
+        INPUTS_JQ_DECODE: "${{ inputs.jq-decode }}"
       run: |
         if [[ -n "$GH_TOKEN" ]]; then 
           echo "::add-mask::$GH_TOKEN"
@@ -125,7 +125,7 @@ runs:
           echo "::error::Invalid action '$INPUTS_ACTION'. Valid actions are: get, set" >&2
           exit 1
         elif [[ "$INPUTS_JQ_DECODE" =~ ^true|false$ ]]; then
-          echo "::error::Invalid value for 'jq_decode': '$INPUTS_JQ_DECODE'. Valid options are: true, false" >&2
+          echo "::error::Invalid value for 'jq-decode': '$INPUTS_JQ_DECODE'. Valid options are: true, false" >&2
           exit 1
         fi
         
@@ -147,10 +147,10 @@ runs:
 
         if [[ "$INPUTS_JSON" =~ ^value|true$ ]]; then
 
-          if [[ "${{ inputs.jq_decode }}" =~ ^true$ && -z "${{ inputs.jq }}" ]]; then
+          if [[ "${{ inputs.jq-decode }}" =~ ^true$ && -z "${{ inputs.jq }}" ]]; then
             jq_decode_suffix='(.value | fromjson? | fromjson?) // (.value | fromjson?) // .value | '
             echo "jq_filter=$jq_decode_suffix." >> "$GITHUB_OUTPUT"
-          elif [[ "${{ inputs.jq_decode }}" =~ ^true$ && -n "${{ inputs.jq }}" ]]; then
+          elif [[ "${{ inputs.jq-decode }}" =~ ^true$ && -n "${{ inputs.jq }}" ]]; then
             jq_decode_suffix='(.value | fromjson? | fromjson?) // (.value | fromjson?) // .value | '
             echo "jq_filter=$jq_decode_suffix${{ inputs.jq }}" >> "$GITHUB_OUTPUT"
           elif [ -z "${{ inputs.jq }}" ]; then
@@ -249,7 +249,7 @@ runs:
         
         [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
         [ -n "$VISIBILITY" ] && GH_CMD+=(--visibility "${VISIBILITY}")
-                
+        
         printf '%s' "${{ steps.validate_body.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
         
         status=$?
