@@ -135,7 +135,7 @@ runs:
         }
         status=$?
         [[ $status -ne 0 ]] && [[ "$EONERROR" =~ ^true$ ]] && exit $status
-        [[ $status -eq 0 ]] && echo "success=true" >> "$GITHUB_OUTPUT" || echo "success=false" >> "$GITHUB_OUTPUT"
+        [[ $status -eq 0 ]] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { echo "success=false" >> "$GITHUB_OUTPUT"; }
         
         echo "::debug::Successfully set GitHub Secret '${{ inputs.secret-name }}' with arguments: ${GH_CMD[*]}"
 

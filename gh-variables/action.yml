@@ -93,45 +93,47 @@ runs:
             inputs.org != '' && inputs.repos != '', '--repos $(echo "${{ inputs.repos }}" | tr '\n\ ' ',' | sed 's/,$//")',
             inputs.org != '' && inputs.visibility != '', '--visibility ${{ inputs.visibility }}',
           ) }}
+        INPUTS_JSON: "${{ inputs.json }}"
+        INPUTS_VISIBILITY: "${{ inputs.visibility }}"
+        INPUTS_ACTION: "${{ inputs.action }}"
+        INPUTS_REPOS: "${{ inputs.repos }}"
+        INPUTS_ORG: "${{ inputs.org }}"
       run: |
         if [[ -n "${{ inputs.github_token }}" ]]; then 
           echo "::add-mask::${{ inputs.github_token }}"
         fi
-        
+
         if [[ ! "${{ inputs.env != '' && 'true' }}${{ inputs.repo != '' && 'true' }}${{ inputs.org != '' && 'true' }}" =~ ^true$ ]]; then
           echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
-        elif [[ -n "${{ inputs.visibility }}" && ! "${{ inputs.visibility }}" =~ ^all|private|selected$ ]]; then
-          echo "::error::Invalid visibility '${{ inputs.visibility }}'. Valid options are: all, private, selected" >&2
+        elif [[ -n "$INPUTS_VISIBILITY" && ! "$INPUTS_VISIBILITY" =~ ^all|private|selected$ ]]; then
+          echo "::error::Invalid visibility '$INPUTS_VISIBILITY'. Valid options are: all, private, selected" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
-        elif [[ -n "${{ inputs.json }}" && ! "${{ inputs.json }}" != ^createdAt|name|numSelectedRepos|selectedReposURL|updatedAt|value|visibility$ ]]; then
-          echo "::error::Invalid json parameter '${{ inputs.json }}'" >&2
+        elif [[ "EONERROR" =~ ^true|false$ ]]; then
+          echo "::error::Invalid value for 'exit_on_error': '$EONERROR'. Valid options are: true, false" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
-        elif [[ "${{ inputs.exit_on_error }}" =~ ^true|false$ ]]; then
-          echo "::error::Invalid value for 'exit_on_error': '${{ inputs.exit_on_error }}'. Valid options are: true, false" >&2
+        elif [[ "$INPUTS_ACTION" =~ ^get|set$ ]]; then
+          echo "::error::Invalid action '$INPUTS_ACTION'. Valid actions are: get, set" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
-        elif [[ "${{ inputs.action }}" =~ ^get|set$ ]]; then
-          echo "::error::Invalid action '${{ inputs.action }}'. Valid actions are: get, set" >&2
-          [[ "$EONERROR" =~ ^true$ ]] && exit 1
-        elif [[ "${{ inputs.action }}" = 'set' && (-n "${{ inputs.json }}" || -n "${{ inputs.jq }}") ]]; then
+        elif [[ "$INPUTS_ACTION" = 'set' && (-n "$INPUTS_JSON" || -n "${{ inputs.jq }}") ]]; then
           echo "::error::Cannot use both 'json' and 'jq' inputs at the same time" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
         fi
         
-        if [[ "${{ inputs.visibility }}" == "selected" && -z "${{ inputs.repos }}" ]]; then
+        if [[ "$INPUTS_VISIBILITY" == "selected" && -z "$INPUTS_REPOS" ]]; then
           echo "::warning::Visibility 'selected' has no repositories specified"
         fi
         
-        if [[ -n "${{ inputs.org }}" && -n "${{ inputs.repos }}" && -z "${{ inputs.visibility }}" ]]; then
+        if [[ -n "$INPUTS_ORG" && -n "$INPUTS_REPOS" && -z "$INPUTS_VISIBILITY" ]]; then
           echo "::warning::Repos specified without visibility defaults to 'all', which may not be intended"
         fi
         
-        if [[ -n "${{ inputs.org }}" && -n "${{ inputs.json }}" ]]; then
-          echo 'json=--repos $(echo "${{ inputs.repos }}" | tr '\n\ ' ',' | sed 's/,$//")' >> "$GITHUB_OUTPUT"
+        if [[ -n "$INPUTS_ORG" && -n "$INPUTS_JSON" ]]; then
+          echo 'json=--repos $(echo "$INPUTS_REPOS" | tr '\n\ ' ',' | sed 's/,$//")' >> "$GITHUB_OUTPUT"
         fi
         
-        if [[ -n "${{ inputs.org }}" && -n "${{ inputs.visibility }}" ]]; then
-          echo "json=--visibility ${{ inputs.visibility }}" >> "$GITHUB_OUTPUT"
+        if [[ -n "$INPUTS_ORG" && -n "$INPUTS_VISIBILITY" ]]; then
+          echo "json=--visibility $INPUTS_VISIBILITY" >> "$GITHUB_OUTPUT"
         fi
         
         [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
@@ -152,26 +154,27 @@ runs:
             inputs.action == 'get' && inputs.json != '', '--json "$(echo "${{ inputs.json }}" | tr '\n\ ' ',' | sed 's/,$//")"',
             inputs.action == 'get' && inputs.jq != '', '-q "${{ inputs.jq }}"',
           ) }}
+        INPUTS_VARIABLE_NAME: "${{ inputs.variable-name }}"
       run: |
         GH_CMD=(${TYPE} ${TYPE_OPT})
         
         [[ -n "${{ steps.validate.outputs.json }}" ]] && GH_CMD+=(${{ steps.validate.outputs.json }})
         [[ -n "${{ inputs.jq }}" ]] && GH_CMD+=(${{ inputs.jq }})
         
-        value=$(gh variable get '${{ inputs.variable-name }}' "${GH_CMD[@]}" || {
-          echo "::error::Failed to get variable '${{ inputs.variable-name }}' with type '${TYPE}'" >&2
+        value=$(gh variable get '$INPUTS_VARIABLE_NAME' "${GH_CMD[@]}" || {
+          echo "::error::Failed to get variable '$INPUTS_VARIABLE_NAME' with type '${TYPE}'" >&2
         })
         
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
-        [[ $status -eq 0 ]] && echo "success=true" >> "$GITHUB_OUTPUT" || echo "success=false" >> "$GITHUB_OUTPUT"
+        [[ $status -eq 0 ]] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { echo "success=false" >> "$GITHUB_OUTPUT"; }
         
         { echo "$OUT_VAR<<EOF"
           echo "$value"
           echo "EOF"
         } >> "$GITHUB_OUTPUT"
         
-        echo "::debug::Successfully executed: gh variable get '${{ inputs.variable-name }}' ${GH_CMD[*]}"
+        echo "::debug::Successfully executed: gh variable get '$INPUTS_VARIABLE_NAME' ${GH_CMD[*]}"
     
     - name: Set GitHub Variable
       id: set_variable
@@ -182,14 +185,15 @@ runs:
         TYPE: "${{ steps.validate.outputs.type }}"
         TYPE_OPT: "${{ steps.validate.outputs.type_opt }}"
         EONERROR: "${{ inputs.exit_on_error }}"
+        INPUTS_VARIABLE_NAME: "${{ inputs.variable-name }}"
       run: |
         GH_CMD=(${TYPE} ${TYPE_OPT})
         
-        printf '%s' "${{ inputs.body }}" | gh variable set "${{ inputs.variable-name }}" "${GH_CMD[@]}" || {
-          echo "::error::Failed to set variable '${{ inputs.variable-name }}' with type '${TYPE} ${TYPE_OPT}'" >&2
+        printf '%s' "${{ inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}" || {
+          echo "::error::Failed to set variable '$INPUTS_VARIABLE_NAME' with type '${TYPE} ${TYPE_OPT}'" >&2
         }
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
-        [[ $status -eq 0 ]] && echo "success=true" >> "$GITHUB_OUTPUT" || echo "success=false" >> "$GITHUB_OUTPUT"
+        [[ $status -eq 0 ]] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { echo "success=false" >> "$GITHUB_OUTPUT"; }
         
-        echo "::debug::Successfully executed: printf '%s' '${{ inputs.body }}' | gh variable set '${{ inputs.variable-name }}' ${GH_CMD[*]}"
+        echo "::debug::Successfully executed: printf '%s' '<body>' | gh variable set $INPUTS_VARIABLE_NAME' ${GH_CMD[*]}"
