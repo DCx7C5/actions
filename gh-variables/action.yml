@@ -200,8 +200,7 @@ runs:
         printf '%s' "${{ inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}" || {
           echo "::error::Failed to set variable '$INPUTS_VARIABLE_NAME' with type '${TYPE} ${TYPE_OPT}'" >&2
         }
-                [ -n "$VISIBILITY" ] && GH_CMD+=(--visibility "${VISIBILITY}")
-
+        
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
         [ $status -eq 0 ] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { 
