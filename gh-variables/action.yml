@@ -1,0 +1,83 @@
+name: "Manage a GitHub Variable"
+description: "Manage a GitHub Variable from GitHub Actions"
+author: "DCx7C5"
+
+
+inputs:
+  action:
+    required: false
+    description: "Action to perform (get or set, defaults to 'set')"
+    default: 'set'
+  variable-name:
+    required: true
+    description: "Name of GitHub Variable to create or update"
+  body:
+    required: true
+    description: "Value to store as GitHub Variable (can be multiline, e.g. for GPG keys)"
+  env:
+    required: false
+    description: "Set deployment environment variable"
+    default: ''
+  org:
+    required: false
+    description: "Name of the organisation to store the variable in (defaults to current organisation based on variable_type)"
+    default: ''
+  repo:
+    required: false
+    description: "Set repository variable (defaults to current repository)"
+    default: ''
+  repos:
+    required: false
+    description: "New-line separated list of repositories to set the secret in (only for organisation secrets, defaults to all repositories in the organisation)"
+    default: ''
+  visibility:
+    required: false
+    description: "Visibility of the secret in the selected repositories (only for organisation secrets, (all|private|selected) defaults to 'all')"
+    default: 'all'
+  jq:
+    required: false
+    description: "jq filter to extract specific fields from the variable value (only for 'get' action, defaults to no filtering)"
+    default: ''
+  json:
+    required: false
+    description: "Output JSON with the specified fields"
+    default: ''
+  gh_token:
+    required: false
+    description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
+    default: ''
+
+
+runs:
+  using: composite
+  steps:
+    - name: Validate Inputs
+      id: validate
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        if [[ ! "${{ inputs.env != '' && 'true' }}${{ inputs.repo != '' && 'true' }}${{ inputs.org != '' && 'true' }}" =~ ^true$ ]]; then
+          echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
+          exit 1
+        fi
+                
+        if [[ "${{ inputs.visibility }}" == "selected" && -z "${{ inputs.repos }}" ]]; then
+          echo "::warning::Visibility 'selected' has no repositories specified"
+        fi
+        
+        echo "type=${{ case(
+            inputs.env != '', '--env ${{ inputs.env || github.environment }}',
+            inputs.org != '', '--org ${{ inputs.org || github.repository_owner }}', 
+            inputs.repo != '', '--repo ${{ inputs.repo || github.repository }}',
+            '--repo ${{ inputs.repo }}'
+        ) }}" >> "$GITHUB_OUTPUT"
+
+    - name: Get GitHub Variable
+      id: manage_variable
+      if: inputs.action == 'get'
+      shell: bash
+      env:
+        GH_TOKEN: "${{ inputs.gh_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+      run: |
+        set -euo pipefail
