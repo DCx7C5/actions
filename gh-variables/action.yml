@@ -80,12 +80,12 @@ runs:
         EONERROR: "${{ inputs.exit_on_error }}"
         TYPE: >-
           ${{ case(
-            inputs.env != '', '--env ${{ inputs.env }}',
-            inputs.org != '', '--org ${{ inputs.org }}', 
-            inputs.repo != '', '--repo ${{ inputs.repo }}',
             inputs.env == 'true', '--env ${{ github.environment }}',
             inputs.org == 'true', '--org ${{ github.repository_owner }}',
             inputs.repo == 'true', '--repo ${{ github.repository }}',
+            inputs.env != '', '--env ${{ inputs.env }}',
+            inputs.org != '', '--org ${{ inputs.org }}', 
+            inputs.repo != '', '--repo ${{ inputs.repo }}',
             '--repo ${{ github.repository }}'
           ) }}
         TYPE_OPT: >-
@@ -163,7 +163,7 @@ runs:
         })
         
         status=$?
-        [[ $status -ne 0 ]] && [[ "$EONERROR" =~ ^true$ ]] && exit $status
+        [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
         [[ $status -eq 0 ]] && echo "success=true" >> "$GITHUB_OUTPUT" || echo "success=false" >> "$GITHUB_OUTPUT"
         
         { echo "$OUT_VAR<<EOF"
@@ -189,7 +189,7 @@ runs:
           echo "::error::Failed to set variable '${{ inputs.variable-name }}' with type '${TYPE} ${TYPE_OPT}'" >&2
         }
         status=$?
-        [[ $status -ne 0 ]] && [[ "$EONERROR" =~ ^true$ ]] && exit $status
+        [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
         [[ $status -eq 0 ]] && echo "success=true" >> "$GITHUB_OUTPUT" || echo "success=false" >> "$GITHUB_OUTPUT"
         
         echo "::debug::Successfully executed: printf '%s' '${{ inputs.body }}' | gh variable set '${{ inputs.variable-name }}' ${GH_CMD[*]}"

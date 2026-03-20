@@ -108,12 +108,12 @@ runs:
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         TYPE: >-
           ${{ case(
-            inputs.env != '', '--env ${{ inputs.env }}',
-            inputs.org != '', '--org ${{ inputs.org }}', 
-            inputs.repo != '', '--repo ${{ inputs.repo }}',
             inputs.env == 'true', '--env ${{ github.environment }}',
             inputs.org == 'true', '--org ${{ github.repository_owner }}',
             inputs.repo == 'true', '--repo ${{ github.repository }}',
+            inputs.env != '', '--env ${{ inputs.env }}',
+            inputs.org != '', '--org ${{ inputs.org }}', 
+            inputs.repo != '', '--repo ${{ inputs.repo }}',
             '--repo ${{ github.repository }}'
           ) }}
         TYPE_OPT: >-
