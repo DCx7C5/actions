@@ -45,11 +45,11 @@ inputs:
     required: false
     description: "Output JSON with the specified fields"
     default: ''
-  gh_token:
+  gh-token:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
     default: ''
-  exit_on_error:
+  exit-on-error:
     required: false
     description: "Whether the action should fail if the variable cannot be retrieved or set (true/false, defaults to 'true')"
     default: 'true'
@@ -77,7 +77,7 @@ runs:
       id: validate_and_parse
       shell: bash
       env:
-        EONERROR: "${{ inputs.exit_on_error }}"
+        EONERROR: "${{ inputs.exit-on-error }}"
         TYPE: >-
           ${{ case(
             inputs.env == 'true', '--env ${{ github.environment }}',
@@ -90,7 +90,7 @@ runs:
           ) }}
         TYPE_OPT: >-
           ${{ case( 
-            inputs.org != '' && inputs.repos != '', '--repos $(echo "${{ inputs.repos }}" | tr '\n\ ' ',' | sed 's/,$//")',
+            inputs.org != '' && inputs.repos != '', '--repos $(echo "${{ inputs.repos }}" | tr '\n\ \,' ',' | sed 's/,$//')',
             inputs.org != '' && inputs.visibility != '', '--visibility ${{ inputs.visibility }}',
           ) }}
         INPUTS_JSON: "${{ inputs.json }}"
@@ -99,8 +99,8 @@ runs:
         INPUTS_REPOS: "${{ inputs.repos }}"
         INPUTS_ORG: "${{ inputs.org }}"
       run: |
-        if [[ -n "${{ inputs.github_token }}" ]]; then 
-          echo "::add-mask::${{ inputs.github_token }}"
+        if [[ -n "${{ inputs.gh-token }}" ]]; then 
+          echo "::add-mask::${{ inputs.gh-token }}"
         fi
 
         if [[ ! "${{ inputs.env != '' && 'true' }}${{ inputs.repo != '' && 'true' }}${{ inputs.org != '' && 'true' }}" =~ ^true$ ]]; then
@@ -144,22 +144,17 @@ runs:
       if: inputs.action == 'get'
       shell: bash
       env:
-        GH_TOKEN: "${{ inputs.gh_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+        GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         TYPE: "${{ steps.validate_and_parse.outputs.type }}"
         TYPE_OPT: "${{ steps.validate_and_parse.outputs.type_opt }}"
         OUT_VAR: "${{ inputs.json != '' && 'json' || 'value' }}"
-        EONERROR: "${{ inputs.exit_on_error }}"
-        GET_OPTS: >-
-          ${{ case(
-            inputs.action == 'get' && inputs.json != '', '--json "$(echo "${{ inputs.json }}" | tr '\n\ ' ',' | sed 's/,$//")"',
-            inputs.action == 'get' && inputs.jq != '', '-q "${{ inputs.jq }}"',
-          ) }}
+        EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_VARIABLE_NAME: "${{ inputs.variable-name }}"
       run: |
         GH_CMD=(${TYPE} ${TYPE_OPT})
-        
-        [[ -n "${{ steps.validate.outputs.json }}" ]] && GH_CMD+=(${{ steps.validate.outputs.json }})
-        [[ -n "${{ inputs.jq }}" ]] && GH_CMD+=(${{ inputs.jq }})
+                
+        [ -n "${{ steps.validate.outputs.json }}" ] && GH_CMD+=($(echo "${{ steps.validate.outputs.json }}" | tr '\n\ \,' ',' | sed 's/,$//'))
+        [ -n "${{ inputs.jq }}" ] && GH_CMD+=(${{ inputs.jq }})
         
         value=$(gh variable get '$INPUTS_VARIABLE_NAME' "${GH_CMD[@]}" || {
           echo "::error::Failed to get variable '$INPUTS_VARIABLE_NAME' with type '${TYPE}'" >&2
@@ -167,7 +162,9 @@ runs:
         
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
-        [[ $status -eq 0 ]] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { echo "success=false" >> "$GITHUB_OUTPUT"; }
+        [[ $status -eq 0 && -n "$value" ]] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { 
+          echo "success=false" >> "$GITHUB_OUTPUT" 
+        }
         
         { echo "$OUT_VAR<<EOF"
           echo "$value"
@@ -175,16 +172,16 @@ runs:
         } >> "$GITHUB_OUTPUT"
         
         echo "::debug::Successfully executed: gh variable get '$INPUTS_VARIABLE_NAME' ${GH_CMD[*]}"
-    
+
     - name: Set GitHub Variable
       id: set_variable
       if: inputs.action == 'set'
       shell: bash
       env:
-        GH_TOKEN: "${{ inputs.gh_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+        GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         TYPE: "${{ steps.validate.outputs.type }}"
         TYPE_OPT: "${{ steps.validate.outputs.type_opt }}"
-        EONERROR: "${{ inputs.exit_on_error }}"
+        EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_VARIABLE_NAME: "${{ inputs.variable-name }}"
       run: |
         GH_CMD=(${TYPE} ${TYPE_OPT})
@@ -194,6 +191,8 @@ runs:
         }
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
-        [[ $status -eq 0 ]] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { echo "success=false" >> "$GITHUB_OUTPUT"; }
+        [ $status -eq 0 ] && { echo "success=true" >> "$GITHUB_OUTPUT"; } || { 
+          echo "success=false" >> "$GITHUB_OUTPUT"
+        }
         
         echo "::debug::Successfully executed: printf '%s' '<body>' | gh variable set $INPUTS_VARIABLE_NAME' ${GH_CMD[*]}"
