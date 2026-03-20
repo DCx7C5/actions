@@ -50,7 +50,7 @@ inputs:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
     default: ''
-  exit_on_error:
+  exit-on-error:
     required: false
     description: "Whether the action should fail if the secret cannot be retrieved or set (true/false, defaults to 'true')"
     default: 'true'
@@ -75,28 +75,29 @@ runs:
       id: validate_and_mask
       shell: bash
       env:
-        EONERROR: "${{ inputs.exit_on_error }}"
+        EONERROR: "${{ inputs.exit-on-error }}"
+        INPUTS_VISIBILITY: "${{ inputs.visibility }}"
       run: |
         if [[ -n '${{ inputs.body }}' ]]; then
           echo '::add-mask::${{ inputs.body }}'
         fi
         
-        if [[ -n "${{ inputs.github_token }}" ]]; then 
-          echo "::add-mask::${{ inputs.github_token }}"
+        if [[ -n "${{ inputs.gh-token }}" ]]; then 
+          echo "::add-mask::${{ inputs.gh-token }}"
         fi
         
         if [[ ! "${{ inputs.env != '' && 'true' }}${{ inputs.repo != '' && 'true' }}${{ inputs.org != '' && 'true' }}" =~ ^true$ ]]; then
           echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
-        elif [[ -n "${{ inputs.visibility }}" && ! "${{ inputs.visibility }}" =~ ^all|private|selected$ ]]; then
-          echo "::error::Invalid visibility '${{ inputs.visibility }}'. Valid options are: all, private, selected" >&2
+        elif [[ -n "$INPUTS_VISIBILITY" && ! "$INPUTS_VISIBILITY" =~ ^all|private|selected$ ]]; then
+          echo "::error::Invalid visibility '$INPUTS_VISIBILITY'. Valid options are: all, private, selected" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
-        elif [[ "${{ inputs.exit_on_error }}" =~ ^true|false$ ]]; then
-          echo "::error::Invalid value for 'exit_on_error': '${{ inputs.exit_on_error }}'. Valid options are: true, false" >&2
+        elif [[ "$EONERROR" =~ ^true|false$ ]]; then
+          echo "::error::Invalid value for 'exit_on_error': '$EONERROR'. Valid options are: true, false" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
         fi
         
-        if [[ "${{ inputs.visibility }}" == "selected" && -z "${{ inputs.repos }}" ]]; then
+        if [[ "$INPUTS_VISIBILITY" = 'selected' && -z "${{ inputs.repos }}" ]]; then
           echo "::warning::Visibility 'selected' has no repositories specified"
         fi
 
@@ -104,7 +105,7 @@ runs:
       id: set_secret
       shell: bash
       env:
-        EONERROR: "${{ inputs.exit_on_error }}"
+        EONERROR: "${{ inputs.exit-on-error }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         TYPE: >-
           ${{ case(
@@ -120,40 +121,39 @@ runs:
           ${{ case( 
             inputs.org != '' && inputs.repos != '', '--repos $(echo "${{ inputs.repos }}" | tr '\n\ ' ',' | sed 's/,$//")',
             inputs.org != '' && inputs.no_repos_select == 'true', '--no-repos-select',
-            inputs.org != '' && inputs.visibility == 'selected' && inputs.repos == '', '--repos ${{ github.repository }}'
           ) }}
-
+        VISIBILITY: "${{ inputs.visibility }}"
+        SECRET_NAME: "${{ inputs.secret-name }}"
       run: |
         GH_CMD+=(${TYPE} ${TYPE_OPT}) 
         
-        [[ -n "${{ inputs.visibility }}" ]] && GH_CMD+=(--visibility "${{ inputs.visibility }}")
+        [[ -n "$VISIBILITY" ]] && GH_CMD+=(--visibility "$VISIBILITY")
         
         [[ "${{ inputs.user }}" == 'true' ]] && GH_CMD+=(--user)
         [[ -n "${{ inputs.app }}" ]] && GH_CMD+=(--app "${{ inputs.app }}")
         
-        printf '%s' "${{ inputs.body }}" | gh secret set "${{ inputs.secret-name }}" "${GH_CMD[@]}" || {
+        printf '%s' "${{ inputs.body }}" | gh secret set "$SECRET_NAME" "${GH_CMD[@]}" || {
           echo "::error::Failed to set GitHub Secret" >&2
         }
         
         status=$?
         [ $status -eq 0 ] && { 
           echo "success=true" >> "$GITHUB_OUTPUT"
-          echo "::debug::Successfully set GitHub Secret '${{ inputs.secret-name }}' with arguments: ${GH_CMD[*]}"
-          echo "::notice::\e[1;32m✓\e[0m Successfully set GitHub Secret '${{ inputs.secret-name }}'"
+          echo "::debug::Successfully set GitHub Secret '$SECRET_NAME' with arguments: ${GH_CMD[*]}"
+          echo "::notice::\e[1;32m✓\e[0m Successfully set GitHub Secret '$SECRET_NAME'"
         } || { 
           echo "success=false" >> "$GITHUB_OUTPUT"
-          echo "::error::Failed to set GitHub Secret '${{ inputs.secret-name }}' with arguments: ${GH_CMD[*]}" >&2
-          echo "::error::\e[1;31m✗\e[0m Failed to set GitHub Secret '${{ inputs.secret-name }}'"
+          echo "::error::Failed to set GitHub Secret '$SECRET_NAME' with arguments: ${GH_CMD[*]}" >&2
+          echo "::error::\e[1;31m✗\e[0m Failed to set GitHub Secret '$SECRET_NAME'"
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
         }
-        
 
     - name: Print encrypted, base64-encoded value
       if: inputs.print == 'true'
       id: print_value
       shell: bash
       env:
-        EONERROR: "${{ inputs.exit_on_error }}"
+        EONERROR: "${{ inputs.exit-on-error }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         
