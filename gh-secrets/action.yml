@@ -106,7 +106,7 @@ runs:
         elif [[ -n "$INPUTS_VISIBILITY" && ! "$INPUTS_VISIBILITY" =~ ^all|private|selected$ ]]; then
           echo "::error::Invalid visibility '$INPUTS_VISIBILITY'. Valid options are: all, private, selected" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
-        elif [[ "$EONERROR" =~ ^true|false$ ]]; then
+        elif [[ "$EONERROR" =~ ^(true|false)$ ]]; then
           echo "::error::Invalid value for 'exit_on_error': '$EONERROR'. Valid options are: true, false" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
         fi

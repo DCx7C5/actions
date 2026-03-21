@@ -121,13 +121,13 @@ runs:
         elif [[ -n "$INPUTS_VISIBILITY" && ! "$INPUTS_VISIBILITY" =~ ^all|private|selected$ ]]; then
           echo "::error::Invalid visibility '$INPUTS_VISIBILITY'. Valid options are: all, private, selected" >&2
           exit 1
-        elif [[ "EONERROR" =~ ^true|false$ ]]; then
+        elif [[ "EONERROR" =~ ^(true|false)$ ]]; then
           echo "::error::Invalid value for 'exit_on_error': '$EONERROR'. Valid options are: true, false" >&2
           exit 1
-        elif [[ "$INPUTS_ACTION" =~ ^get|set|delete$ ]]; then
+        elif [[ "$INPUTS_ACTION" =~ ^(get|set|delete)$ ]]; then
           echo "::error::Invalid action '$INPUTS_ACTION'. Valid actions are: get, set, delete" >&2
           exit 1
-        elif [[ "$INPUTS_JQ_DECODE" =~ ^true|false$ ]]; then
+        elif [[ "$INPUTS_JQ_DECODE" =~ ^(true|false)$ ]]; then
           echo "::error::Invalid value for 'jq-decode': '$INPUTS_JQ_DECODE'. Valid options are: true, false" >&2
           exit 1
         fi
@@ -161,8 +161,10 @@ runs:
           fi
         fi
         
-        if [[ "${{ inputs.variable-name }}" == *$'\n'* ]]; then
-          
+        if [[ "${{ inputs.variable-name }}" == *$'\n'* && -n "${{ inputs.json }}" ]]; then
+          if [[ "${{ inputs.action }}" == 'set' ]]; then
+            echo "body=$(jq -rc <<< "${{ inputs.body }}")" >> "$GITHUB_OUTPUT"
+          fi
         fi
 
 
@@ -220,13 +222,14 @@ runs:
         VISIBILITY: "${{ steps.validate_and_parse.outputs.visibility }}"
         EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_VARIABLE_NAME: "${{ inputs.variable-name }}"
+        BODY: "${{ steps.validate_and_parse.outputs.body || inputs.body }}"
       run: |
         GH_CMD=(${TYPE})
         
         [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
         [ -n "$VISIBILITY" ] && GH_CMD+=(--visibility "${VISIBILITY}")
         
-        printf '%s' "${{ steps.validate_body.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
+        printf '%s' "${{ steps.validate_and_parse.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
         
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
