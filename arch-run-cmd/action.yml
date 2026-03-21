@@ -53,7 +53,7 @@ inputs:
 
 runs:
   using: docker
-  image: "${{ inputs.image }}"
+  image: arch-run-cmd:latest
   env:
     CI: "true"
     GITHUB_ACTIONS: "true"
