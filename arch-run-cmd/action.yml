@@ -91,6 +91,8 @@ runs:
     - name: Build Arch Linux Docker image
       id: build_image
       uses: ./docker-build-image
+      env:
+        GH_TOKEN: ${{ inputs.gh_token || env.GH_TOKEN || github.token }}
       with:
         image_working_directory: ${{ github.action_path }}
         runtime_working_directory: ${{ github.workspace }}
@@ -121,6 +123,8 @@ runs:
       id: run_cmd
       if: success()
       uses: ./docker-run-image
+      env:
+        GH_TOKEN: ${{ inputs.gh_token || env.GH_TOKEN || github.token }}
       with:
         working_directory: ${{ github.workspace }}
         ccache_dir: ${{ inputs.ccache_dir }}

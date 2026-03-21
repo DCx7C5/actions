@@ -62,7 +62,6 @@ jobs:
       - name: Test Arch Run Command Action
         id: test_arch_run_cmd
         uses: ./arch-run-cmd
-
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
