@@ -54,7 +54,7 @@ runs:
         # Owner in Kleinbuchstaben für GHCR
         owner="${{ github.repository_owner }}"
         owner="${owner,,}"
-        full_image="$registry_url/$owner/${{ inputs.image_tag }}:${{ inputs.image_version }}"
+        full_image="$registry_url/${{ github.repository }}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
 
         docker tag "${{ inputs.image_tag }}:${{ inputs.image_version }}" "$full_image"
         echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "$registry_url" -u ${{ github.actor }} --password-stdin
