@@ -78,13 +78,13 @@ runs:
       shell: bash
       env:
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || github.token }}"
-        DOCKERFILE: "${{ inputs.dockerfile_path || 'Dockerfile' }}"
         USER: "${{ inputs.user || env.USER || runner.user }}"
         GROUP: "${{ inputs.group || env.GROUP || runner.group }}"
         UID: "${{ inputs.uid || env.UID || '1000' }}"
         GID: "${{ inputs.gid || env.GID || '1000' }}"
         IMAGE_WORKING_DIR: "${{ inputs.image_working_directory || env.IMAGE_WORKING_DIR || './arch-run-cmd' }}"
         RUNTIME_WORKING_DIR: "${{ inputs.runtime_working_directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
+        DOCKERFILE: "${{ inputs.dockerfile_path || format('{0}/Dockerfile', "$IMAGE_WORKING_DIR") }}"
       working-directory: ${{ inputs.working_directory || env.WORKING_DIR || github.workspace || '.' }}
       run: |
         set -euo pipefail
