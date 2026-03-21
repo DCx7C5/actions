@@ -39,8 +39,14 @@ if [[ ! -d "$WORK_DIR" ]]; then
   if [[ "$(id -u)" == "0" ]]; then
     mkdir -p "$WORK_DIR"
   else
-    echo "ERROR: Cannot create work directory: $WORK_DIR (no permission, not root)" >&2
-    exit 1
+    echo "WARNING: Cannot create work directory: $WORK_DIR (no permission, not root)" >&2
+    if [[ -d "/github/workspace" && -w "/github/workspace" ]]; then
+      echo "Falling back to /github/workspace as work directory." >&2
+      WORK_DIR="/github/workspace"
+    else
+      echo "ERROR: /github/workspace is not available or not writable. Aborting." >&2
+      exit 1
+    fi
   fi
 fi
 cd "$WORK_DIR" || {
