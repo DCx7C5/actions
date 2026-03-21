@@ -27,7 +27,7 @@ inputs:
   user:
     description: "User name to create inside the container (defaults to runner.user)"
     required: false
-    default: ${{ runner.user }}
+    default: ''
 
 
 runs:
@@ -44,7 +44,6 @@ runs:
       shell: bash
       env:
         GH_TOKEN: "${{ inputs.gh_token || env.GH_TOKEN || github.token }}"
-        USER: "${{ inputs.user || github.actor }}"
       run: |
         set -euo pipefail
         echo "image_name: '${{ inputs.image_tag }}'"
@@ -61,12 +60,12 @@ runs:
         repo="${{ github.repository }}"
         repo_name="${repo##*/}"
         repo_owner="${repo%%/*}"
-        full_image="${registry_url,,}/${{ github.repository_owner || 'x' }}/${repo_name,,}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
+        full_image="${registry_url,,}/${{ github.repository_owner ||  'x' }}/${repo_name,,}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
         if [[ "$registry_url" == "*/x/*" ]]; then
           full_image="${registry_url,,}/${repo_owner,,}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
         fi
         docker tag "${{ inputs.image_tag }}:${{ inputs.image_version }}" "${full_image,,}"
-        echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "$registry_url" -u ${{ github.actor }} --password-stdin
+        echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "${registry_url,,}" -u ${{ github.actor }} --password-stdin
         docker push "${full_image,,}"
 
     - name: Logout
