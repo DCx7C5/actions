@@ -53,8 +53,8 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
           gh_token: ${{ steps.app_token.outputs.token }}
-          image_tag: ${{ inputs.image_tag }}
-          image_version: ${{ inputs.image_version }}
+          image_tag: ${{ inputs.image_tag || 'arch-run-cmd' }}
+          image_version: ${{ inputs.image_version || 'latest' }}
           enable_ccache: ${{ inputs.enable_ccache }}
           working_directory: ${{ github.workspace }}
           gpg_key: ''

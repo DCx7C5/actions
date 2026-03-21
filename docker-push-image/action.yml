@@ -40,20 +40,20 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        echo "image_name: '${{ inputs.image_name }}'"
-        echo "image_tag: '${{ inputs.image_tag }}'"
+        echo "image_name: '${{ inputs.image_tag }}'"
+        echo "image_tag: '${{ inputs.image_version }}'"
         echo "registry: '${{ inputs.registry }}'"
 
-        if [[ -z "${{ inputs.image_name }}" || -z "${{ inputs.image_tag }}" || -z "${{ inputs.registry }}" ]]; then
+        if [[ -z "${{ inputs.image_tag }}" || -z "${{ inputs.image_version }}" || -z "${{ inputs.registry }}" ]]; then
           echo "ERROR: image_name, image_tag und registry dürfen nicht leer sein!" >&2
           exit 1
         fi
         
         registry_url="${{ inputs.registry }}"
         registry_url="${registry_url%/}"
-        full_image="$registry_url/${{ inputs.image_name }}:${{ inputs.image_tag }}"
+        full_image="$registry_url/${{ inputs.image_tag }}:${{ inputs.image_version }}"
 
-        docker tag "${{ inputs.image_name }}:${{ inputs.image_tag }}" "$full_image"
+        docker tag "${{ inputs.image_tag }}:${{ inputs.image_version }}" "$full_image"
         echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "$registry_url" -u ${{ github.actor }} --password-stdin
         docker push "$full_image"
 
