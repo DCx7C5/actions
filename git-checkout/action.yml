@@ -23,7 +23,9 @@ inputs:
     description: 'Action to cd into after checkout'
     required: false
     default: ''
-
+  lfs:
+    description: 'Download Git LFS files'
+    default: 'false'
 
 runs:
   using: 'composite'
@@ -35,53 +37,59 @@ runs:
         REPOSITORY: ${{ inputs.repository || github.repository }}
         REF: ${{ inputs.ref || github.ref_name || github.sha }}
         WORKSPACE: ${{ inputs.path || github.workspace }}
+        LFS: ${{ inputs.lfs }}
       run: |
         set -euo pipefail
-        
-        
         TOKEN="${TOKEN:-${1:-}}"
         REPOSITORY="${REPOSITORY:-${2:-${GITHUB_REPOSITORY:-}}}"
         REF="${REF:-${3:-${GITHUB_REF_NAME:-${GITHUB_SHA:-HEAD}}}}"
         WORKSPACE="${WORKSPACE:-${4:-${GITHUB_WORKSPACE:-$(pwd)}}}"
-
+        LFS="${LFS:-false}"
+        
         if [[ -z "${TOKEN}" || -z "${REPOSITORY}" ]]; then
             echo "❌ ERROR: TOKEN and REPOSITORY are required"
             exit 1
         fi
-
-        OWNER="${REPOSITORY%%/*:-"${{ github.repository_owner }}}""
+        
+        OWNER="${REPOSITORY%%/*}"
         REPO="${REPOSITORY#*/}"
         mkdir -p "${WORKSPACE}"
         cd "${WORKSPACE}"
-
+        
         GIT_CRED="-c url.https://x-access-token:${TOKEN}@github.com/.insteadOf=https://github.com/"
-
+        
+        if [[ "${LFS}" == "true" ]]; then
+            echo "🦕 Git LFS enabled"
+            export GIT_LFS_SKIP_SMUDGE=1
+        fi
+        
         echo "🚀 Cloning ${REPOSITORY} @ ${REF} → ${WORKSPACE}"
-
+        
         if [[ "${REF}" =~ ^[0-9a-f]{40}$ ]]; then
             IS_SHA=true
         else
             IS_SHA=false
         fi
-
+        
         if [[ ! -d ".git" ]]; then
-            # Fresh clone
             if ${IS_SHA}; then
-                git ${GIT_CRED} clone --depth 1 --no-tags \
-                    "https://github.com/${OWNER}/${REPO}.git" .
+                git ${GIT_CRED} clone --depth 1 --no-tags "https://github.com/${OWNER}/${REPO}.git" .
                 git ${GIT_CRED} fetch --depth 1 origin "${REF}"
                 git checkout "${REF}"
             else
-                git ${GIT_CRED} clone --depth 1 --no-tags --branch "${REF}" \
-                    "https://github.com/${OWNER}/${REPO}.git" .
+                git ${GIT_CRED} clone --depth 1 --no-tags --branch "${REF}" "https://github.com/${OWNER}/${REPO}.git" .
             fi
         else
-            # Already checked out → update + clean
             git ${GIT_CRED} fetch --depth 1 origin
             git checkout "${REF}" 2>/dev/null || git checkout -B "$(basename "${REF}")" "${REF}"
             git clean -ffdx
         fi
         
+        if [[ "${LFS}" == "true" ]]; then
+            echo "🔄 Pulling LFS files..."
+            git ${GIT_CRED} lfs install
+            git ${GIT_CRED} lfs pull
+        fi
         [[ -d "${{ inputs.action }}" ]] && cd "${{ inputs.action }}"
         
         echo "✅ Checkout complete!"
