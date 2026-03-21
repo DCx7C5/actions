@@ -108,7 +108,7 @@ runs:
         elif [[ -n "$INPUTS_ORG" ]]; then
           TYPE="--org $INPUTS_ORG"
         fi
-        if [[  -n "$INPUTS_ORG"  && "$INPUTS_VISIBILITY" = 'selected' && -z "${{ inputs.repos }}" ]]; then
+        if [[ -n "$INPUTS_ORG"  && "$INPUTS_VISIBILITY" == "selected" && -z "${{ inputs.repos }}" ]]; then
           echo "::warning::Visibility 'selected' has no repositories specified"
         fi
         
