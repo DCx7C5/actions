@@ -97,7 +97,7 @@ runs:
           fi
         fi
         
-        cd "$(basename "$DOCKERFILE")" || exit 1
+        cd "$(dirname "$DOCKERFILE")" || exit 1
         
         IMAGE='${{ inputs.image_tag }}:${{ inputs.image_version }}'
         
