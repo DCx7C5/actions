@@ -115,7 +115,7 @@ runs:
           echo "::add-mask::$GH_TOKEN"
         fi
 
-        if [[ ! "${{ inputs.env != '' && 'true' }}${{ inputs.repo != '' && 'true' }}${{ inputs.org != '' && 'true' }}" =~ ^true$ ]]; then
+        if [[ ! "${{ inputs.env != '' && 'true' || '' }}${{ inputs.repo != '' && 'true' || '' }}${{ inputs.org != '' && 'true' || '' }}" =~ ^true$ ]]; then
           echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
           exit 1
         elif [[ -n "$INPUTS_VISIBILITY" && ! "$INPUTS_VISIBILITY" =~ ^all|private|selected$ ]]; then
