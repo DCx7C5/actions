@@ -23,7 +23,10 @@ inputs:
     description: "Working directory for the action (defaults to github.workspace)"
     required: false
     default: ''
-
+  user:
+    description: "User name to create inside the container (defaults to runner.user)"
+    required: false
+    default: ''
 
 
 runs:
@@ -33,8 +36,8 @@ runs:
       uses: docker/login-action@v4
       with:
         registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ inputs.gh_token }}
+        username: ${{ inputs.user || github.actor }}
+        password: ${{ inputs.gh_token || env.GH_TOKEN || github.token }}
 
     - id: push_image
       shell: bash
@@ -52,8 +55,7 @@ runs:
         registry_url="${{ inputs.registry }}"
         registry_url="${registry_url%/}"
         # Owner in Kleinbuchstaben für GHCR
-        owner="${owner,,}"
-        full_image="$registry_url/${{ github.repository }}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
+        full_image="$registry_url/$username/${{ inputs.image_tag }}:${{ inputs.image_version }}"
 
         docker tag "${{ inputs.image_tag }}:${{ inputs.image_version }}" "$full_image"
         echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "$registry_url" -u ${{ github.actor }} --password-stdin
