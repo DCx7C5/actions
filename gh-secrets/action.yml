@@ -162,16 +162,16 @@ runs:
         }
         
         status=$?
-        [ $status -eq 0 ] && { 
+        ic [ $status -eq 0 ]; then
           echo "success=true" >> "$GITHUB_OUTPUT"
           echo "::debug::Successfully set GitHub Secret '$SECRET_NAME' with arguments: ${GH_CMD[*]}"
           echo "::notice::Successfully set GitHub Secret '$SECRET_NAME'"
-        } || { 
+        else
           echo "success=false" >> "$GITHUB_OUTPUT"
           echo "::error::Failed to set GitHub Secret '$SECRET_NAME' with arguments: ${GH_CMD[*]}" >&2
           echo "::error::Failed to set GitHub Secret '$SECRET_NAME'"
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
-        }
+        fi
 
     - name: Print encrypted, base64-encoded value
       if: inputs.action == 'set' && inputs.print == 'true'
@@ -185,13 +185,13 @@ runs:
         echo "secret_value=$(printf '%s' "${{ inputs.body }}" | gh secret set --no-store)" >> "$GITHUB_OUTPUT"
         
         status=$?
-        [ $status -ne 0 ] && {
+        if [ $status -ne 0 ]; then
           echo "::error::Failed to print encrypted value of the secret" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
-        } || { 
+        else
           echo "::debug::Successfully printed encrypted, base64-encoded value of the secret to outputs.secret_value"
           echo "::notice::Encrypted, base64-encoded value of the secret is available in 'encrypted-value' output"
-        }
+        fi
 
     - name: Delete secret if action is set to 'delete'
       if: inputs.action == 'delete'
@@ -207,12 +207,12 @@ runs:
         gh variable delete "$SECRET_NAME" "${GH_CMD[@]}"
 
         status=$?
-        [ $status -eq 0 ] && { 
+        if [ $status -eq 0 ]; then 
           echo "success=true" >> "$GITHUB_OUTPUT"
           echo "::debug::Successfully executed: gh secret delete $SECRET_NAME ${GH_CMD[*]}"
           echo "::notice::GitHub Secret '$SECRET_NAME' deleted successfully"
-        } || { 
+        else
           echo "success=false" >> "$GITHUB_OUTPUT"
           echo "::error::Failed to delete GitHub Secret '$SECRET_NAME' with arguments: ${GH_CMD[*]}" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
-        }
+        fi
