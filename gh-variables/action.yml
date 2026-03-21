@@ -166,9 +166,9 @@ runs:
           fi
         fi
         
-        if [[ "${{ inputs.variable-name }}" == *$'\n'* && -n "${{ inputs.json }}" ]]; then
-          if [[ "${{ inputs.action }}" == 'set' ]]; then
-            echo "body=$(jq -rc <<< "${{ inputs.body }}")" >> "$GITHUB_OUTPUT"
+        if [[ "$INPUTS_VARIABLE_NAME" == *$'\n'* && -n "$INPUTS_JSON" ]]; then
+          if [[ "$INPUTS_ACTION" == 'set' ]]; then
+            echo "body=$(jq -rc <<< "$INPUTS_BODY")" >> "$GITHUB_OUTPUT"
           fi
         fi
 
