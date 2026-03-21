@@ -93,7 +93,7 @@ runs:
       uses: ./git-checkout
       with:
         gh_token: ${{ inputs.gh_token || env.GH_TOKEN || github.token }}
-        action: ''
+        action: "${{ inputs.image || format('{0}:{1}', inputs.image_tag, inputs.image_version) }}"
 
     - name: Build Arch Linux Docker image
       id: build_image

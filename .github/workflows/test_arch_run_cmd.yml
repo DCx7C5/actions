@@ -2,6 +2,16 @@ name: "Test Arch Run Command Action"
 on:
   workflow_dispatch:
     inputs:
+      image_tag:
+        description: "The name of the Docker image to build and run"
+        required: false
+        default: 'arch-run-cmd'
+        type: string
+      image_version:
+        description: "The version tag of the Docker image to build and run"
+        required: false
+        default: 'latest'
+        type: string
       enable_ccache:
         description: "Enable ccache in the Arch Run Command Action"
         required: false
@@ -29,19 +39,25 @@ jobs:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
 
-      - uses: actions/checkout@v5
+      - uses: ./git-checkout
         with:
-          token: ${{ steps.app_token.outputs.token }}
+          gh_token: ${{ steps.app_token.outputs.token }}
+          action: 'docker-build-image'
 
       - name: Build Arch Run Command Action Image
         uses: ./docker-build-image
         with:
           gh_token: ${{ steps.app_token.outputs.token }}
           dockerfile_path: './arch-run-cmd/Dockerfile'
-          image_tag: 'arch-run-cmd'
-          image_version: 'latest'
+          image_tag: ${{ inputs.image_tag || 'arch-run-cmd' }}
+          image_version: ${{ inputs.image_version || 'latest' }}
           runtime_working_directory: ${{ github.workspace }}
-          image_working_directory: '${{ github.workspace }}/arch-run-cmd/'
+          image_working_directory: ${{ format('{0}/arch-run-cmd', github.workspace) }}
+
+      - uses: ./git-checkout
+        with:
+          gh_token: ${{ steps.app_token.outputs.token }}
+          action: 'arch-run-cmd'
 
       - name: Test Arch Run Command Action
         uses: ./docker-run-image
