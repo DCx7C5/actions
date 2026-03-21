@@ -1,3 +1,5 @@
+[![Test gh-variables and gh-secrets in GitHub Actions](https://github.com/DCx7C5/actions/actions/workflows/test_gh_variables_secrets.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/test_gh_variables_secrets.yml)
+
 # Dystopian Actions
 
 Central index for the local GitHub Actions in this repository.
@@ -106,10 +108,10 @@ jobs:
 | Action                                     | Purpose                                                      |
 |--------------------------------------------|--------------------------------------------------------------|
 | [`arch-run-cmd`](./arch-run-cmd)           | Run commands in a controlled Arch Linux container/toolchain. |
-| [`json-packages`](aur-json-packages)         | Query and mutate `.ci/packages.json` with `jq`.              |
+| [`json-packages`](aur-json-packages)       | Query and mutate `.ci/packages.json` with `jq`.              |
 | [`tar-create`](./tar-create)               | Build tar archives from selected files.                      |
-| [`store-as-secret`](./store-as-secret)     | Store generated values as GitHub secret.                     |
-| [`store-as-variable`](./store-as-variable) | Store generated values as GitHub Actions variable.           |
+| [`gh-secrets`](./gh-secrets)               | Store generated values as GitHub secret.                     |
+| [`gh-variables`](./gh-variables)           | Store generated values as GitHub Actions variable.           |
 | [`gh-upload-assets`](./gh-upload-assets)   | Release asset upload helper (also used by release creation). |
 | [`tg-notify`](./tg-notify)                 | Send Telegram notifications.                                 |
 | [`tg-notify-release`](./tg-notify-release) | Send Telegram release notifications.                         |
@@ -119,4 +121,3 @@ jobs:
 - Keep `action.yml` descriptions short and explicit; README can hold the detailed behavior.
 - When changing action inputs/outputs, update the action README in the same commit.
 - Prefer adding small validation guards over silently skipping invalid states.
-
