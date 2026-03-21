@@ -90,9 +90,9 @@ runs:
         EONERROR: "${{ inputs.exit-on-error }}"
         TYPE: >-
           ${{ case(
-            inputs.env == 'true', '--env ${{ github.environment }}',
-            inputs.org == 'true', '--org ${{ github.repository_owner }}',
-            inputs.repo == 'true', '--repo ${{ github.repository }}',
+            inputs.env == 'true', '--env '${{ github.environment }},
+            inputs.org == 'true', '--org '${{ github.repository_owner }},
+            inputs.repo == 'true', '--repo '${{ github.repository }},
             inputs.env != '', '--env ${{ inputs.env }}',
             inputs.org != '', '--org ${{ inputs.org }}', 
             inputs.repo != '', '--repo ${{ inputs.repo }}',
