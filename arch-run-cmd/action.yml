@@ -19,6 +19,10 @@ inputs:
         description: "ccache directory for build caching"
         required: false
         default: ''
+    repo_owner:
+        description: "Owner of the files created inside the container (defaults to github.actor)"
+        required: false
+        default: ${{ github.repository_owner }}
     user:
         description: "User name to create inside the container (defaults to runner.user)"
         required: false
