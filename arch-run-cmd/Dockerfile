@@ -112,7 +112,7 @@ RUN cat <<'MAKEPKG' >> /rootfs/etc/makepkg.conf
 
 # ===== Container Optimization =====
 MAKEFLAGS="-j$(nproc)"
-CCACHE_DIR="/github/workspace/.ccache"
+CCACHE_DIR="${WORKING_DIR}/.ccache"
 CCACHE_MAXSIZE="1G"
 
 # Aggressive size optimization
