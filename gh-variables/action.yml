@@ -88,16 +88,6 @@ runs:
       shell: bash
       env:
         EONERROR: "${{ inputs.exit-on-error }}"
-        TYPE: >-
-          ${{ case(
-            inputs.env == 'true', '--env '${{ github.environment }},
-            inputs.org == 'true', '--org '${{ github.repository_owner }},
-            inputs.repo == 'true', '--repo '${{ github.repository }},
-            inputs.env != '', '--env ${{ inputs.env }}',
-            inputs.org != '', '--org ${{ inputs.org }}', 
-            inputs.repo != '', '--repo ${{ inputs.repo }}',
-            '--repo ${{ github.repository }}'
-          ) }}
         INPUTS_REPOS: "${{ inputs.repos }}"
         TYPE_OPT: >-
           ${{ case(
@@ -142,6 +132,20 @@ runs:
 
         if [[ -n "$INPUTS_ORG" && -n "$INPUTS_REPOS" && -z "$INPUTS_VISIBILITY" ]]; then
           echo "visibility=all" >> "$GITHUB_OUTPUT"
+        fi
+
+        if [[ "${{ inputs.env }}" =~ ^true$ ]]; then
+          TYPE="--env ${{ github.environment }}"
+        elif [[ "${{ inputs.repo }}" =~ ^true$ ]]; then
+          TYPE="--repo ${{ github.repository }}"
+        elif [[ "${{ inputs.org }}" =~ ^true$ ]]; then
+          TYPE="--org ${{ github.repository_owner }}"
+        elif [[ "${{ inputs.env }}" != '' ]]; then
+          TYPE="--env ${{ inputs.env }}"
+        elif [[ "${{ inputs.repo }}" != '' ]]; then
+          TYPE="--repo ${{ inputs.repo }}"
+        elif [[ "${{ inputs.org }}" != '' ]]; then
+          TYPE="--org ${{ inputs.org }}"
         fi
 
         [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
