@@ -62,8 +62,4 @@ jobs:
           run_with_sudo: 'true'
           working_directory: ${{ github.workspace }}
           gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
-          run: |
-            set -euo pipefail
-            echo "Hello, World!" > message.txt
-            printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --local-user "$GPG_KEY_ID" --output message.txt.sig --detach-sig message.txt 
-            ls -als
+          run: "printf '%s' '${{ secrets.GPG_PASSPHRASE }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --local-user $GPG_KEY_ID --output message.txt.sig --detach-sig message.txt"
