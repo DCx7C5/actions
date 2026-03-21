@@ -4,6 +4,10 @@ author: "DCx7C5"
 
 
 inputs:
+  action:
+    required: false
+    description: "Action to perform (defaults to 'set', 'set/delete' is currently supported)"
+    default: 'set'
   secret-name:
     required: true
     description: "Name of GitHub Secret to create or update"
@@ -77,6 +81,16 @@ runs:
       env:
         EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_VISIBILITY: "${{ inputs.visibility }}"
+        TYPE: >-
+          ${{ case(
+            inputs.env == 'true', '--env ${{ github.environment }}',
+            inputs.org == 'true', '--org ${{ github.repository_owner }}',
+            inputs.repo == 'true', '--repo ${{ github.repository }}',
+            inputs.env != '', '--env ${{ inputs.env }}',
+            inputs.org != '', '--org ${{ inputs.org }}', 
+            inputs.repo != '', '--repo ${{ inputs.repo }}',
+            '--repo ${{ github.repository }}'
+          ) }}
       run: |
         if [[ -n '${{ inputs.body }}' ]]; then
           echo '::add-mask::${{ inputs.body }}'
@@ -100,6 +114,8 @@ runs:
         if [[ "$INPUTS_VISIBILITY" = 'selected' && -z "${{ inputs.repos }}" ]]; then
           echo "::warning::Visibility 'selected' has no repositories specified"
         fi
+        
+        [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
 
     - name: Set GitHub Secret
       id: set_secret
@@ -107,16 +123,7 @@ runs:
       env:
         EONERROR: "${{ inputs.exit-on-error }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
-        TYPE: >-
-          ${{ case(
-            inputs.env == 'true', '--env ${{ github.environment }}',
-            inputs.org == 'true', '--org ${{ github.repository_owner }}',
-            inputs.repo == 'true', '--repo ${{ github.repository }}',
-            inputs.env != '', '--env ${{ inputs.env }}',
-            inputs.org != '', '--org ${{ inputs.org }}', 
-            inputs.repo != '', '--repo ${{ inputs.repo }}',
-            '--repo ${{ github.repository }}'
-          ) }}
+        TYPE: "${{ steps.validate_and_mask.outputs.type }}"
         TYPE_OPT: >-
           ${{ case( 
             inputs.org != '' && inputs.repos != '', '--repos $(echo "${{ inputs.repos }}" | tr '\n\ ' ',' | sed 's/,$//")',
@@ -124,6 +131,7 @@ runs:
           ) }}
         VISIBILITY: "${{ inputs.visibility }}"
         SECRET_NAME: "${{ inputs.secret-name }}"
+
       run: |
         GH_CMD+=(${TYPE} ${TYPE_OPT}) 
         
@@ -166,4 +174,31 @@ runs:
         } || { 
           echo "::debug::Successfully printed encrypted, base64-encoded value of the secret to outputs.secret_value"
           echo "::notice::\e[1;32m✓\e[0m Encrypted, base64-encoded value of the secret is available in 'encrypted-value' output"
+        }
+
+    - name: Delete secret if action is set to 'delete'
+      if: inputs.action == 'delete'
+      shell: bash
+      env:
+        EONERROR: "${{ inputs.exit-on-error }}"
+        GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+        TYPE: "${{ steps.validate_and_mask.outputs.type }}"
+        TYPE_OPT: "${{ steps.validate_and_parse.outputs.type_opt || '' }}"
+        SECRET_NAME: "${{ inputs.secret-name }}"
+      run: |
+        GH_CMD=(${TYPE})
+
+        [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
+
+        gh variable delete "$SECRET_NAME" "${GH_CMD[@]}"
+
+        status=$?
+        [ $status -eq 0 ] && { 
+          echo "success=true" >> "$GITHUB_OUTPUT"
+          echo "::debug::Successfully executed: gh secret delete $SECRET_NAME ${GH_CMD[*]}"
+          echo "::notice::\e[1;32m✓\e[0m GitHub Secret '$SECRET_NAME' deleted successfully"
+        } || { 
+          echo "success=false" >> "$GITHUB_OUTPUT"
+          echo "::error::\e[1;31m✗\e[0m Failed to delete GitHub Secret '$SECRET_NAME' with arguments: ${GH_CMD[*]}" >&2
+          [[ "$EONERROR" =~ ^true$ ]] && exit $status
         }
