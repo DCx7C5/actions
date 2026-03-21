@@ -52,7 +52,6 @@ runs:
         registry_url="${{ inputs.registry }}"
         registry_url="${registry_url%/}"
         # Owner in Kleinbuchstaben für GHCR
-        owner="${{ github.repository_owner }}"
         owner="${owner,,}"
         full_image="$registry_url/${{ github.repository }}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
 
