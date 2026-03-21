@@ -29,6 +29,13 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3   # ← best practice
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.gh_token }}
+
     - id: push_image
       shell: bash
       working-directory: ${{ inputs.working_directory || env.WORKING_DIRECTORY || github.workspace }}
