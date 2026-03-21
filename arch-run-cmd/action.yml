@@ -60,7 +60,7 @@ runs:
     DISABLE_TELEMETRY: "1"
     PYTHONDONTWRITEBYTECODE: "1"
     RUN_WITH_SUDO: "${{ inputs.run_with_sudo }}"
-  pre-entrypoint: |
+  pre-entrypoint: |-
     set -euo pipefail
     
     if [[ -d "$GNUPGHOME" && -n "${{ inputs.gpg_key_id }}" && -n '${{ inputs.gpg_passhphrase }}' && "${{ inputs.preset_cache }}" == 'true' ]]; then
