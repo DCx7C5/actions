@@ -101,12 +101,11 @@ jobs:
           dockerfile_path: ${{ format('{0}/arch-run-cmd/Dockerfile', github.workspace) }}
           github_token: ${{ steps.app_token.outputs.token }}
           image_version: 'latest'
-          image_tag: 'arch-run-cmd'
+          image_tag: 'arch-run-cmd-dcx'
 
       - name: Test Arch Run Command Action with Detached Signature
         uses: ./arch-run-cmd
         with:
-          image: arch-run-cmd:latest
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}
