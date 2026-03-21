@@ -1,6 +1,7 @@
 FROM alpine:3.22 AS bootstrap
 
 ARG USER
+ARG GROUP
 ARG WORKING_DIR
 ARG CCACHE_DIR
 ARG UID
@@ -83,7 +84,7 @@ RUN mkdir -p /rootfs/dev /rootfs/proc /rootfs/sys /rootfs/run \
 
 # Setup user & sudo (no dbus needed in minimal container)
 RUN groupadd -R /rootfs ${USER:-runner} 2>/dev/null || true \
-  && useradd -R /rootfs -m -u ${UID:-1000} -g ${USER:-runner} -s /bin/bash ${USER:-runner} 2>/dev/null || true \
+  && useradd -R /rootfs -m -u ${UID:-1000} -g ${GROUP:-runner} -s /bin/bash ${USER:-runner} 2>/dev/null || true \
   && mkdir -p /rootfs/etc/sudoers.d \
   && echo "${USER:-runner} ALL=(ALL) NOPASSWD: ALL" > "/rootfs/etc/sudoers.d/${USER:-runner}-nopasswd" \
   && chmod 0440 "/rootfs/etc/sudoers.d/${USER:-runner}-nopasswd" 2>/dev/null || true
