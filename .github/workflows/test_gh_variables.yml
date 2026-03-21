@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'gh-variables/**'
+      - 'gh-variables/action.yml'
+      - '.github/workflows/test_gh_variables.yml'
 
 permissions: 
   contents: write
