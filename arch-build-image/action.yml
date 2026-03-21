@@ -20,6 +20,11 @@ inputs:
     required: false
     default: ''
 
+outputs:
+  image_tag:
+    description: "The Docker image tag that was built"
+    value: ${{ steps.build_image.outputs.image_tag }}
+
 
 runs:
   using: composite
@@ -48,4 +53,5 @@ runs:
           -f ./arch-run-cmd/Dockerfile \
           -t $IMAGE_TAG:latest .
         
+        echo "image_tag=$IMAGE_TAG:latest" >> $GITHUB_OUTPUT
         echo "::notice::Docker image built successfully: $IMAGE_TAG"
