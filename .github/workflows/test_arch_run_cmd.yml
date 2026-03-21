@@ -31,6 +31,7 @@ on:
       - 'docker-build-image/**'
       - 'docker-push-image/**'
       - 'docker-run-image/**'
+      - '.github/workflows/test_arch_run_cmd.yml'
 
 
 concurrency:
@@ -98,5 +99,5 @@ jobs:
           gpg_passhphrase: ''
           import_key_during_build: 'false'
           preset_passphrase_cache: 'false'
-          run_with_sudo: 'false'
+          run_with_sudo: 'true'
           command: 'ls -la / && whoami && echo "Hello from inside the Arch Linux container!"'
