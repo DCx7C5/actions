@@ -39,10 +39,12 @@ jobs:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
 
-      - uses: ./git-checkout
+      - id: checkout
+        name: Checkout repository
+        uses: actions/checkout@v5
         with:
-          gh_token: ${{ steps.app_token.outputs.token }}
-          action: 'docker-build-image'
+          fetch-depth: 0
+          token: '${{ steps.app_token.outputs.token }}'
 
       - name: Build Arch Run Command Action Image
         uses: ./docker-build-image
@@ -53,11 +55,6 @@ jobs:
           image_version: ${{ inputs.image_version || 'latest' }}
           runtime_working_directory: ${{ github.workspace }}
           image_working_directory: ${{ format('{0}/arch-run-cmd', github.workspace) }}
-
-      - uses: ./git-checkout
-        with:
-          gh_token: ${{ steps.app_token.outputs.token }}
-          action: 'arch-run-cmd'
 
       - name: Test Arch Run Command Action
         uses: ./docker-run-image
