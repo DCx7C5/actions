@@ -1,3 +1,4 @@
+[![Update Repository Tag & Release](https://github.com/DCx7C5/actions/actions/workflows/update_repo_tag.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/update_repo_tag.yml)
 [![Test gh-variables and gh-secrets in GitHub Actions](https://github.com/DCx7C5/actions/actions/workflows/test_gh_variables_secrets.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/test_gh_variables_secrets.yml)
 
 # Dystopian Actions
