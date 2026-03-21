@@ -1,6 +1,6 @@
 FROM alpine:3.22 AS bootstrap
 
-ARG USER=builder
+ARG USER=runner
 ARG MAKE_JOBS=4
 
 # Install minimal pacman + tools (aggressive size optimization)
@@ -121,7 +121,7 @@ COPY --chmod=755 --chown=1000:1000 post_entrypoint.sh /rootfs/post_entrypoint.sh
 
 FROM scratch AS arch_minimal
 
-ARG USER=builder
+ARG USER=runner
 ARG BUILD_DATE
 ARG VCS_REF
 
@@ -136,14 +136,7 @@ ENV USER=${USER} \
 
 COPY --from=bootstrap /rootfs/ /
 
-# Stelle sicher, dass /github/workspace existiert und builder gehört
-RUN mkdir -p /github/workspace && chown 1000:1000 /github/workspace
-
-WORKDIR /github/workspace
-
-
-# Erstelle /home/runner für GitHub Actions Kompatibilität
-RUN mkdir -p /home/runner && chown 1000:1000 /home/runner
+WORKDIR /home/runner
 
 USER ${USER}
 

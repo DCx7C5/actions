@@ -62,4 +62,5 @@ jobs:
           github_token: ${{ steps.app_token.outputs.token }}
           run_with_sudo: 'true'
           gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
-        run: 'echo "Hello, World!"'
+          run: 'echo "Hello, World!"'
+        run:
