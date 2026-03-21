@@ -1,14 +1,17 @@
 FROM alpine:3.22 AS bootstrap
 
-ARG USER
-ARG GROUP
 ARG WORKING_DIR
 ARG CCACHE_DIR
 ARG GNUPGHOME
+ARG USER
+ARG GROUP
 ARG UID
 ARG GID
 ARG MAKE_JOBS=4
 ENV USER=${USER:-runner} \
+    GROUP=${GROUP:-runner} \
+    UID=${UID:-1000} \
+    GID=${GID:-1000} \
     MAKEFLAGS="-j${MAKE_JOBS}" \
     WORKING_DIR=${WORKING_DIR:-"/home/$USER/work"} \
     CCACHE_DIR=${CCACHE_DIR:-"/home/$USER/work/.ccache"} \
@@ -127,22 +130,25 @@ MAKEPKG
 # Copy entrypoint with secure permissions
 
 # Copy entrypoint and post-entrypoint scripts with correct permissions
-COPY --chmod=755 --chown=1000:1000 entrypoint.sh /rootfs/entrypoint.sh
-COPY --chmod=755 --chown=1000:1000 post_entrypoint.sh /rootfs/post_entrypoint.sh
+COPY --chmod=755 --chown=$UID:$GID entrypoint.sh /rootfs/entrypoint.sh
+COPY --chmod=755 --chown=$UID:$GID post_entrypoint.sh /rootfs/post_entrypoint.sh
 
 
 FROM scratch AS arch_minimal
 
-ARG USER
-ARG GROUP
 ARG BUILD_DATE
 ARG VCS_REF
+ARG USER
+ARG GROUP
 ARG WORKING_DIR
 ARG CCACHE_DIR
 ARG GNUPGHOME
 ARG UID
 ARG GID
 ENV USER=${USER:-runner} \
+    GROUP=${GROUP:-runner} \
+    UID=${UID:-1000} \
+    GID=${GID:-1000} \
     MAKEFLAGS="-j${MAKE_JOBS}" \
     WORKING_DIR=${WORKING_DIR:-"/home/$USER/work"} \
     CCACHE_DIR=${CCACHE_DIR:-"/home/$USER/work/.ccache"} \

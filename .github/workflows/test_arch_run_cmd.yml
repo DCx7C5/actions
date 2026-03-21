@@ -33,21 +33,18 @@ jobs:
         with:
           token: ${{ steps.app_token.outputs.token }}
 
-      - name: Build Arch Run Command Action
-        id: build-arch
-        uses: ./arch-build-image
+      - name: Build Arch Run Command Action Image
+        uses: ./docker-build-image
         with:
-          image_working_directory: ${{ format('{0}/arch-run-cmd', github.workspace) }}
-          runtime_working_directory: ${{ github.workspace }}
-          ccache_dir: ${{ inputs.ccache_dir }}
-          gpg_home: ${{ inputs.gpg_home }}
-          dockerfile_path: ${{ format('{0}/arch-run-cmd/Dockerfile', github.workspace) }}
           github_token: ${{ steps.app_token.outputs.token }}
+          dockerfile_path: './arch-run-cmd/Dockerfile'
+          image_tag: 'arch-run-cmd'
           image_version: 'latest'
-          image_tag: 'arch-run-cmd-dcx'
+          runtime_working_directory: ${{ github.workspace }}
+          image_working_directory: '${{ github.workspace }}/arch-run-cmd/'
 
       - name: Test Arch Run Command Action
-        uses: ./arch-run-cmd
+        uses: ./docker-run-image
         with:
           github_token: ${{ steps.app_token.outputs.token }}
           ccache_dir: "${{ github.workspace }}/.ccache"
@@ -58,60 +55,3 @@ jobs:
 
           command: |
             echo "Hello, World!" && ls -als && pwd
-
-  test-sign-detached:
-    runs-on: ubuntu-latest
-    steps:
-      - name: GitHub App Token
-        id: app_token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
-          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
-      - uses: actions/checkout@v5
-        with:
-          token: ${{ steps.app_token.outputs.token }}
-          repository: 'DCx7C5/actions'
-
-      - name: Import GPG key
-        id: gpg_import
-        uses: ./gpg-import
-        env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
-        with:
-          gpg_home: ${{ format('{0}/.gnupg', github.workspace)}}
-          method: 'inline'
-          gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
-          delete_after_import: 'true'
-          configure_git: 'true'
-          setup_home: 'true'
-          preset_pass: 'false'
-
-      - name: Build Arch Run Command Action
-        id: build-arch
-        uses: ./arch-build-image
-
-        with:
-          image_working_directory: ${{ format('{0}/arch-run-cmd', github.workspace) }}
-          runtime_working_directory: ${{ github.workspace }}
-          ccache_dir: ${{ inputs.ccache_dir }}
-          gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
-          dockerfile_path: ${{ format('{0}/arch-run-cmd/Dockerfile', github.workspace) }}
-          github_token: ${{ steps.app_token.outputs.token }}
-          image_version: 'latest'
-          image_tag: 'arch-run-cmd-dcx'
-
-      - name: Test Arch Run Command Action with Detached Signature
-        uses: ./arch-run-cmd
-        with:
-          gpg_key_id: ${{ secrets.GPG_KEY_ID }}
-          gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
-          github_token: ${{ steps.app_token.outputs.token }}
-          ccache_dir: "${{ github.workspace }}/.ccache"
-          gpg_keygrips: ${{ steps.gpg_import.outputs.gpg_keygrips }}
-          working_directory: ${{ github.workspace }}
-          gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
-          run_with_sudo: ${{ inputs.run_with_sudo || 'false' }}
-          enable_ccache: ${{ inputs.enable_ccache || 'false' }}
-          command: 'echo "Hello, World!"'

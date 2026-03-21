@@ -2,96 +2,104 @@ name: "Run Command In Arch Linux Docker (AUR Build)"
 description: "Minimal, secure Arch Linux container for AUR builds with GPG & ccache support"
 author: "DCx7c5"
 
+
 inputs:
-  command:
-    description: "Command/script to execute inside container"
-    required: true
-  working_directory:
-    description: "Working directory inside container"
-    required: false
-    default: ''
-  gpg_home:
-    description: "GPG home directory (usually in workspace)"
-    required: false
-    default: ''
-  ccache_dir:
-    description: "ccache directory for build caching"
-    required: false
-    default: ''
-  user:
-    description: "User name to create inside the container (defaults to runner.user)"
-    required: false
-    default: ''
-  group:
-    description: "Group name to create inside the container (defaults to runner.group)"
-    required: false
-    default: ''
-  uid:
-    description: "User ID to use inside the container (defaults to current user ID)"
-    required: false
-    default: ''
-  gid:
-    description: "Group ID to use inside the container (defaults to current group ID)"
-    required: false
-    default: ''
-  enable_ccache:
-    description: "Enable ccache for faster incremental builds"
-    required: false
-    default: "true"
-  github_token:
-    description: "GitHub token for API access (defaults to github.token)"
-    required: false
-    default: ''
-  gpg_key_id:
-    description: "GPG key ID or fingerprint to use for signing (if needed, will be passed via environment variable)"
-    required: false
-    default: ''
-  gpg_keygrips:
-    description: "Keygrips of GPG keys to preset in gpg-agent cache (if needed, will be passed via environment variable as a comma-separated list)"
-    required: false
-    default: ''
-  gpg_passhphrase:
-    description: "Passphrase for GPG key (if needed, will be passed via environment variable)"
-    required: false
-    default: ''
-  preset_cache:
-    description: "Whether to preset GPG passphrase in gpg-agent cache before running the command (default: true)"
-    required: false
-    default: "true"
-  run_with_sudo:
-    description: "Whether to run the command with sudo inside the container (default: false)"
-    required: false
-    default: "false"
-  gpg_key:
-    description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
-    required: false
-    default: ''
+    command:
+        description: "Command/script to execute inside container"
+        required: true
+    working_directory:
+        description: "Working directory inside container"
+        required: false
+        default: ''
+    gpg_home:
+        description: "GPG home directory (usually in workspace)"
+        required: false
+        default: ''
+    ccache_dir:
+        description: "ccache directory for build caching"
+        required: false
+        default: ''
+    user:
+        description: "User name to create inside the container (defaults to runner.user)"
+        required: false
+        default: ''
+    group:
+        description: "Group name to create inside the container (defaults to runner.group)"
+        required: false
+        default: ''
+    uid:
+        description: "User ID to use inside the container (defaults to current user ID)"
+        required: false
+        default: ''
+    gid:
+        description: "Group ID to use inside the container (defaults to current group ID)"
+        required: false
+        default: ''
+    enable_ccache:
+        description: "Enable ccache for faster incremental builds"
+        required: false
+        default: "true"
+    github_token:
+        description: "GitHub token for API access (defaults to github.token)"
+        required: false
+        default: ''
+    gpg_key:
+        description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
+        required: false
+        default: ''
+    gpg_key_id:
+        description: "GPG key ID or fingerprint to use for signing (if needed, will be passed via environment variable)"
+        required: false
+        default: ''
+    gpg_keygrips:
+        description: "Keygrips of GPG keys to preset in gpg-agent cache (if needed, will be passed via environment variable as a comma-separated list)"
+        required: false
+        default: ''
+    gpg_passhphrase:
+        description: "Passphrase for GPG key (if needed, will be passed via environment variable)"
+        required: false
+        default: ''
+    preset_passphrase_cache:
+        description: "Whether to preset GPG passphrase in gpg-agent cache before running the command (default: true)"
+        required: false
+        default: "false"
+    import_key_during_build:
+        description: "Whether to import the GPG key during the build stage instead of at runtime (default: false, recommended to be false for better security)"
+        required: false
+        default: "false"
+    run_with_sudo:
+        description: "Whether to run the command with sudo inside the container (default: false)"
+        required: false
+        default: "false"
+
 
 runs:
-  using: docker
-  image: arch-run-cmd-dcx:latest
-  env:
-    CI: "true"
-    GITHUB_ACTIONS: "true"
-    GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || github.token }}"
-    MAKEFLAGS: '-j ${{ runner.cpu_count }}'
-    CCACHE_DIR: ${{ inputs.ccache_dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}
-    GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME || format('{0}/.gnuphome', github.workspace) }}
-    CCACHE_MAXSIZE: "2G"
-    CCACHE_COMPRESS: "1"
-    CCACHE_COMPRESSLEVEL: "6"
-    DISABLE_TELEMETRY: "1"
-    PYTHONDONTWRITEBYTECODE: "1"
-    RUN_WITH_SUDO: ${{ inputs.run_with_sudo || env.RUN_WITH_SUDO || 'false' }}
-    GPG_KEY_ID: ${{ inputs.gpg_key_id || env.GPG_KEY_ID || '' }}
-    GPG_PASSPHRASE: ${{ inputs.gpg_passhphrase || '' }}
-    PRESET_CACHE: ${{ inputs.preset_cache || env.PRESET_CACHE || 'false' }}
-    WORKING_DIRECTORY: ${{ inputs.working_directory || env.WORKING_DIRECTORY || env.WORK_DIR || github.workspace || '.' }}
-    KEYGRIPS: ${{ inputs.gpg_keygrips || env.KEYGRIPS || '' }}
-    USER: "${{ inputs.user || env.USER || runner.user }}"
-    GROUP: "${{ inputs.group || env.GROUP || runner.group }}"
-    UID: "${{ inputs.uid || env.UID || '1000' }}"
-    GID: "${{ inputs.gid || env.GID || '1000' }}"
-  post-entrypoint: /post_entrypoint.sh
-  args:
-    - ${{ inputs.command }}
+  using: composite
+  steps:
+    - name: Build Arch Linux Docker image
+      id: build_image
+      uses: ./docker-build-image
+      with:
+        gpg_home: ${{ inputs.gpg_home }}
+        ccache_dir: ${{ inputs.ccache_dir }}
+        user: ${{ inputs.user || env.USER || runner.user }}
+        group: ${{ inputs.group || env.GROUP || runner.group }}
+        uid: ${{ inputs.uid || env.UID || runner.uid }}
+        gid: ${{ inputs.gid || env.GID || runner.gid }}
+        github_token: ${{ inputs.github_token }}
+        gpg_key: ${{ inputs.gpg_key }}
+        dockerfile_path: ./Dockerfile
+
+    - name: Push Docker image to GitHub Container Registry
+      id: push_image
+      uses: ./docker-push-image
+      with:
+        gh_token: ${{ inputs.github_token }}
+        image_name: ''
+
+
+    - name: Run command in Arch Linux container
+      id: run_cmd
+      uses: ./docker-run-image
+      with:
+        command: ''
