@@ -3,6 +3,14 @@ description: "Build the Arch Linux Docker image used for AUR builds"
 author: "DCx7C5"
 
 inputs:
+  image_tag:
+    description: "Docker image tag to build (defaults to 'arch-aur-builder:latest')"
+    required: false
+    default: 'arch-aur-builder'
+  image_version:
+    description: "Docker image version tag (defaults to 'latest')"
+    required: false
+    default: 'latest'
   working_directory:
     description: "Working directory inside container"
     required: false
@@ -21,10 +29,15 @@ inputs:
     default: ''
 
 outputs:
-  image_tag:
+  image:
     description: "The Docker image tag that was built"
-    value: ${{ steps.build_image.outputs.image_tag }}
-
+    value: ${{ steps.build_image.outputs.image || inputs.image }}
+  image_tag:
+    description: "The Docker image tag (without version) that was built"
+    value: ${{ steps.build_image.outputs.image_tag || inputs.image_tag }}
+  image_version:
+    description: "The Docker image version tag that was built"
+    value: ${{ steps.build_image.outputs.image_version || inputs.image_version }}
 
 runs:
   using: composite
@@ -36,11 +49,11 @@ runs:
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || github.token }}"
         GNUPGHOME: "${{ inputs.gpg_home }}"
         CCACHE_DIR: "${{ inputs.ccache_dir }}"
-
+      working-directory: ${{ inputs.working_directory || github.workspace }}
       run: |
         set -euo pipefail
         
-        IMAGE_TAG="arch-aur-builder"
+        IMAGE="${{ inputs.image_tag }}:${{ inputs.image_version }}"
         
         echo "::notice::Building Arch Linux Docker image for AUR builds..."
         docker build \
@@ -51,7 +64,9 @@ runs:
           --build-arg UID=$(id -u) \
           --build-arg GID=$(id -g) \
           -f ./arch-run-cmd/Dockerfile \
-          -t $IMAGE_TAG:latest .
+          -t $IMAGE .
         
-        echo "image_tag=$IMAGE_TAG:latest" >> $GITHUB_OUTPUT
+        echo "image_tag=${IMAGE_TAG%%:*}" >> $GITHUB_OUTPUT
+        echo "image_version=${IMAGE_TAG##*:}" >> $GITHUB_OUTPUT
+        echo "image=${IMAGE}" >> $GITHUB_OUTPUT
         echo "::notice::Docker image built successfully: $IMAGE_TAG"

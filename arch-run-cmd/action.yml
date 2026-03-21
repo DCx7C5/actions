@@ -17,7 +17,7 @@ inputs:
   ccache_dir:
     description: "ccache directory for build caching"
     required: false
-    default: "${{ github.workspace }}/.ccache"
+    default: ''
   enable_ccache:
     description: "Enable ccache for faster incremental builds"
     required: false
@@ -42,21 +42,25 @@ inputs:
     description: "Whether to run the command with sudo inside the container (default: false)"
     required: false
     default: "false"
+  gpg_key:
+    description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
+    required: false
+    default: ''
   image:
     description: "Docker image to use (if set, skips build and uses this image tag)"
     required: false
-    default: ''
+    default: 'arch-aur-builder:latest'
 
 runs:
   using: docker
-  image: ${{ inputs.image || 'arch-aur-builder:latest' }}
+  image: ${{ inputs.image }}
   env:
     CI: "true"
     GITHUB_ACTIONS: "true"
     GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || github.token }}"
-    MAKEFLAGS: "-j${{ runner.cpu_count }}"
-    CCACHE_DIR: ${{ inputs.ccache_dir }}
-    GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+    MAKEFLAGS: '-j ${{ runner.cpu_count }}'
+    CCACHE_DIR: ${{ inputs.ccache_dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}
+    GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME || format('{0}/.gnuphome', github.workspace) }}
     CCACHE_MAXSIZE: "2G"
     CCACHE_COMPRESS: "1"
     CCACHE_COMPRESSLEVEL: "6"
@@ -66,10 +70,8 @@ runs:
     GPG_KEY_ID: ${{ inputs.gpg_key_id }}
     GPG_PASSPHRASE: ${{ inputs.gpg_passhphrase }}
     PRESET_CACHE: ${{ inputs.preset_cache }}
-    WORKING_DIRECTORY: ${{ inputs.working_directory || '/home/runner/work' }}
-    WORK_DIR: ${{ inputs.working_directory }}
+    WORKING_DIRECTORY: ${{ inputs.working_directory || github.workspace }}
+    WORK_DIR: ${{ inputs.working_directory || github.workspace }}
   post-entrypoint: /post_entrypoint.sh
   args:
-    - ${{ inputs.working_directory || github.workspace || '/home/runner/work' }}
-    - ${{ inputs.gpg_home || env.GNUPGHOME || '' }}
-    - ${{ inputs.command || '' }}
+    - ${{ inputs.command }}
