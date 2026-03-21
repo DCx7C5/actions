@@ -3,7 +3,7 @@ description: "Minimal, secure Arch Linux container for AUR builds with GPG & cca
 author: "DCx7c5"
 
 inputs:
-  run:
+  command:
     description: "Command/script to execute inside container"
     required: false
   working_directory:
@@ -47,17 +47,6 @@ inputs:
 runs:
   using: docker
   image: "Dockerfile"
-  args:
-    - ${{ inputs.run }}
-    - ${{ inputs.working_directory }}
-    - ${{ inputs.gpg_home }}
-    - ${{ inputs.ccache_dir }}
-    - ${{ inputs.github_token }}
-    - ${{ inputs.gpg_key_id }}
-    - ${{ inputs.gpg_passhphrase }}
-    - ${{ inputs.preset_cache }}
-    - ${{ inputs.run_with_sudo }}
-
   env:
     CI: "true"
     GITHUB_ACTIONS: "true"
@@ -74,7 +63,9 @@ runs:
     GPG_KEY_ID: ${{ inputs.gpg_key_id }}
     GPG_PASSPHRASE: ${{ inputs.gpg_passhphrase }}
     PRESET_CACHE: ${{ inputs.preset_cache }}
-    WORKING_DIRECTORY: ${{ inputs.working_directory || '/github/workspace' }}
+    WORKING_DIRECTORY: ${{ inputs.working_directory || '/home/runner/work' }}
+    WORK_DIR: ${{ inputs.working_directory || '/home/runner/work' }}
   post-entrypoint: /post_entrypoint.sh
-
-
+  args:
+    - ${{ inputs.working_directory || github.workspace || '/home/runner/work' }}
+    - ${{ inputs.command || '' }}
