@@ -191,7 +191,7 @@ runs:
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
         }
         
-        if [[ "$value" == *$'\n'* ]]; then
+        if [[ "$value" == *$'\n'* || "$(printf '%s\n' "$value" | wc -l)" -gt 1 ]]; then
           { echo "$OUT_VAR<<EOF"
             echo "$value"
             echo "EOF"
@@ -202,36 +202,6 @@ runs:
 
         echo "success=true" >> "$GITHUB_OUTPUT"
         echo "::notice::\e[1;32m✓\e[0m GitHub Variable '$INPUTS_VARIABLE_NAME' retrieved successfully"
-
-    - name: Validate Variable Body
-      id: validate_body
-      if: inputs.action == 'set' && inputs.json != ''
-      shell: bash
-      env:
-        BODY: "${{ inputs.body }}"
-      run: |
-        if [[ ! "$BODY" =~ \n ]]; then
-          echo "body_type=string" >> "$GITHUB_OUTPUT"
-        elif [[ "$BODY" =~ \n ]]; then
-          echo "body_type=multiline" >> "$GITHUB_OUTPUT"
-        else
-          echo "::error::Invalid body value. Body must be a string or multiline string." >&2
-          [[ "${{ inputs.exit-on-error }}" =~ ^true$ ]] && exit 1
-        fi
-        
-        if printf '%s' "$BODY" | jq -e . >/dev/null 2>&1; then
-          echo "body_json=true" >> "$GITHUB_OUTPUT"
-          if printf '%s' "$BODY" | jq -e '. | fromjson' >/dev/null 2>&1; then
-            echo "encoded=true" >> "$GITHUB_OUTPUT"
-            if printf '%s' "$BODY" | jq -e '. | fromjson' >/dev/null 2>&1; then
-              echo "double_encoded=true" >> "$GITHUB_OUTPUT"
-            fi
-          fi
-        else
-          echo "body_json=false" >> "$GITHUB_OUTPUT"
-        fi
-        
-        echo "::debug::Validated body for GitHub Variable. Type: ${body_type}, JSON: ${body_json:-false}, Encoded: ${encoded:-false}, Double Encoded: ${double_encoded:-false}"
 
     - name: Set GitHub Variable
       id: set_variable
