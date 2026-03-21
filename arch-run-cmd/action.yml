@@ -9,7 +9,7 @@ inputs:
   working_directory:
     description: "Working directory inside container"
     required: false
-    default: ''
+    default: ${{ github.workspace }}
   gpg_home:
     description: "GPG home directory (usually in workspace)"
     required: false

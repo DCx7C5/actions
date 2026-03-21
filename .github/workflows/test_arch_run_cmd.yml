@@ -20,6 +20,28 @@ jobs:
         with:
           token: ${{ steps.app_token.outputs.token }}
 
+      - name: Test Arch Run Command Action
+        uses: ./arch-run-cmd
+        with:
+          gpg_key_id: ${{ secrets.GPG_KEY_ID }}
+          gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
+          github_token: ${{ steps.app_token.outputs.token }}
+          run: 'echo "Hello, World!"'
+
+  test-sign-detached:
+    runs-on: ubuntu-latest
+    needs: test-run-cmd
+    steps:
+      - name: GitHub App Token
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
+          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ steps.app_token.outputs.token }}
+
       - name: Import GPG key
         id: gpg_import
         uses: ./gpg-import
@@ -32,13 +54,15 @@ jobs:
           delete_after_import: 'true'
           configure_git: 'true'
           setup_home: 'true'
-          preset_pass: 'true'
+          preset_pass: 'false'
 
-      - name: Test Arch Run Command Action
+      - name: Test Arch Run Command Action with Detached Signature
         uses: ./arch-run-cmd
         with:
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}
-          run: 'echo "Hello, World!"'
-
+          run: |
+            set -euo pipefail
+            echo "Hello, World!" > message.txt
+            printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --local-user "$GPG_KEY_ID" --output message.txt.sig --detach-sig message.txt 
