@@ -22,16 +22,22 @@ jobs:
           token: ${{ steps.app_token.outputs.token }}
 
       - name: Build Arch Run Command Action
+        id: build-arch
         uses: ./arch-build-image
         with:
-          working_directory: '${{ github.workspace }}'
-          ccache_dir: "${{ inputs.ccache_dir }}"
+          image_working_directory: ${{ format('{0}/arch-run-cmd', github.workspace) }}
+          runtime_working_directory: ${{ github.workspace }}
+          ccache_dir: ${{ inputs.ccache_dir }}
           gpg_home: ${{ inputs.gpg_home }}
+          dockerfile_path: Dockerfile
+          github_token: ${{ steps.app_token.outputs.token }}
+          image_version: 'latest'
+          image_tag: 'arch-run-cmd'
 
       - name: Test Arch Run Command Action
         uses: ./arch-run-cmd
         with:
-          image: ${{ steps.build-arch.outputs.image_tag }}
+          image: ${{ steps.build-arch.outputs.image }}
           github_token: ${{ steps.app_token.outputs.token }}
           ccache_dir: '${{ github.workspace }}/.ccache'
           run_with_sudo: 'true'
@@ -52,12 +58,15 @@ jobs:
       - uses: actions/checkout@v5
         with:
           token: ${{ steps.app_token.outputs.token }}
+          repository: 'DCx7C5/actions'
+
       - name: Import GPG key
         id: gpg_import
         uses: ./gpg-import
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
+          gpg_home: ${{ format('{0}/.gnupg', github.workspace)}}
           method: 'inline'
           gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
@@ -67,17 +76,23 @@ jobs:
           preset_pass: 'false'
 
       - name: Build Arch Run Command Action
+        id: build-arch
         uses: ./arch-build-image
+
         with:
-          working_directory: ${{ github.workspace }}
+          image_working_directory: ${{ format('{0}/arch-run-cmd', github.workspace) }}
+          runtime_working_directory: ${{ github.workspace }}
           ccache_dir: ${{ inputs.ccache_dir }}
           gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
+          dockerfile_path: Dockerfile
           github_token: ${{ steps.app_token.outputs.token }}
+          image_version: 'latest'
+          image_tag: 'arch-run-cmd'
 
       - name: Test Arch Run Command Action with Detached Signature
         uses: ./arch-run-cmd
         with:
-          image: ${{ steps.build-arch.outputs.image_tag }}
+          image: ${{ steps.build-arch.outputs.image }}
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}

@@ -15,34 +15,38 @@ inputs:
     description: "Path to the Dockerfile to use for building the image"
     required: false
     default: ''
-  working_directory:
+  image_working_directory:
     description: "Working directory inside container"
     required: false
-    default: ${{ github.workspace }}
+    default: ''
+  runtime_working_directory:
+    description: "Working directory for the build context (defaults to github.workspace)"
+    required: false
+    default: ''
   gpg_home:
     description: "GPG home directory (usually in workspace)"
     required: false
-    default: '${{ github.workspace }}/.gnupg'
+    default: ''
   ccache_dir:
     description: "ccache directory for build caching"
     required: false
-    default: "${{ github.workspace }}/.ccache"
+    default: ''
   user:
     description: "User name to create inside the container (defaults to runner.user)"
     required: false
-    default: ${{ runner.user }}
+    default: ''
   group:
     description: "Group name to create inside the container (defaults to runner.group)"
     required: false
-    default: ${{ runner.group }}
+    default: ''
   uid:
     description: "User ID to use inside the container (defaults to current user ID)"
     required: false
-    default: ${{ env.UID || '1000' }}
+    default: ''
   gid:
     description: "Group ID to use inside the container (defaults to current group ID)"
     required: false
-    default: ${{ env.GID || '1000' }}
+    default: ''
   gpg_key:
     description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
     required: false
@@ -75,6 +79,12 @@ runs:
       env:
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || github.token }}"
         DOCKERFILE: "${{ inputs.dockerfile_path || 'Dockerfile' }}"
+        USER: "${{ inputs.user || env.USER || runner.user }}"
+        GROUP: "${{ inputs.group || env.GROUP || runner.group }}"
+        UID: "${{ inputs.uid || env.UID || '1000' }}"
+        GID: "${{ inputs.gid || env.GID || '1000' }}"
+        IMAGE_WORKING_DIR: "${{ inputs.image_working_directory || env.IMAGE_WORKING_DIR || './arch-run-cmd' }}"
+        RUNTIME_WORKING_DIR: "${{ inputs.runtime_working_directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
       working-directory: ${{ inputs.working_directory || env.WORKING_DIR || github.workspace || '.' }}
       run: |
         set -euo pipefail
