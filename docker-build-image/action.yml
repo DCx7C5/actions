@@ -63,7 +63,7 @@ inputs:
 outputs:
   image:
     description: "The Docker image tag that was built"
-    value: "${{ inputs.image_tag }}:${{ inputs.image_version }}"
+    value: "${{ steps.build_image.outputs.image }}"
   image_tag:
     description: "The Docker image tag (without version) that was built"
     value: ${{ inputs.image_tag }}
