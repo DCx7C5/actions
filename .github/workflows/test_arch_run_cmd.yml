@@ -1,6 +1,18 @@
 name: "Test Arch Run Command Action"
 on:
   workflow_dispatch:
+    inputs:
+      enable_ccache:
+        description: "Enable ccache in the Arch Run Command Action"
+        required: false
+        default: true
+        type: boolean
+      run_with_sudo:
+        description: "Whether to run the command with sudo inside the container (for testing root permissions)"
+        required: false
+        default: true
+        type: boolean
+
   push:
     paths:
       - 'arch-run-cmd/**'
@@ -39,10 +51,12 @@ jobs:
         with:
           image: arch-run-cmd:latest
           github_token: ${{ steps.app_token.outputs.token }}
-          ccache_dir: '${{ github.workspace }}/.ccache'
-          run_with_sudo: 'true'
-          enable_ccache: 'true'
+          ccache_dir: "${{ github.workspace }}/.ccache"
+          run_with_sudo: ${{ inputs.run_with_sudo || 'false' }}
+          enable_ccache: ${{ inputs.enable_ccache || 'false' }}
           working_directory: ${{ github.workspace }}
+          preset_cache: 'false'
+
           command: |
             echo "Hello, World!" && ls -als && pwd
 
@@ -96,9 +110,10 @@ jobs:
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}
-          run_with_sudo: 'true'
-          ccache_dir: '${{ github.workspace }}/.ccache'
-          enable_ccache: 'true'
-          working_directory: '${{ github.workspace }}'
+          ccache_dir: "${{ github.workspace }}/.ccache"
+          gpg_keygrips: ${{ steps.gpg_import.outputs.gpg_keygrips }}
+          working_directory: ${{ github.workspace }}
           gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
+          run_with_sudo: ${{ inputs.run_with_sudo || 'false' }}
+          enable_ccache: ${{ inputs.enable_ccache || 'false' }}
           command: 'echo "Hello, World!"'

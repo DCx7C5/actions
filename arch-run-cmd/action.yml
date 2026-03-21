@@ -18,6 +18,22 @@ inputs:
     description: "ccache directory for build caching"
     required: false
     default: ''
+  user:
+    description: "User name to create inside the container (defaults to runner.user)"
+    required: false
+    default: ''
+  group:
+    description: "Group name to create inside the container (defaults to runner.group)"
+    required: false
+    default: ''
+  uid:
+    description: "User ID to use inside the container (defaults to current user ID)"
+    required: false
+    default: ''
+  gid:
+    description: "Group ID to use inside the container (defaults to current group ID)"
+    required: false
+    default: ''
   enable_ccache:
     description: "Enable ccache for faster incremental builds"
     required: false
@@ -28,6 +44,10 @@ inputs:
     default: ''
   gpg_key_id:
     description: "GPG key ID or fingerprint to use for signing (if needed, will be passed via environment variable)"
+    required: false
+    default: ''
+  gpg_keygrips:
+    description: "Keygrips of GPG keys to preset in gpg-agent cache (if needed, will be passed via environment variable as a comma-separated list)"
     required: false
     default: ''
   gpg_passhphrase:
@@ -52,8 +72,10 @@ inputs:
     default: 'arch-run-cmd:latest'
 
 runs:
+  name: "Run Command in Arch Linux Docker Container"
   using: docker
   image: arch-run-cmd:latest
+  author: "DCx7c5"
   env:
     CI: "true"
     GITHUB_ACTIONS: "true"
@@ -70,9 +92,12 @@ runs:
     GPG_KEY_ID: ${{ inputs.gpg_key_id || env.GPG_KEY_ID || '' }}
     GPG_PASSPHRASE: ${{ inputs.gpg_passhphrase || '' }}
     PRESET_CACHE: ${{ inputs.preset_cache || env.PRESET_CACHE || 'false' }}
-    WORKING_DIRECTORY: ${{ inputs.working_directory || env.WORKING_DIRECTORY || github.workspace || '.' }}
-    WORK_DIR: ${{ inputs.working_directory || github.workspace || env.WORK_DIR || '.' }}
-    KEYGRIPS: ${{ steps.gpg_import.outputs.key_grips || env.KEYGRIPS || '' }}
+    WORKING_DIRECTORY: ${{ inputs.working_directory || env.WORKING_DIRECTORY || env.WORK_DIR || github.workspace || '.' }}
+    KEYGRIPS: ${{ inputs.gpg_keygrips || env.KEYGRIPS || '' }}
+    USER: "${{ inputs.user || env.USER || runner.user }}"
+    GROUP: "${{ inputs.group || env.GROUP || runner.group }}"
+    UID: "${{ inputs.uid || env.UID || '1000' }}"
+    GID: "${{ inputs.gid || env.GID || '1000' }}"
   post-entrypoint: /post_entrypoint.sh
   args:
     - ${{ inputs.command }}

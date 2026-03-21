@@ -5,7 +5,6 @@ set -euo pipefail
 # Error handling with context
 trap 'echo "ERROR: Script failed on line $LINENO (command: $BASH_COMMAND)" >&2; exit 1' ERR
 
-WORKING_DIR="$1"
 # Fallback auf Standard, wenn leer, null oder ein Systempfad
 if [[ -z "$WORKING_DIR" || "$WORKING_DIR" == "null" || "$WORKING_DIR" == "/bin/bash" ]]; then
   WORKING_DIR="/home/runner/work"
@@ -36,7 +35,7 @@ COMMAND="$*"
 
 
 if [[ ! -d "$WORKING_DIR" ]]; then
-  if [[ "$(sudo -u "$USER" env "${ENV_VARS[@]}" id -u)" == "0" ]]; then
+  if [[ "$(id -u)" == "0" ]]; then
     mkdir -p "$WORKING_DIR"
   else
     echo "WARNING: Cannot create work directory: $WORKING_DIR (no permission, not root)" >&2
