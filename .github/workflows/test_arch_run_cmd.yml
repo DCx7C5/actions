@@ -26,6 +26,7 @@ jobs:
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}
+          run_with_sudo: 'true'
           run: 'echo "Hello, World!"'
 
   test-sign-detached:
