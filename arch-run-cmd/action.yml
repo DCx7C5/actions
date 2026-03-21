@@ -137,5 +137,6 @@ runs:
         preset_passphrase_cache: ${{ inputs.preset_passphrase_cache }}
         run_with_sudo: ${{ inputs.run_with_sudo }}
         gpg_key: ${{ inputs.gpg_key }}
-
+        image_tag: ${{ inputs.image_tag || steps.build_image.outputs.image_tag }}
+        image_version: ${{ inputs.image_version || steps.build_image.outputs.image_version }}
         command: 'ls -las && whoami && id && env && echo "Running command: ${{ inputs.command }}" && ${{ inputs.command }}'
