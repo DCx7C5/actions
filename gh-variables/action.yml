@@ -148,12 +148,11 @@ runs:
         [ -n "$TYPE_OPT" ] && echo "type_opt=$TYPE_OPT" >> "$GITHUB_OUTPUT"
         
         if [[ -n "$INPUTS_ORG" && ! "$INPUTS_ORG" =~ ^true$ && -n "$INPUTS_VISIBILITY" ]]; then
-          VISIBILITY="--visibility "$INPUTS_VISIBILITY""
+          VISIBILITY="$INPUTS_VISIBILITY"
           echo "visibility=$VISIBILITY" >> "$GITHUB_OUTPUT"
         fi
 
         if [[ "$INPUTS_JSON" =~ ^value|true$ ]]; then
-
           if [[ "${{ inputs.jq-decode }}" =~ ^true$ && -z "${{ inputs.jq }}" ]]; then
             jq_decode_suffix='(.value | fromjson? | fromjson?) // (.value | fromjson?) // .value | '
             echo "jq_filter=$jq_decode_suffix." >> "$GITHUB_OUTPUT"
@@ -190,7 +189,7 @@ runs:
         GH_CMD=(${TYPE})
         
         [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
-        [ -n "${VISIBILITY}" ] && GH_CMD+=(${VISIBILITY})
+        [ -n "${VISIBILITY}" ] && GH_CMD+=(--visibility "${VISIBILITY}")
         [ -n "$JSON" ] && GH_CMD+=(--json "$(echo "$JSON" | tr '\n\ \,' ',' | sed 's/,$//')")
         [ -n "$JQ_FILTER" ] && GH_CMD+=(-q "${JQ_FILTER}")
         
@@ -230,7 +229,7 @@ runs:
       run: |
         GH_CMD=(${TYPE})
         [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
-        [ -n "$VISIBILITY" ]] && GH_CMD+=(${VISIBILITY})
+        [ -n "$VISIBILITY" ] && GH_CMD+=(--visibility "${VISIBILITY}")
 
         printf '%s' "${{ steps.validate_and_parse.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
         status=$?
