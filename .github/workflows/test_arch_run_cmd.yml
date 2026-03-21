@@ -31,7 +31,7 @@ on:
       - 'docker-build-image/**'
       - 'docker-push-image/**'
       - 'docker-run-image/**'
-    
+
 
 concurrency:
   group: 'test-arch-run-cmd'
@@ -57,7 +57,10 @@ jobs:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
           permission-packages: 'write'
-          owner: "DystopianOS"
+          owner: |
+            ${{ github.repository_owner }}
+            dystopianos
+            dcx7c5
           repositories: |
             ${{ github.repository }}
             
