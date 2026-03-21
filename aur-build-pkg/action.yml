@@ -38,9 +38,8 @@ runs:
         gpg_passhphrase: ${{ inputs.gpg_passhphrase }}
         run_with_sudo: 'true'
         enable_ccache: 'true'
-        preset_cache: 'true'
         gpg_home: ${{ inputs.gpg_home || env.GNUPGHOME }}
-        github_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
+        gh_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
         gpg_key_id: ${{ inputs.gpg_key_id }}
         run: |
           set -euo pipefail
@@ -70,3 +69,5 @@ runs:
           fi
           
           echo "::notice::Package build completed successfully"
+
+        command: ''

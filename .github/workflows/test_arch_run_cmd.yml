@@ -22,27 +22,42 @@ on:
         required: false
         default: true
         type: boolean
+      passphrase:
+        description: "Passphrase for GPG key (if needed, will be passed via environment variable)"
+        required: false
+        default: ''
+        type: string
+      gpg_key:
+        description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
+        required: false
+        default: ''
+        type: string
+      gpg_key_id:
+        description: "GPG key ID or fingerprint to use for signing (if needed, will be passed via environment variable)"
+        required: false
+        default: ''
+        type: string
+      gpg_keygrips:
+        description: "Keygrips of GPG keys to preset in gpg-agent cache (if needed, will be passed via environment variable as a comma-separated list)"
+        required: false
+        default: ''
+        type: string
+
 
   push:
     branches:
       - main
     paths:
-      - 'arch-run-cmd/**'
-      - 'docker-build-image/**'
-      - 'docker-push-image/**'
-      - 'docker-run-image/**'
+      - 'arch-run-cmd/action.yml'
+      - 'docker-build-image/action.yml'
+      - 'docker-push-image/action.yml'
+      - 'docker-run-image/action.yml'
       - '.github/workflows/test_arch_run_cmd.yml'
 
 
 concurrency:
   group: 'test-arch-run-cmd'
   cancel-in-progress: true
-
-permissions:
-  packages: write
-  contents: write
-  actions: write
-  pull-requests: write
 
 jobs:
   test-run-cmd:
@@ -95,10 +110,11 @@ jobs:
           image_version: ${{ inputs.image_version || 'latest' }}
           enable_ccache: ${{ inputs.enable_ccache }}
           working_directory: ${{ github.workspace }}
-          gpg_key: ''
-          gpg_key_id: ''
-          gpg_keygrips: ''
-          gpg_passhphrase: ''
+          gpg_key: ${{ inputs.gpg_key || steps.gpg_import.outputs.gpg_key || '' }}
+          gpg_key_id: ${{ inputs.gpg_key_id || steps.gpg_import.outputs.gpg_key_id || '' }}
+          gpg_keygrips: ${{ inputs.gpg_keygrips || steps.gpg_import.outputs.gpg_keygrips || '' }}
+          gpg_passhphrase: ${{ inputs.passphrase || '' }}
+          gpg_home: ${{ inputs.gpg_home || steps.gpg_import.outputs.gpg_home }}
           import_key_during_build: 'false'
           preset_passphrase_cache: 'false'
           run_with_sudo: 'true'
