@@ -22,7 +22,7 @@ jobs:
   example:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Create release
         uses: DCx7C5/actions/gh-create-release@v1
         with:
