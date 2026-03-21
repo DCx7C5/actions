@@ -128,6 +128,7 @@ runs:
 
     - name: Set GitHub Secret
       id: set_secret
+      if: inputs.action == 'set'
       shell: bash
       env:
         EONERROR: "${{ inputs.exit-on-error }}"
@@ -173,7 +174,7 @@ runs:
         }
 
     - name: Print encrypted, base64-encoded value
-      if: inputs.print == 'true'
+      if: inputs.action == 'set' && inputs.print == 'true'
       id: print_value
       shell: bash
       env:
