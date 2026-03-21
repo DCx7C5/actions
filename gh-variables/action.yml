@@ -89,11 +89,6 @@ runs:
       env:
         EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_REPOS: "${{ inputs.repos }}"
-        TYPE_OPT: >-
-          ${{ case(
-            inputs.org != '' && inputs.repos != '', '--repos $(echo "$INPUTS_REPOS" | tr "\n " "," | sed "s/,$//")',
-            ''
-          ) }}
         INPUTS_JSON: "${{ inputs.json }}"
         INPUTS_VISIBILITY: "${{ inputs.visibility }}"
         INPUTS_ACTION: "${{ inputs.action }}"
@@ -153,7 +148,6 @@ runs:
         fi
 
         [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
-        [ -n "$TYPE_OPT" ] && echo "type_opt=$TYPE_OPT" >> "$GITHUB_OUTPUT"
         
         if [[ -n "$INPUTS_ORG" && ! "$INPUTS_ORG" =~ ^true$ && -n "$INPUTS_VISIBILITY" ]]; then
           VISIBILITY="$INPUTS_VISIBILITY"
