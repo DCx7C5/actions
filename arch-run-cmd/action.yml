@@ -72,10 +72,8 @@ inputs:
     default: 'arch-run-cmd:latest'
 
 runs:
-  name: "Run Command in Arch Linux Docker Container"
   using: docker
   image: arch-run-cmd:latest
-  author: "DCx7c5"
   env:
     CI: "true"
     GITHUB_ACTIONS: "true"
