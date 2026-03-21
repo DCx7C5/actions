@@ -25,7 +25,7 @@ jobs:
           github_token: ${{ steps.app_token.outputs.token }}
           run_with_sudo: 'true'
           working_directory: ${{ github.workspace }}
-
+          command: 'echo "Hello, World!"'
 
   test-sign-detached:
     runs-on: ubuntu-latest
@@ -61,4 +61,4 @@ jobs:
           github_token: ${{ steps.app_token.outputs.token }}
           run_with_sudo: 'true'
           gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
-          run: 'echo "Hello, World!"'
+          command: 'echo "Hello, World!"'
