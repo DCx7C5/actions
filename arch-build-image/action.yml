@@ -45,15 +45,14 @@ runs:
     - id: build_image
       shell: bash
       env:
-        WORKING_DIR: ${{ inputs.working_directory || github.workspace }}
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || github.token }}"
-        GNUPGHOME: "${{ inputs.gpg_home }}"
+        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME || format('{0}/.gnupg', github.workspace) || '.gnupg' }}"
         CCACHE_DIR: "${{ inputs.ccache_dir }}"
-      working-directory: ${{ inputs.working_directory || github.workspace }}
+      working-directory: ${{ inputs.working_directory || env.WORKING_DIR || github.workspace || '.' }}
       run: |
         set -euo pipefail
         
-        IMAGE="${{ inputs.image_tag }}:${{ inputs.image_version }}"
+        IMAGE='${{ inputs.image_tag }}:${{ inputs.image_version }}'
         
         echo "::notice::Building Arch Linux Docker image for AUR builds..."
         docker build \
@@ -61,6 +60,7 @@ runs:
           --build-arg GNUPGHOME=$GNUPGHOME \
           --build-arg CCACHE_DIR=$CCACHE_DIR \
           --build-arg USER=$USER \
+          --build-arg GROUP=$GROUP \
           --build-arg UID=$(id -u) \
           --build-arg GID=$(id -g) \
           -f ./arch-run-cmd/Dockerfile \
