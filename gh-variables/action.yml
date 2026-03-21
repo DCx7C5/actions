@@ -147,6 +147,10 @@ runs:
         elif [[ "${{ inputs.org }}" != '' ]]; then
           TYPE="--org "${{ inputs.org }}""
         fi
+        
+        if [[ -n "${{ inputs.org }} && -n "${{ inputs.repos }}" ]]; then
+          echo "type_opt=--repos $(echo "${{ inputs.repos }}" | tr "\n " "," | sed "s/,$//")" >> "$GITHUB_OUTPUT"
+        fi
 
         [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
         [ -n "$TYPE_OPT" ] && echo "type_opt=$TYPE_OPT" >> "$GITHUB_OUTPUT"
