@@ -57,9 +57,7 @@ jobs:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
           permission-packages: 'write'
-          owner: |
-            dystopianos
-            dcx7c5
+          owner: 'dcx7c5'
           repositories: |
             ${{ github.repository }}
             
