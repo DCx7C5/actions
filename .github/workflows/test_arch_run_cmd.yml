@@ -84,7 +84,7 @@ jobs:
           runtime_working_directory: ${{ github.workspace }}
           ccache_dir: ${{ inputs.ccache_dir }}
           gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
-          dockerfile_path: Dockerfile
+          dockerfile_path: ${{ format('{0}/arch-run-cmd/Dockerfile', github.workspace) }}
           github_token: ${{ steps.app_token.outputs.token }}
           image_version: 'latest'
           image_tag: 'arch-run-cmd'
