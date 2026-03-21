@@ -186,7 +186,7 @@ runs:
         GH_CMD=(${TYPE})
         
         [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
-        [ -n "${VISIBILITY}" ] && GH_CMD+=("${VISIBILITY}")
+        [ -n "${VISIBILITY}" ] && GH_CMD+=(${VISIBILITY})
         [ -n "$JSON" ] && GH_CMD+=(--json "$(echo "$JSON" | tr '\n\ \,' ',' | sed 's/,$//')")
         [ -n "$JQ_FILTER" ] && GH_CMD+=(-q "${JQ_FILTER}")
         
@@ -227,7 +227,7 @@ runs:
         GH_CMD=(${TYPE})
         
         [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
-        [ -n "$VISIBILITY" ] && GH_CMD+=("${VISIBILITY}")
+        [ -n "$VISIBILITY" ] && GH_CMD+=(${VISIBILITY})
         
         printf '%s' "${{ steps.validate_and_parse.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
         
