@@ -6,13 +6,14 @@ inputs:
   image_tag:
     description: "Docker image tag to build"
     required: true
+    default: ''
   image_version:
     description: "Docker image version tag (defaults to 'latest')"
-    required: false
-    default: 'latest'
+    required: true
+    default: ''
   dockerfile_path:
     description: "Path to the Dockerfile to use for building the image"
-    required: false
+    required: true
     default: '.'
   image_working_directory:
     description: "Working directory inside container"
@@ -86,7 +87,6 @@ runs:
         WORKING_DIR: "${{ inputs.runtime_working_directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
         RUNTIME_WORKING_DIR: "${{ env.WORKING_DIR }}"
         DOCKERFILE: "${{ inputs.dockerfile_path || format('{0}/Dockerfile', inputs.image_working_directory || env.IMAGE_WORKING_DIR) }}"
-        IMAGE: "${{ inputs.image_tag }}:${{ inputs.image_version }}"
         CCACHE_DIR: "${{ inputs.ccache_dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}"
       working-directory: "${{ inputs.image_working_directory || env.IMAGE_WORKING_DIR }}"
       run: |
@@ -111,13 +111,13 @@ runs:
             fi
           done <<< "${{ inputs.build_args }}"
         fi
-        
+        IMAGE_NAME="${{ inputs.image_tag }}:${{ inputs.image_version }}"
         echo "::notice::Building Arch Linux Docker image for AUR builds..."
         docker build \
           "${DOCKER_BUILD_ARGS[@]}" \
           -f "$DOCKERFILE" \
-          -t "$IMAGE" .
+          -t "$IMAGE_NAME" .
         
         cd "${{ github.workspace }}" || true
-        
+        echo "image=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
         echo "::notice::Docker image built successfully: $IMAGE"

@@ -4,12 +4,12 @@ author: "DCx7C5"
 
 
 inputs:
-  image_name:
+  image_tag:
     description: "Name of the Docker image to push (e.g., 'my-image' or 'my-registry/my-image')"
     required: true
-  image_tag:
-    description: "Tag of the Docker image to push (defaults to 'latest')"
-    required: false
+  image_version:
+    description: "Version of the Docker image to push (defaults to 'latest')"
+    required: true
     default: 'latest'
   registry:
     description: "URL of the Docker registry to push to (e.g., 'docker.io' for Docker Hub, 'ghcr.io' for GitHub Container Registry)"
@@ -22,7 +22,7 @@ inputs:
   working_directory:
     description: "Working directory for the action (defaults to github.workspace)"
     required: false
-    default: '${{ github.workspace }}'
+    default: ''
 
 
 
@@ -38,7 +38,6 @@ runs:
 
     - id: push_image
       shell: bash
-      working-directory: ${{ inputs.working_directory || env.WORKING_DIRECTORY || github.workspace }}
       run: |
         set -euo pipefail
         echo "image_name: '${{ inputs.image_name }}'"
@@ -57,3 +56,8 @@ runs:
         docker tag "${{ inputs.image_name }}:${{ inputs.image_tag }}" "$full_image"
         echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "$registry_url" -u ${{ github.actor }} --password-stdin
         docker push "$full_image"
+
+    - name: Logout
+      if: always()
+      run: docker logout ghcr.io
+      shell: bash
