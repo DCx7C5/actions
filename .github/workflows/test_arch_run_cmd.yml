@@ -55,7 +55,6 @@ jobs:
 
       - name: Test Arch Run Command Action with Detached Signature
         uses: ./arch-run-cmd
-        working-directory: ${{ github.workspace }}
         with:
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
@@ -63,4 +62,3 @@ jobs:
           run_with_sudo: 'true'
           gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
           run: 'echo "Hello, World!"'
-        run:
