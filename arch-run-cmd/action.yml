@@ -129,10 +129,3 @@ runs:
         gh_token: ${{ inputs.github_token }}
         command: ''
 
-
-    - name: Run command in Arch Linux container
-      id: run_cmd
-      uses: ./docker-run-image
-      with:
-        gh_token: ${{ inputs.github_token }}
-        command: ''
