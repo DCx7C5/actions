@@ -16,15 +16,17 @@ jobs:
         with:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
+
       - uses: actions/checkout@v5
         with:
           token: ${{ steps.app_token.outputs.token }}
+
       - name: Test Arch Run Command Action
         uses: ./arch-run-cmd
         with:
           github_token: ${{ steps.app_token.outputs.token }}
           run_with_sudo: 'true'
-          working_directory: ${{ github.workspace }}
+          working_directory: '/home/runner/work'
           command: 'echo "Hello, World!"'
 
   test-sign-detached:
@@ -52,6 +54,7 @@ jobs:
           configure_git: 'true'
           setup_home: 'true'
           preset_pass: 'false'
+          gpg_home: '/home/runner/work/.gnupg'
 
       - name: Test Arch Run Command Action with Detached Signature
         uses: ./arch-run-cmd
@@ -60,5 +63,6 @@ jobs:
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}
           run_with_sudo: 'true'
-          gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
+          working_directory: '/home/runner/work'
+          gpg_home: '/home/runner/work/.gnupg'
           command: 'echo "Hello, World!"'
