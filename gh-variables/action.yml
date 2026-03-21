@@ -229,8 +229,13 @@ runs:
 
         read -ra TYPE_ARR <<< "$TYPE"
         read -ra TYPE_OPT_ARR <<< "$TYPE_OPT"
-        GH_CMD=("${TYPE_ARR[@]}")
-        [ ${#TYPE_OPT_ARR[@]} -gt 0 ] && GH_CMD+=("${TYPE_OPT_ARR[@]}")
+        GH_CMD=()
+        for arg in "${TYPE_ARR[@]}"; do
+          [[ -n "$arg" ]] && GH_CMD+=("$arg")
+        done
+        for arg in "${TYPE_OPT_ARR[@]}"; do
+          [[ -n "$arg" ]] && GH_CMD+=("$arg")
+        done
         [ -n "$VISIBILITY" ] && GH_CMD+=(--visibility "$VISIBILITY")
 
         printf '%s' "${{ steps.validate_and_parse.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
@@ -257,10 +262,10 @@ runs:
         EONERROR: "${{ inputs.exit-on-error }}"
         VARIABLE_NAME: "${{ inputs.variable-name }}"
       run: |
-        GH_CMD=(${TYPE})
-        
-        [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
-        
+        read -ra TYPE_ARR <<< "$TYPE"
+        read -ra TYPE_OPT_ARR <<< "$TYPE_OPT"
+        GH_CMD=("${TYPE_ARR[@]}")
+        [ ${#TYPE_OPT_ARR[@]} -gt 0 ] && GH_CMD+=("${TYPE_OPT_ARR[@]}")
         gh variable delete "$VARIABLE_NAME" "${GH_CMD[@]}"
         
         status=$?
