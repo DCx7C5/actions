@@ -59,7 +59,7 @@ jobs:
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
           permission-packages: 'write'
           repositories: |
-            dcx7c5/actions
+            actions
             
       - id: checkout
         name: Checkout repository
