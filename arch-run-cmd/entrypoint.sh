@@ -6,7 +6,8 @@ set -euo pipefail
 trap 'echo "ERROR: Script failed on line $LINENO (command: $BASH_COMMAND)" >&2; exit 1' ERR
 
 WORK_DIR="$1"
-if [[ -z "$WORK_DIR" || "$WORK_DIR" == "null" ]]; then
+# Fallback auf Standard, wenn leer, null oder ein Systempfad
+if [[ -z "$WORK_DIR" || "$WORK_DIR" == "null" || "$WORK_DIR" == "/bin/bash" ]]; then
   WORK_DIR="/github/workspace"
 fi
 GNUPGHOME="${2:-$WORK_DIR/.gnupg}"
@@ -119,7 +120,8 @@ if [ "$IS_GITHUB_ACTIONS" != "true" ]; then
   echo "    User: $USER"
   echo "    Work directory: $(pwd)"
   echo "    GPG home: $GNUPGHOME"
-  echo "    Make flags: $MAKEFLAGS::endgroup::"
+  echo "    Make flags: $MAKEFLAGS"
+  echo "::endgroup::"
 fi
 
 # ============================================================================
@@ -146,5 +148,7 @@ else
   if [ "$IS_GITHUB_ACTIONS" != "true" ]; then
     echo "::notice::No command provided, starting interactive shell..."
   fi
-  exec bash -l
+  echo "Starte interaktive Shell..."
+  exec bash -l || { echo "Fehler: Interaktive Shell konnte nicht gestartet werden!" >&2; exit 99; }
 fi
+
