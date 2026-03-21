@@ -137,7 +137,16 @@ runs:
         fi
         
         if [[ -n "$INPUTS_ORG" && -n "$INPUTS_REPOS" && -z "$INPUTS_VISIBILITY" ]]; then
-          echo "::warning::Repos specified without visibility defaults to 'all', which may not be intended"
+          echo "visibility=all" >> "$GITHUB_OUTPUT"
+        fi
+
+        if [[ -n "$INPUTS_ORG" && -n "$INPUTS_REPOS" && -z "$INPUTS_VISIBILITY" ]]; then
+          echo "visibility=all" >> "$GITHUB_OUTPUT"
+        fi
+
+        if [[ -n "$INPUTS_ORG" && ! "$INPUTS_ORG" =~ ^true$ && -n "$INPUTS_VISIBILITY" ]]; then
+          VISIBILITY="$INPUTS_VISIBILITY"
+          echo "visibility=$VISIBILITY" >> "$GITHUB_OUTPUT"
         fi
 
         [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
@@ -225,12 +234,12 @@ runs:
         BODY: "${{ steps.validate_and_parse.outputs.body || inputs.body }}"
       run: |
         GH_CMD=(${TYPE})
-        
+
         [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
-        [ -n "$VISIBILITY" ] && GH_CMD+=(${VISIBILITY})
-        
+        if [[ -n "$VISIBILITY" ]]; then
+          GH_CMD+=(--visibility "$VISIBILITY")
+        fi
         printf '%s' "${{ steps.validate_and_parse.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
-        
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
         [ $status -eq 0 ] && { 
