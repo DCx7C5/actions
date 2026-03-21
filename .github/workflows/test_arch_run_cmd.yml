@@ -58,7 +58,6 @@ jobs:
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
           permission-packages: 'write'
           owner: |
-            ${{ github.repository_owner }}
             dystopianos
             dcx7c5
           repositories: |
