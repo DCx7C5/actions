@@ -137,7 +137,7 @@ runs:
           TYPE="--org \"$INPUTS_ORG\""
         fi
         
-        if [[ -n "${{ inputs.org }} && -n "${{ inputs.repos }}" ]]; then
+        if [[ -n "${{ inputs.org }}" && -n "${{ inputs.repos }}" ]]; then
           echo "type_opt=--repos $(echo "${{ inputs.repos }}" | tr "\n " "," | sed 's/,$//')" >> "$GITHUB_OUTPUT"
         fi
 
@@ -159,7 +159,12 @@ runs:
             echo "jq_filter=.value" >> "$GITHUB_OUTPUT"
           fi
         fi
-
+        
+        if [[ -n "$INPUTS_JSON" && "$INPUTS_VARIABLE_NAME" == *$'\n'* ]]; then
+          if [[ "$INPUTS_ACTION" == "set" ]]; then
+            echo "body=$(printf '%s' "$INPUTS_BODY" | jq -rc)" >> "$GITHUB_OUTPUT"
+          fi
+        fi
   
 
 
