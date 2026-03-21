@@ -66,12 +66,13 @@ runs:
     CCACHE_COMPRESSLEVEL: "6"
     DISABLE_TELEMETRY: "1"
     PYTHONDONTWRITEBYTECODE: "1"
-    RUN_WITH_SUDO: ${{ inputs.run_with_sudo }}
-    GPG_KEY_ID: ${{ inputs.gpg_key_id }}
-    GPG_PASSPHRASE: ${{ inputs.gpg_passhphrase }}
-    PRESET_CACHE: ${{ inputs.preset_cache }}
-    WORKING_DIRECTORY: ${{ inputs.working_directory || github.workspace }}
-    WORK_DIR: ${{ inputs.working_directory || github.workspace }}
+    RUN_WITH_SUDO: ${{ inputs.run_with_sudo || env.RUN_WITH_SUDO || 'false' }}
+    GPG_KEY_ID: ${{ inputs.gpg_key_id || env.GPG_KEY_ID || '' }}
+    GPG_PASSPHRASE: ${{ inputs.gpg_passhphrase || '' }}
+    PRESET_CACHE: ${{ inputs.preset_cache || env.PRESET_CACHE || 'false' }}
+    WORKING_DIRECTORY: ${{ inputs.working_directory || env.WORKING_DIRECTORY || github.workspace || '.' }}
+    WORK_DIR: ${{ inputs.working_directory || github.workspace || env.WORK_DIR || '.' }}
+    KEYGRIPS: ${{ steps.gpg_import.outputs.key_grips || env.KEYGRIPS || '' }}
   post-entrypoint: /post_entrypoint.sh
   args:
     - ${{ inputs.command }}
