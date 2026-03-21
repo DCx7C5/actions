@@ -134,7 +134,7 @@ runs:
         elif [[ "${{ inputs.repo }}" =~ ^true$ ]]; then
           TYPE="--repo "${{ github.repository }}""
         elif [[ "${{ inputs.org }}" =~ ^true$ ]]; then
-          TYPE="--org "${{ github.repository_owner }}""
+          TYPE="--org "${{ inputs.org || github.repository_owner }}""
         elif [[ "${{ inputs.env }}" != '' ]]; then
           TYPE="--env "${{ inputs.env }}""
         elif [[ "${{ inputs.repo }}" != '' ]]; then
