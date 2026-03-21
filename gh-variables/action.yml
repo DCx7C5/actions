@@ -159,12 +159,7 @@ runs:
             echo "jq_filter=.value" >> "$GITHUB_OUTPUT"
           fi
         fi
-        
-        if [[ -n "$INPUTS_JSON" && "$INPUTS_VARIABLE_NAME" == *$'\n'* ]]; then
-          if [[ "$INPUTS_ACTION" == "set" ]]; then
-            echo "body=$(printf '%s' "$INPUTS_BODY" | jq -rc)" >> "$GITHUB_OUTPUT"
-          fi
-        fi
+
   
 
 
