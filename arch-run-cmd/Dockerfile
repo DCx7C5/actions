@@ -133,7 +133,11 @@ ENV USER=${USER} \
     PATH=/home/${USER}/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     SHELL=/bin/bash
 
+
 COPY --from=bootstrap /rootfs/ /
+
+# Stelle sicher, dass /github/workspace existiert und builder gehört
+RUN mkdir -p /github/workspace && chown 1000:1000 /github/workspace
 
 WORKDIR /github/workspace
 
