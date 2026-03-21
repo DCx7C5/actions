@@ -71,15 +71,36 @@ inputs:
         description: "Whether to run the command with sudo inside the container (default: false)"
         required: false
         default: "false"
+    image:
+        description: "Pre-built Docker image to use instead of building a new one (optional, overrides build step if provided)"
+        required: false
+        default: 'arch-run-cmd:latest'
+    image_tag:
+        description: "Docker image tag to build (defaults to 'arch-run-cmd')"
+        required: false
+        default: 'arch-run-cmd'
+    image_version:
+        description: "Docker image version tag (defaults to 'latest')"
+        required: false
+        default: 'latest'
 
 
 runs:
   using: composite
   steps:
+    - id: checkout
+      name: Checkout repository
+      uses: ./git-checkout
+      with:
+        gh_token: ${{ inputs.gh_token || env.GH_TOKEN || github.token }}
+        action: ''
+
     - name: Build Arch Linux Docker image
       id: build_image
       uses: ./docker-build-image
       with:
+        image_working_directory: ${{ format('{0}/arch-run-cmd', github.workspace)}}
+        runtime_working_directory: ${{ github.workspace }}
         gpg_home: ${{ inputs.gpg_home }}
         ccache_dir: ${{ inputs.ccache_dir }}
         user: ${{ inputs.user || env.USER || runner.user }}
@@ -88,8 +109,8 @@ runs:
         gid: ${{ inputs.gid || env.GID || runner.gid }}
         gh_token: ${{ inputs.github_token }}
         gpg_key: ${{ inputs.gpg_key }}
-        image_tag: 'arch-run-cmd'
-        image_version: 'latest'
+        image_tag: ${{ inputs.image_tag }}
+        image_version: ${{ inputs.image_version }}
         dockerfile_path: ${{ format('{0}/arch-run-cmd/Dockerfile', github.workspace)}}
 
     - name: Push Docker image to GitHub Container Registry
@@ -103,6 +124,7 @@ runs:
       id: run_cmd
       uses: ./docker-run-image
       with:
+        working_directory: ${{ inputs.working_directory || env.WORKING_DIRECTORY || github.workspace }}
         ccache_dir: ${{ inputs.ccache_dir }}
         gpg_home: ${{ inputs.gpg_home }}
         user: ${{ inputs.user || env.USER || runner.user }}
