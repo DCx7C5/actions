@@ -158,6 +158,7 @@ runs:
           elif [ -z "${{ inputs.jq }}" ]; then
             echo "jq_filter=.value" >> "$GITHUB_OUTPUT"
           fi
+          echo "json=$INPUTS_JSON" >> "$GITHUB_OUTPUT"
         fi
         
         if [[ -n "$INPUTS_JSON" && "$INPUTS_VARIABLE_NAME" == *$'\n'* ]]; then
@@ -176,7 +177,6 @@ runs:
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         TYPE: "${{ steps.validate_and_parse.outputs.type }}"
         TYPE_OPT: "${{ steps.validate_and_parse.outputs.type_opt || '' }}"
-        VISIBILITY: "${{ steps.validate_and_parse.outputs.visibility || '' }}"
         JSON: "${{ steps.validate_and_parse.outputs.json }}"
         OUT_VAR: "${{ inputs.json != '' && 'json' || 'value' }}"
         EONERROR: "${{ inputs.exit-on-error }}"
