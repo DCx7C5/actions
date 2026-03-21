@@ -100,7 +100,7 @@ runs:
         group: ${{ inputs.group || env.GROUP || runner.group }}
         uid: ${{ inputs.uid || env.UID || runner.uid }}
         gid: ${{ inputs.gid || env.GID || runner.gid }}
-        gh_token: ${{ inputs.gh_token }}
+        gh_token: ${{ inputs.gh_token || env.GH_TOKEN || github.token }}
         gpg_key: ${{ inputs.gpg_key }}
         image_tag: ${{ inputs.image_tag }}
         image_version: ${{ inputs.image_version }}
@@ -112,7 +112,7 @@ runs:
       uses: ./docker-push-image
       with:
         working_directory: ${{ github.workspace }}
-        gh_token: ${{ inputs.github_token }}
+        gh_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
         image_name: ${{ steps.build_image.outputs.image_tag }}
         image_tag: ${{ steps.build_image.outputs.image_version }}
         registry: 'ghcr.io'
@@ -132,5 +132,10 @@ runs:
         gid: ${{ inputs.gid || env.GID || runner.gid }}
         enable_ccache: ${{ inputs.enable_ccache }}
         gpg_key_id: ${{ inputs.gpg_key_id }}
-        gh_token: ${{ inputs.gh_token }}
+        gh_token: ${{ inputs.gh_token || env.GH_TOKEN || github.token }}
+        gpg_keygrips: ${{ inputs.gpg_keygrips }}
+        gpg_passhphrase: ${{ inputs.gpg_passhphrase }}
+        preset_passphrase_cache: ${{ inputs.preset_passphrase_cache }}
+        run_with_sudo: ${{ inputs.run_with_sudo }}
+        gpg_key: ${{ inputs.gpg_key }}
         command: 'ls -las && whoami && id && env && echo "Running command: ${{ inputs.command }}" && ${{ inputs.command }}'
