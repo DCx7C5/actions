@@ -96,7 +96,7 @@ runs:
             exit 1
           fi
         fi
-        
+        basedir=$(pwd)
         cd "$(dirname "$DOCKERFILE")" || exit 1
         
         IMAGE='${{ inputs.image_tag }}:${{ inputs.image_version }}'
@@ -123,6 +123,8 @@ runs:
         docker build \
           -f "$DOCKERFILE" \
           -t "$IMAGE" .
+        
+        cd "$basedir" || exit 1
         
         echo "image_tag=${IMAGE%%:*}" >> $GITHUB_OUTPUT
         echo "image_version=${IMAGE##*:}" >> $GITHUB_OUTPUT
