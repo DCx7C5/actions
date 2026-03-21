@@ -30,7 +30,9 @@ on:
       - 'docker-push-image/**'
       - 'docker-run-image/**'
 
-
+concurrency:
+  group: 'test-arch-run-cmd'
+  cancel-in-progress: true
 
 permissions:
   packages: write
@@ -52,6 +54,10 @@ jobs:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
           permission-packages: 'write'
+          owner: true
+          repositories: |
+            DCx7C5/actions
+            
 
       - id: checkout
         name: Checkout repository
