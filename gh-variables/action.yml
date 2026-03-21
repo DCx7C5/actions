@@ -101,7 +101,7 @@ runs:
         INPUTS_REPOS: "${{ inputs.repos }}"
         TYPE_OPT: >-
           ${{ case(
-            inputs.org != '' && inputs.repos != '', '--repos $(echo "$INPUTS_REPOS" | tr "\n " "," | sed "s/,$//")',
+            inputs.org != '' && inputs.repos != '', '--repos $(echo "$INPUTS_REPOS" | tr "\n " "," | sed "s/,$//")'
           ) }}
         INPUTS_JSON: "${{ inputs.json }}"
         INPUTS_VISIBILITY: "${{ inputs.visibility }}"
