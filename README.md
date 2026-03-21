@@ -1,7 +1,5 @@
 
 [![Update Repository Tag & Release](https://github.com/DCx7C5/actions/actions/workflows/update_repo_tag.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/update_repo_tag.yml)
-[![Test gh-variables](https://github.com/DCx7C5/actions/actions/workflows/test_gh_variables.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/test_gh_variables.yml)
-[![Test gh-secrets](https://github.com/DCx7C5/actions/actions/workflows/test_gh_secrets.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/test_gh_secrets.yml)
 
 # Dystopian Actions
 
@@ -78,7 +76,6 @@ jobs:
 | [`git-add-remote`](./git-add-remote)           | Add/configure git remotes used by automation.     |
 | [`git-configure-gnupg`](./git-configure-gnupg) | Configure GnuPG for use with Git.                |
 | [`git-fetch`](./git-fetch)                     | Fetch refs from configured remotes.               |
-| [`git-find-changed`](./git-find-changed)       | Detect changed files/paths for conditional steps. |
 | [`git-stage-changes`](./git-stage-changes)     | Stage selected paths before commit.               |
 | [`git-commit`](./git-commit)                   | Create commits from staged changes.               |
 | [`git-pull-changes`](./git-pull-changes)       | Pull changes from remote.                         |
@@ -86,7 +83,6 @@ jobs:
 | [`git-merge`](./git-merge)                     | Merge branches/refs in automation workflows.      |
 | [`git-status`](./git-status)                   | Inspect and expose workspace status.              |
 | [`git-clean-workspace`](./git-clean-workspace) | Clean untracked/generated files in workspace.     |
-| [`git-create-repo`](./git-create-repo)         | Create repository via GitHub API/CLI flows.       |
 | [`git-delete-repo`](./git-delete-repo)         | Delete repository via automation flow.            |
 
 ### GPG / crypto helpers
@@ -113,8 +109,8 @@ jobs:
 | [`arch-run-cmd`](./arch-run-cmd)           | Run commands in a controlled Arch Linux container/toolchain. |
 | [`json-packages`](aur-json-packages)       | Query and mutate `.ci/packages.json` with `jq`.              |
 | [`tar-create`](./tar-create)               | Build tar archives from selected files.                      |
-| [`gh-secrets`](./gh-secrets)               | Store generated values as GitHub secret.                     |
-| [`gh-variables`](./gh-variables)           | Store generated values as GitHub Actions variable.           |
+| [`gh-secrets`](./gh-secrets)               | Store generated values as GitHub secret. [![gh-secrets](https://github.com/DCx7C5/actions/actions/workflows/test_gh_secrets.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/test_gh_secrets.yml) |
+| [`gh-variables`](./gh-variables)           | Store generated values as GitHub Actions variable. [![gh-variables](https://github.com/DCx7C5/actions/actions/workflows/test_gh_variables.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/test_gh_variables.yml) |
 | [`gh-upload-assets`](./gh-upload-assets)   | Release asset upload helper (also used by release creation). |
 | [`tg-notify`](./tg-notify)                 | Send Telegram notifications.                                 |
 | [`tg-notify-release`](./tg-notify-release) | Send Telegram release notifications.                         |
