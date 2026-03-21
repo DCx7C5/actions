@@ -63,7 +63,7 @@ runs:
     GPG_KEY_ID: ${{ inputs.gpg_key_id }}
     GPG_PASSPHRASE: ${{ inputs.gpg_passhphrase }}
     PRESET_CACHE: ${{ inputs.preset_cache }}
-    WORKING_DIRECTORY: ${{ inputs.working_directory }}
+    WORKING_DIRECTORY: ${{ inputs.working_directory || '/github/workspace' }}
   post-entrypoint: post-entrypoint.sh
   args:
     - ${{ inputs.working_directory }}
