@@ -68,4 +68,5 @@ runs:
   post-entrypoint: /post_entrypoint.sh
   args:
     - ${{ inputs.working_directory || github.workspace || '/home/runner/work' }}
+    - ${{ inputs.gpg_home || env.GNUPGHOME || '' }}
     - ${{ inputs.command || '' }}
