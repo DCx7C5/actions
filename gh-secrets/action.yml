@@ -185,12 +185,9 @@ runs:
         EONERROR: "${{ inputs.exit-on-error }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         TYPE: "${{ steps.validate_and_mask.outputs.type }}"
-        TYPE_OPT: "${{ steps.validate_and_parse.outputs.type_opt || '' }}"
         SECRET_NAME: "${{ inputs.secret-name }}"
       run: |
         GH_CMD=(${TYPE})
-
-        [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
 
         gh variable delete "$SECRET_NAME" "${GH_CMD[@]}"
 
