@@ -51,7 +51,7 @@ jobs:
         with:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
-          permission-organization-packages: 'write'
+          permission-packages: 'write'
 
       - id: checkout
         name: Checkout repository
