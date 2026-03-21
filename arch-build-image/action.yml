@@ -124,7 +124,7 @@ runs:
           -f "$DOCKERFILE" \
           -t "$IMAGE" .
         
-        echo "image_tag=${IMAGE_TAG%%:*}" >> $GITHUB_OUTPUT
-        echo "image_version=${IMAGE_TAG##*:}" >> $GITHUB_OUTPUT
+        echo "image_tag=${IMAGE%%:*}" >> $GITHUB_OUTPUT
+        echo "image_version=${IMAGE##*:}" >> $GITHUB_OUTPUT
         echo "image=${IMAGE}" >> $GITHUB_OUTPUT
-        echo "::notice::Docker image built successfully: $IMAGE_TAG"
+        echo "::notice::Docker image built successfully: $IMAGE"
