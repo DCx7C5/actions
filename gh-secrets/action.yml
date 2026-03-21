@@ -97,17 +97,17 @@ runs:
             echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
             [[ "$EONERROR" =~ ^true$ ]] && exit 1
           fi
-        
+          echo "::note::Input validation passed for 'env', 'repo', and 'org' inputs"
           if [[ -n "$INPUTS_VISIBILITY" && ! "$INPUTS_VISIBILITY" =~ ^(all|private|selected)$ ]]; then
             echo "::error::Invalid visibility '$INPUTS_VISIBILITY'. Valid options are: all, private, selected" >&2
             [[ "$EONERROR" =~ ^true$ ]] && exit 1
           fi
-        
+          echo "::note::Input validation passed for 'visibility' input"
           if [[ ! "$EONERROR" =~ ^(true|false)$ ]]; then
             echo "::error::Invalid value for 'exit_on_error': '$EONERROR'. Valid options are: true, false" >&2
             [[ "$EONERROR" =~ ^true$ ]] && exit 1
           fi
-        
+          echo "::note::Input validation passed for 'exit-on-error' input"
           # Build the type flag (env/repo/org)
           if [[ -n "$INPUTS_ENV" ]]; then
             TYPE="--env $INPUTS_ENV"
@@ -116,11 +116,11 @@ runs:
           elif [[ -n "$INPUTS_ORG" ]]; then
             TYPE="--org $INPUTS_ORG"
           fi
-        
+          echo "::debug::Determined secret type flag: '$TYPE'"
           if [[ -n "$INPUTS_ORG" && "$INPUTS_VISIBILITY" == "selected" && -z "$INPUTS_REPOSITORIES" ]]; then
             echo "::warning::Visibility 'selected' has no repositories specified"
           fi
-        
+          echo "::note::Input validation completed successfully"
           [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
         fi
 
