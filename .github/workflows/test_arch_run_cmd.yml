@@ -56,7 +56,7 @@ jobs:
           permission-packages: 'write'
           owner: true
           repositories: |
-            dcx7c5/actions
+            ${{ github.repository }}
             
       - id: checkout
         name: Checkout repository
@@ -64,6 +64,7 @@ jobs:
         with:
           fetch-depth: 0
           token: '${{ steps.app_token.outputs.token }}'
+          repository: '${{ github.repository }}'
 
       - name: Test Arch Run Command Action
         id: test_arch_run_cmd
