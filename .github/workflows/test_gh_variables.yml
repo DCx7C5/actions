@@ -62,9 +62,10 @@ jobs:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
           
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ steps.app_token.outputs.token }}
+
       - name: Test Variable Action
         id: test_variable
         uses: ./gh-variables
@@ -98,6 +99,8 @@ jobs:
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
           
       - uses: actions/checkout@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         with:
           token: ${{ steps.app_token.outputs.token }}
       - name: Test Variable Action
@@ -131,7 +134,7 @@ jobs:
         with:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ steps.app_token.outputs.token }}
       - name: Test Variable Action
