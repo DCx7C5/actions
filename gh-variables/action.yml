@@ -148,8 +148,7 @@ runs:
         [ -n "$TYPE_OPT" ] && echo "type_opt=$TYPE_OPT" >> "$GITHUB_OUTPUT"
         
         if [[ -n "$INPUTS_ORG" && ! "$INPUTS_ORG" =~ ^true$ && -n "$INPUTS_VISIBILITY" ]]; then
-          VISIBILITY="$INPUTS_VISIBILITY"
-          echo "visibility=$VISIBILITY" >> "$GITHUB_OUTPUT"
+          echo "visibility=$INPUTS_VISIBILITY" >> "$GITHUB_OUTPUT"
         fi
 
         if [[ "$INPUTS_JSON" =~ ^value|true$ ]]; then
