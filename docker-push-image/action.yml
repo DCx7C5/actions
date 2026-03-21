@@ -60,9 +60,12 @@ runs:
         registry_url="${registry_url%/}"
         repo="${{ github.repository }}"
         repo_name="${repo##*/}"
-        full_image="$registry_url/${{ inputs.user || github.actor }}/${repo_name}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
-
-        docker tag "${{ inputs.image_tag }}:${{ inputs.image_version }}" "$full_image"
+        repo_owner="${repo%%/*}"
+        full_image="${registry_url,,}/${{ github.repository_owner || 'x' }}/${repo_name,,}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
+        if [[ "$registry_url" == "*/x/*" ]]; then
+          full_image="${registry_url,,}/${repo_owner,,}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
+        fi
+        docker tag "${{ inputs.image_tag }}:${{ inputs.image_version }}" "${full_image,,}"
         echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "$registry_url" -u ${{ github.actor }} --password-stdin
         docker push "${full_image,,}"
 

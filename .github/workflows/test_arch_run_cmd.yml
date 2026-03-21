@@ -104,5 +104,5 @@ jobs:
           preset_passphrase_cache: 'false'
           run_with_sudo: 'true'
           # noinspection GithubFunctionSignatureValidation
-          user: ${{ inputs.user || github.actor || 'dcx7c5' }}
+          user: ${{ inputs.user || github.actor || 'runner' }}
           command: 'ls -la / && whoami && echo "Hello from inside the Arch Linux container!"'
