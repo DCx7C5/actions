@@ -36,7 +36,7 @@ jobs:
       - name: Build Arch Run Command Action Image
         uses: ./docker-build-image
         with:
-          github_token: ${{ steps.app_token.outputs.token }}
+          gh_token: ${{ steps.app_token.outputs.token }}
           dockerfile_path: './arch-run-cmd/Dockerfile'
           image_tag: 'arch-run-cmd'
           image_version: 'latest'
@@ -46,7 +46,7 @@ jobs:
       - name: Test Arch Run Command Action
         uses: ./docker-run-image
         with:
-          github_token: ${{ steps.app_token.outputs.token }}
+          gh_token: ${{ steps.app_token.outputs.token }}
           ccache_dir: "${{ github.workspace }}/.ccache"
           run_with_sudo: ${{ inputs.run_with_sudo || 'false' }}
           enable_ccache: ${{ inputs.enable_ccache || 'false' }}

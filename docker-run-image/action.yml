@@ -54,7 +54,7 @@ inputs:
     description: "Passphrase for GPG key (if needed, will be passed via environment variable)"
     required: false
     default: ''
-  preset_cache:
+  preset_passphrase_cache:
     description: "Whether to preset GPG passphrase in gpg-agent cache before running the command (default: true)"
     required: false
     default: "true"
