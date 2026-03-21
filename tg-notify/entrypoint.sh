@@ -94,7 +94,7 @@ fi
 # Extract message ID for verification
 MESSAGE_ID=$(echo "$RESPONSE_BODY" | jq -r '.result.message_id // empty' || true)
 if [ -n "$MESSAGE_ID" ]; then
-  echo "::notice::\e[1;32m✓\e[0m Telegram message sent successfully! (Message ID: $MESSAGE_ID)"
+  echo "::notice::Telegram message sent successfully! (Message ID: $MESSAGE_ID)"
 else
   echo "::error::No message ID in response" >&2
   exit 1

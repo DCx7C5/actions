@@ -76,7 +76,7 @@ runs:
         } >> "$GITHUB_OUTPUT"
         
         echo "::group::Import Summary (Protected Key from Inline)"
-        echo "\e[1;32m✓\e[0m GPG key imported successfully"
+        echo "GPG key imported successfully"
         echo "  Fingerprint: ${fingerprint}"
         echo "  Total keys: ${keys_total}"
         echo "  Public keys: ${keys_public}"

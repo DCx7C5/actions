@@ -49,7 +49,7 @@ runs:
         token: '${{ inputs.token }}'
         parse_mode: 'HTML'
         message: |
-          <b>\e[1;32m✓\e[0m New Signed Release Published!</b>
+          <b>New Signed Release Published!</b>
           
           <b>📦 Release Details:</b>
           - <b>Repository:</b> <code>${{ inputs.repository }}</code>
