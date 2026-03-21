@@ -113,8 +113,8 @@ runs:
       with:
         working_directory: ${{ github.workspace }}
         gh_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
-        image_name: ${{ inputs.image_tag || steps.build_image.outputs.image_tag }}
-        image_tag: ${{ inputs.image_version || steps.build_image.outputs.image_version }}
+        image_tag: ${{ inputs.image_tag || steps.build_image.outputs.image_tag }}
+        image_version: ${{ inputs.image_version || steps.build_image.outputs.image_version }}
         registry: 'ghcr.io'
 
     - name: Run command in Arch Linux container with ccache and GPG support
