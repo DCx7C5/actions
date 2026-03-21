@@ -81,16 +81,6 @@ runs:
       env:
         EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_VISIBILITY: "${{ inputs.visibility }}"
-        TYPE: >-
-          ${{ case(
-            inputs.env == 'true', '--env ${{ github.environment }}',
-            inputs.org == 'true', '--org ${{ github.repository_owner }}',
-            inputs.repo == 'true', '--repo ${{ github.repository }}',
-            inputs.env != '', '--env ${{ inputs.env }}',
-            inputs.org != '', '--org ${{ inputs.org }}', 
-            inputs.repo != '', '--repo ${{ inputs.repo }}',
-            '--repo ${{ github.repository }}'
-          ) }}
       run: |
         if [[ -n '${{ inputs.body }}' ]]; then
           echo '::add-mask::${{ inputs.body }}'
@@ -110,7 +100,13 @@ runs:
           echo "::error::Invalid value for 'exit_on_error': '$EONERROR'. Valid options are: true, false" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit 1
         fi
-        
+        if [[ -n "$INPUTS_ENV" ]]; then
+          TYPE="--env $INPUTS_ENV"
+        elif [[ -n "$INPUTS_REPO" ]]; then
+          TYPE="--repo $INPUTS_REPO"
+        elif [[ -n "$INPUTS_ORG" ]]; then
+          TYPE="--org $INPUTS_ORG"
+        fi
         if [[ "$INPUTS_VISIBILITY" = 'selected' && -z "${{ inputs.repos }}" ]]; then
           echo "::warning::Visibility 'selected' has no repositories specified"
         fi
