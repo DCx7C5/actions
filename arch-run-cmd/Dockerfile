@@ -7,12 +7,13 @@ ARG USER
 ARG GROUP
 ARG UID
 ARG GID
+ARG RUNNER_JOBS
 ARG MAKE_JOBS=4
 ENV USER=${USER:-runner} \
     GROUP=${GROUP:-runner} \
     UID=${UID:-1000} \
     GID=${GID:-1000} \
-    MAKEFLAGS="-j${MAKE_JOBS}" \
+    MAKEFLAGS=-j${MAKE_JOBS:-"${RUNNER_JOBS:-4}"} \
     WORKING_DIR=${WORKING_DIR:-"/home/$USER/work"} \
     CCACHE_DIR=${CCACHE_DIR:-"/home/$USER/work/.ccache"} \
     GNUPGHOME=${GNUPGHOME:-"/home/$USER/work/.gnupg"} \
@@ -149,7 +150,7 @@ ENV USER=${USER:-runner} \
     GROUP=${GROUP:-runner} \
     UID=${UID:-1000} \
     GID=${GID:-1000} \
-    MAKEFLAGS="-j${MAKE_JOBS}" \
+    MAKEFLAGS="-j${MAKE_JOBS:-4}" \
     WORKING_DIR=${WORKING_DIR:-"/home/$USER/work"} \
     CCACHE_DIR=${CCACHE_DIR:-"/home/$USER/work/.ccache"} \
     GNUPGHOME=${GNUPGHOME:-"/home/$USER/work/.gnupg"} \
@@ -158,7 +159,7 @@ ENV USER=${USER:-runner} \
 
 COPY --from=bootstrap /rootfs/ /
 
-WORKDIR ${WORKING_DIR:-"/home/${USER:-runner}/work"}
+WORKDIR "$WORKING_DIR"
 
 USER ${USER:-runner}
 
