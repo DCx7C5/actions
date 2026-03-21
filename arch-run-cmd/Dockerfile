@@ -124,8 +124,8 @@ MAKEPKG
 # Copy entrypoint with secure permissions
 
 # Copy entrypoint and post-entrypoint scripts with correct permissions
-COPY --chmod=755 --chown=1000:1000 entrypoint.sh /rootfs/entrypoint.sh
-COPY --chmod=755 --chown=1000:1000 post_entrypoint.sh /rootfs/post_entrypoint.sh
+COPY --chmod=755 --chown=1000:1000 ./arch-run-cmd/entrypoint.sh /rootfs/entrypoint.sh
+COPY --chmod=755 --chown=1000:1000 ./arch-run-cmd/post_entrypoint.sh /rootfs/post_entrypoint.sh
 
 
 FROM scratch AS arch_minimal
