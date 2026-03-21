@@ -125,4 +125,6 @@ runs:
           -f "$DOCKERFILE" \
           -t "${{ inputs.image_tag }}:${{ inputs.image_version }}" .
         
+        cd "${{ github.workspace }}" || true
+        
         echo "::notice::Docker image built successfully: $IMAGE"
