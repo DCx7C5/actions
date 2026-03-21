@@ -91,11 +91,12 @@ runs:
     - name: Build Arch Linux Docker image
       id: build_image
       uses: ./docker-build-image
+      working-directory: ${{ github.action_path }}
       with:
-        image_working_directory: ${{ format('{0}/arch-run-cmd', github.workspace)}}
+        image_working_directory: ${{ github.action_path }}
         runtime_working_directory: ${{ github.workspace }}
-        gpg_home: ${{ inputs.gpg_home }}
-        ccache_dir: ${{ inputs.ccache_dir }}
+        gpg_home: ${{ inputs.gpg_home || env.GPG_HOME || format('{0}/.gnupg', github.workspace) }}
+        ccache_dir: ${{ inputs.ccache_dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}
         user: ${{ inputs.user || env.USER || runner.user }}
         group: ${{ inputs.group || env.GROUP || runner.group }}
         uid: ${{ inputs.uid || env.UID || runner.uid }}
@@ -109,16 +110,19 @@ runs:
     - name: Push Docker image to GitHub Container Registry
       id: push_image
       uses: ./docker-push-image
+      working-directory: ${{ github.action_path }}
       with:
-        working_directory: ${{ github.workspace }}
         gh_token: ${{ inputs.github_token }}
-        image_name: ${{ steps.build_image.outputs.image }}
+        image_name: ${{ steps.build_image.outputs.image_tag }}
+        image_tag: ${{ steps.build_image.outputs.image_version }}
+        registry: 'ghcr.io'
+
 
     - name: Run command in Arch Linux container with ccache and GPG support
       id: run_cmd
       uses: ./docker-run-image
+      working-directory: ${{ github.workspace }}
       with:
-        working_directory: ${{ inputs.working_directory || env.WORKING_DIRECTORY || github.workspace }}
         ccache_dir: ${{ inputs.ccache_dir }}
         gpg_home: ${{ inputs.gpg_home }}
         user: ${{ inputs.user || env.USER || runner.user }}
@@ -129,4 +133,3 @@ runs:
         gpg_key_id: ${{ inputs.gpg_key_id }}
         gh_token: ${{ inputs.gh_token }}
         command: 'ls -las && whoami && id && env && echo "Running command: ${{ inputs.command }}" && ${{ inputs.command }}'
-
