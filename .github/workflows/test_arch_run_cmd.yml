@@ -46,25 +46,20 @@ jobs:
           fetch-depth: 0
           token: '${{ steps.app_token.outputs.token }}'
 
-      - name: Build Arch Run Command Action Image
-        uses: ./docker-build-image
-        with:
-          gh_token: ${{ steps.app_token.outputs.token }}
-          dockerfile_path: './arch-run-cmd/Dockerfile'
-          image_tag: ${{ inputs.image_tag || 'arch-run-cmd' }}
-          image_version: ${{ inputs.image_version || 'latest' }}
-          runtime_working_directory: ${{ github.workspace }}
-          image_working_directory: ${{ format('{0}/arch-run-cmd', github.workspace) }}
-
       - name: Test Arch Run Command Action
-        uses: ./docker-run-image
+        id: test_arch_run_cmd
+        uses: ./arch-run-cmd
         with:
           gh_token: ${{ steps.app_token.outputs.token }}
-          ccache_dir: "${{ github.workspace }}/.ccache"
-          run_with_sudo: ${{ inputs.run_with_sudo || 'false' }}
-          enable_ccache: ${{ inputs.enable_ccache || 'false' }}
+          image_tag: ${{ inputs.image_tag }}
+          image_version: ${{ inputs.image_version }}
+          enable_ccache: ${{ inputs.enable_ccache }}
           working_directory: ${{ github.workspace }}
+          gpg_key: ''
+          gpg_key_id: ''
+          gpg_keygrips: ''
+          gpg_passhphrase: ''
+          import_key_during_build: 'false'
           preset_passphrase_cache: 'false'
-
-          command: |
-            echo "Hello, World!" && ls -als && pwd
+          run_with_sudo: 'false'
+          command: 'ls -la / && whoami && echo "Hello from inside the Arch Linux container!"'
