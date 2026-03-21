@@ -10,12 +10,8 @@ branding:
 inputs:
   json_file:
     required: true
-    default: '${{ github.workspace }}/.ci/packages.json'
     description: "Path to the packages.json file to manage. Can also be GitHub Actions Variable string (default: .ci/packages.json)."
-  action:
-    required: false
-    default: 'get'
-    description: "Action to perform on packages.json: get (read), add, update, or remove a package entry."
+    default: ${{ vars.JSON_PACKAGES || '.ci/packages.json' }}
   pkg_name:
     required: false
     default: ''
@@ -28,31 +24,41 @@ inputs:
     required: false
     default: ''
     description: "Value to set for the given key. Used for add/update actions."
-  variable_scope:
+  env:
     required: false
-    default: 'repo'
-    description: "GitHub variable scope to store updated JSON: repo, env, or org."
-  variable_name:
+    description: "Set deployment environment variable"
+    default: ''
+  org:
     required: false
-    default: 'JSON_PACKAGES'
-    description: "Name of the GitHub variable to store the updated JSON."
-  scope_context:
+    description: "Name of the organisation to store the variable in (defaults to current organisation based on variable_type)"
+    default: ''
+  repo:
     required: false
-    default: 'auto'
-    description: "Context for variable scope (repository name for repo scope, organisation name for org scope, environment name for env scope). Defaults to current context."
+    description: "Set repository variable (defaults to current repository)"
+    default: ''
   steps_out:
     required: false
     default: 'false'
     description: "Whether to set the updated JSON as a step output (true/false)."
-  github_token:
+  gh_token:
     required: false
+    description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
     default: ''
-    description: "GitHub token with permission to manage variables. Required for write operations."
-
+  action:
+    required: false
+    default: 'get'
+    description: >-
+      Action to perform on the packages.json file. Valid actions are:
+      - get: Retrieve package information. If pkg_name is provided, retrieves details for that package; otherwise, retrieves the entire packages.json content.
+      - add: Add a new package entry. Requires pkg_name, key, and value inputs.
+      - update: Update an existing package entry. Requires pkg_name, key, and value inputs.
+      - remove: Remove a package entry. Requires  pkg_name input.
+      - count: Count the number of packages in the packages.json file.
+      
 
 outputs:
-  packages:
-    description: "All package names from packages.json (for 'get' without pkg_name). Returns a list of all managed packages."
+  out:
+    description: "Output channel for the action. "
     value: ${{ steps.get_all_packages.outputs.packages }}
   repository:
     description: "Repository URL for the package (for 'get' with pkg_name). Shows the upstream repository."
@@ -60,12 +66,18 @@ outputs:
   custom:
     description: "Custom flag for the package (for 'get' with pkg_name). Indicates if the package is marked as custom."
     value: ${{ steps.get_pkg_value.outputs.custom }}
-  remote_dir:
+  remote_path:
     description: "Remote type for the package (for 'get' with pkg_name). E.g. 'PKG' or 'GIT'."
     value: ${{ steps.get_pkg_value.outputs.remote_dir }}
+  remote_url:
+    description: "Remote URL for the package (for 'get' with pkg_name). Shows the URL of the remote repository or source."
+    value: ${{ steps.get_pkg_value.outputs.remote_url }}
   submodule:
     description: "Submodule info for the package (for 'get' with pkg_name). Shows submodule if present."
     value: ${{ steps.get_pkg_value.outputs.submodule }}
+  default:
+    description: "Default output channel for the action."
+    value: ${{ outputs.out }}
 
 
 runs:
@@ -74,28 +86,25 @@ runs:
     - id: validate_inputs
       shell: bash
       env:
-        ACTION: "${{ inputs.action }}"
         PKG_NAME: "${{ inputs.pkg_name }}"
         JSON_PATH: "${{ inputs.json_file }}"
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
-        SCOPE: "${{ inputs.variable_scope }}"
-        CONTEXT: "${{ inputs.scope_context }}"
+        ACTION: "${{ inputs.action }}"
       run: |
         set -euo pipefail
 
-        valid_actions=("get" "add" "update" "remove")
+        valid_actions=("get" "add" "update" "remove" "count")
 
         if [[ ! " ${valid_actions[*]} " =~ " ${ACTION} " ]]; then
           echo "::error::Invalid action '${ACTION}'. Valid actions are: ${valid_actions[*]}" >&2
           exit 1
-        fi
-
-        if [[ -z "$JSON_PATH" && ! -f "$JSON_PATH" ]]; then
+        elif [[ ! "${{ inputs.env != '' && 'true' }}${{ inputs.repo != '' && 'true' }}${{ inputs.org != '' && 'true' }}" =~ ^true$ ]]; then
+          echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
+          exit 1
+        elif [[ -z "$JSON_PATH" && ! -f "$JSON_PATH" ]]; then
           echo "::error::File '$JSON_PATH' does not exist." >&2
           exit 1
-        fi
-
-        if [[ -n "${{ inputs.key }}" && -z "${{ inputs.value }}" && ! "$ACTION" =~ '^remove|get$' ]]; then
+        elif [[ -n "${{ inputs.key }}" && -z "${{ inputs.value }}" && ! "$ACTION" =~ '^remove|get$' ]]; then
           echo "::error::Both 'key' and 'value' inputs must be provided together for add/update actions." >&2
           exit 1
         elif [[ -z "${{ inputs.key }}" && -n "${{ inputs.value }}" ]]; then
@@ -104,6 +113,17 @@ runs:
         elif [[ -n "${{ inputs.key }}" && -n "${{ inputs.value }}" && ! "$ACTION" =~ ^add|update|get$ ]]; then
           echo "::error::'key' and 'value' inputs are only valid for 'add' and 'update' actions." >&2
           exit 1
+        elif [[ -n "${{ inputs.key }}" && -z "${{ inputs.value }}" && ! "$ACTION" =~ '^remove|get$' ]]; then
+          echo "::error::Both 'key' and 'value' inputs must be provided together for add/update actions." >&2
+          exit 1
+        elif [[ -z "${{ inputs.key }}" && -n "${{ inputs.value }}" ]]; then
+          echo "::error::Both 'key' and 'value' inputs must be provided together for add/update actions." >&2
+          exit 1
+        elif [[ -n "${{ inputs.key }}" && -n "${{ inputs.value }}" && ! "$ACTION" =~ ^add|update|get$ ]]; then
+          echo "::error::'key' and 'value' inputs are only valid for 'add' and 'update' actions." >&2
+          exit 1
+        elif [[ "${{ inputs.visibility }}" == "selected" && -z "${{ inputs.repos }}" ]]; then
+          echo "::warning::Visibility 'selected' has no repositories specified"
         fi
         
         if [[ -n "$JSON_PATH" && -f "$JSON_PATH" ]]; then
@@ -115,228 +135,39 @@ runs:
           exit 1
         fi
         
-        if [[ "$SCOPE" == "org" && "$CONTEXT" == "auto" ]]; then
-          scope_context="${{ github.repository_owner }}"
-        elif [[ "$SCOPE" == "env" && "$CONTEXT" == "auto" ]]; then
-          scope_context="${{ github.environment }}"
-        elif [[ "$SCOPE" == "repo" && "$CONTEXT" == "auto" ]]; then
-          scope_context="${{ github.repository }}"
-        else
-          scope_context="$CONTEXT"
-        fi
+        echo "level=${{ case(
+          inputs.action == 'get', 'info',
+          inputs.action == 'count', 'notice',
+          'warning'
+        )}}" >> "$GITHUB_OUTPUT"
 
-    - name: Get all package names
-      id: get_all_packages
-      if: inputs.action == 'get' && inputs.pkg_name == '' && 
-          inputs.key == '' && inputs.value == ''
+    - name: Dynamical Filter
+      id: filter
       shell: bash
       env:
-        JSON_PATH: "${{ inputs.json_file }}"
-      run: |
-        set -euo pipefail
-        echo "::notice::Contents of '$JSON_PATH':"
-        
-        { echo "packages<<EOF"
-          [[ -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key | @json' "$JSON_PATH"
-          [[ ! -f "$JSON_PATH" ]] && jq -r 'to_entries[] | .key | @json' <<< "$JSON_PATH"
-          echo "EOF"
-        } >> "$GITHUB_OUTPUT"
-
-    - name: Get package values
-      id: get_pkg_value
-      if: inputs.pkg_name != '' && inputs.action == 'get' && 
-          inputs.key == '' && inputs.value == ''
-      shell: bash
-      env:
-        JSON_PATH: "${{ inputs.json_file }}"
-        PKG_NAME: "${{ inputs.pkg_name }}"
+        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       run: |
         set -euo pipefail
 
-        if [ -f "$JSON_PATH" ]; then
-          pkg=$(jq --arg pkg "$PKG_NAME" '.[$pkg] // empty' "$JSON_PATH")
-        else
-          pkg=$(jq --arg pkg "$PKG_NAME" '.[$pkg] // empty' <<< "$JSON_PATH")
-        fi
-        
-        { echo "repository=$(jq -r '.repository // empty' <<< "$pkg")"
-          echo "custom=$(jq -r '.custom // empty' <<< "$pkg")"
-          echo "remote_dir=$(jq -r '.remote_dir // empty' <<< "$pkg")"
-          echo "submodule=$(jq -r '.submodule // empty' <<< "$pkg")"
-        } >> "$GITHUB_OUTPUT"
 
-    - name: Add package entry if not exists
-      id: add_pkg
-      if: inputs.action == 'add' && 
-          inputs.pkg_name != '' && 
-         (inputs.key != '' || inputs.value != '')
-      shell: bash
-      env:
-        JSON_PATH: "${{ inputs.json_file }}"
-        PKG_NAME: "${{ inputs.pkg_name }}"
-        KEY_JSON: "${{ inputs.key }}"
-      run: |
-        set -euo pipefail
-        if [ -z "$PKG_NAME" ]; then
-          echo "::error::'pkg_name' is required for action=add." >&2
-          exit 1
-        fi
-        
-        JQ_ARGS=(--arg pkg "$PKG_NAME")
-        
-        if [[ "$KEY_JSON" =~ ^\{.*\}$ ]]; then
-          KEY_JSON="$(echo "$KEY_JSON" | jq '@json')"
-          JQ_ARGS+=(--argjson val "$KEY_JSON")
-        else
-          JQ_ARGS+=(--arg val "$KEY_JSON")
-        fi
-        
-        if [ -f "$JSON_PATH" ]; then
-          jq "${JQ_ARGS[@]}" 'if has($pkg) then . else . + {($pkg): $val} end' \
-            "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
-        else
-          {
-            echo "new_json<<EOF"
-            jq "${JQ_ARGS[@]}" 'if has($pkg) then . else . + {($pkg): $val} end' <<< "$JSON_PATH"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-        fi
+        gh variable get "${{ inputs.variable_name }}" ${GH_CMD[@]} ${FILTER[@]} 2>/dev/null
 
-    - name: Update package entry
-      id: add_update_pkg
-      if: inputs.action == 'update' && inputs.pkg_name != '' &&
-          inputs.key != '' && inputs.value != ''
-      shell: bash
-      env:
-        JSON_PATH: "${{ inputs.json_file }}"
-        PKG_NAME: "${{ inputs.pkg_name }}"
-        ACTION: "${{ inputs.action }}"
-        KEY: "${{ inputs.key }}"
-        VALUE: "${{ inputs.value }}"
-      run: |
-        set -euo pipefail
-               
-        if [ -f "$JSON_PATH" ]; then
-          jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
-            'if has($pkg) then .[$pkg][$key] = $value else . end' \
-            "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
-        elif [ ! -f "$JSON_PATH" ]; then
-          { echo "new_json<<EOF"
-            jq --arg pkg "$PKG_NAME" --arg key "$KEY" --arg value "$VALUE" \
-              'if has($pkg) then .[$pkg][$key] = $value else . + {($pkg): {($key): $value}} end | @json' \
-              <<< "$JSON_PATH"
-            echo "EOF" 
-          } >> "$GITHUB_OUTPUT"
-        else
-          echo "::error::File '$JSON_PATH' does not exist for update." >&2
-          exit 1
-        fi
-        
-        echo "::notice::Updated '$JSON_PATH' with package '$PKG_NAME' ($KEY=$VALUE) for action '$ACTION'"
-
-    - name: Remove package entry
-      id: remove_pkg
-      if: inputs.action == 'remove' || inputs.action == 'delete'
-      shell: bash
-      env:
-        JSON_PATH: "${{ inputs.json_file }}"
-        PKG_NAME: "${{ inputs.pkg_name }}"
-        ACTION: "${{ inputs.action }}"
-        KEY: "${{ inputs.key }}"
-      run: |
-        set -euo pipefail
-
-        if [[ -z "$KEY" && -f "$JSON_PATH" ]]; then
-          jq --arg pkg "$PKG_NAME" 'del(.[$pkg])' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
-          echo "::notice::Removed package '$PKG_NAME' from '$JSON_PATH'"
-        
-        elif [[ -n "$KEY" && -f "$JSON_PATH" ]]; then
-          jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key])' "$JSON_PATH" > "${JSON_PATH}.tmp" && mv "${JSON_PATH}.tmp" "$JSON_PATH"
-            echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in '$JSON_PATH'"
-        
-        elif [[ -z "$KEY" && ! -f "$JSON_PATH" ]]; then
-          { 
-            echo "new_json<<EOF"
-            jq --arg pkg "$PKG_NAME" 'del(.[$pkg]) | @json' <<< "$JSON_PATH"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-          echo "::notice::Removed package '$PKG_NAME' from inline JSON input"
-        
-        elif [[ -n "$KEY" && ! -f "$JSON_PATH" ]]; then
-          { 
-            echo "new_json<<EOF"
-            jq --arg pkg "$PKG_NAME" --arg key "$KEY" 'del(.[$pkg][$key]) | @json' <<< "$JSON_PATH"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-          echo "::notice::Removed key '$KEY' from package '$PKG_NAME' in inline JSON input"
-        fi
-
-    - name: Get all packages with key == value
-      id: get_packages_by_key_value
-      if: inputs.action == 'get' && inputs.key != '' &&
-          inputs.value != '' && inputs.pkg_name == ''
-      shell: bash
-      env:
-        JSON_PATH: "${{ inputs.json_file }}"
-        KEY: "${{ inputs.key }}"
-        VALUE: "${{ inputs.value }}"
-      run: |
-        set -euo pipefail
-
-        echo "::notice::Finding packages in '$JSON_PATH' where '$KEY' == '$VALUE'"
-        
-        if [ -f "$JSON_PATH" ]; then
-          matching_packages=$(jq -r --arg key "$KEY" --arg value "$VALUE" 'to_entries[] | select(.value[$key] == $value) | .key' "$JSON_PATH")
-        elif [ ! -f "$JSON_PATH" ]; then
-          matching_packages=$(jq -r --arg key "$KEY" --arg value "$VALUE" 'to_entries[] | select(.value[$key] == $value) | .key' <<< "$JSON_PATH")
-        else
-          echo "::error::File '$JSON_PATH' does not exist for get action." >&2
-          exit 1
-        fi
-        
-        { echo "packages<<EOF"
-          echo "$matching_packages"
-          echo "EOF"
-        } >> "$GITHUB_OUTPUT"
-
-    - name: Get all packages with key present
-      id: get_packages_by_key
-      if: inputs.action == 'get' && inputs.key != '' &&
-          inputs.value == '' && inputs.pkg_name == ''
-      shell: bash
-      env:
-        JSON_PATH: "${{ inputs.json_file }}"
-        KEY: "${{ inputs.key }}"
-      run: |
-        set -euo pipefail
-
-        echo "::notice::Finding packages in '$JSON_PATH' where key '$KEY' is present"
-        
-        if [ -f "$JSON_PATH" ]; then
-          matching_packages=$(jq -r --arg key "$KEY" 'to_entries[] | select(.value[$key] != null) | .key // empty' "$JSON_PATH")
-        elif [ ! -f "$JSON_PATH" ]; then
-          matching_packages=$(jq -r --arg key "$KEY" 'to_entries[] | select(.value[$key] != null) | .key // empty' <<< "$JSON_PATH")
-        else
-          echo "::error::File '$JSON_PATH' does not exist for get action." >&2
-          exit 1
-        fi
-        
-        { echo "packages<<EOF"
-          echo "$matching_packages"
-          echo "EOF"
-        } >> "$GITHUB_OUTPUT"
 
     - name: Save updated JSON to inline again
       id: save_updated_json
       if: steps.validate_inputs.outputs.inline_json == 'true' && 
          (steps.add_pkg.outputs.new_json != '' || steps.add_update_pkg.outputs.new_json != '' || steps.remove_pkg.outputs.new_json != '')
-      uses: DCx7C5/actions/store-as-variable@v1
+      uses: DCx7C5/actions/gh-variables@v1
       with:
-        variable_name: ${{ inputs.variable_name }}
-        value: '${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json }}'
-        scope: ${{ inputs.variable_scope }}
-        context: ${{ steps.validate_inputs.outputs.scope_context || inputs.scope_context }}
-        github_token: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
+        action: 'set'
+        variable-name: ${{ inputs.variable_name }}
+        body: ${{ steps.add_pkg.outputs.new_json || steps.add_update_pkg.outputs.new_json || steps.remove_pkg.outputs.new_json }}
+        repo: ${{ inputs.repo }}
+        org: ${{ inputs.org }}
+        env: ${{ inputs.env }}
+        repos: ${{ inputs.repos }}
+        visibility: ${{ inputs.visibility }}
+        gh-token: ${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}
 
     - name: Set step output for updated JSON
       id: set_output_updated_json
