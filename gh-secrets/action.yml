@@ -204,7 +204,7 @@ runs:
       run: |
         GH_CMD=(${TYPE})
 
-        if gh variable delete "$SECRET_NAME" "${GH_CMD[@]}" >/dev/null 2>&1; then
+        if gh secret delete "$SECRET_NAME" "${GH_CMD[@]}" >/dev/null 2>&1; then
           echo "success=true" >> "$GITHUB_OUTPUT"
           echo "::debug::Successfully executed: gh secret delete $SECRET_NAME ${GH_CMD[*]}"
           echo "::notice::GitHub Secret '$SECRET_NAME' deleted successfully"
