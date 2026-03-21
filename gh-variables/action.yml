@@ -25,7 +25,7 @@ inputs:
   repo:
     required: false
     description: "Set repository variable (defaults to current repository)"
-    default: ${{ github.repository }}
+    default: ''
   repos:
     required: false
     description: "New-line separated list of repositories to set the secret in (only for organisation secrets, defaults to all repositories in the organisation)"
