@@ -120,4 +120,4 @@ runs:
         
         cd "${{ github.workspace }}" || true
         echo "image=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
-        echo "::notice::Docker image built successfully: $IMAGE"
+        echo "::notice::Docker image built successfully: $IMAGE_NAME"
