@@ -136,7 +136,7 @@ ENV USER=${USER} \
 
 COPY --from=bootstrap /rootfs/ /
 
-WORKDIR /home/runner
+WORKDIR /home/runner/work/
 
 USER ${USER}
 
