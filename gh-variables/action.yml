@@ -211,7 +211,7 @@ runs:
         fi
 
         echo "success=true" >> "$GITHUB_OUTPUT"
-        echo "::notice::\e[1;32m✓\e[0m GitHub Variable '$INPUTS_VARIABLE_NAME' retrieved successfully"
+        echo "::notice::GitHub Variable '$INPUTS_VARIABLE_NAME' retrieved successfully"
 
     - name: Set GitHub Variable
       id: set_variable
@@ -228,8 +228,9 @@ runs:
       run: |
 
         read -ra TYPE_ARR <<< "$TYPE"
+        read -ra TYPE_OPT_ARR <<< "$TYPE_OPT"
         GH_CMD=("${TYPE_ARR[@]}")
-        [ -n "$TYPE_OPT" ] && GH_CMD+=($TYPE_OPT)
+        [ ${#TYPE_OPT_ARR[@]} -gt 0 ] && GH_CMD+=("${TYPE_OPT_ARR[@]}")
         [ -n "$VISIBILITY" ] && GH_CMD+=(--visibility "$VISIBILITY")
 
         printf '%s' "${{ steps.validate_and_parse.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
@@ -238,10 +239,10 @@ runs:
         [ $status -eq 0 ] && { 
           echo "success=true" >> "$GITHUB_OUTPUT"
           echo "::debug::Successfully executed: printf '%s' $BODY | gh variable set $INPUTS_VARIABLE_NAME ${GH_CMD[*]}"
-          echo "::notice::\e[1;32m✓\e[0m GitHub Variable '$INPUTS_VARIABLE_NAME' set successfully"
+          echo "::notice::GitHub Variable '$INPUTS_VARIABLE_NAME' set successfully"
         } || { 
           echo "success=false" >> "$GITHUB_OUTPUT"
-          echo "::error::\e[1;31m✗\e[0m Failed to set GitHub Variable '$INPUTS_VARIABLE_NAME' with arguments: ${GH_CMD[*]}" >&2
+          echo "::error::Failed to set GitHub Variable '$INPUTS_VARIABLE_NAME' with arguments: ${GH_CMD[*]}" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
         }
 
@@ -266,9 +267,9 @@ runs:
         [ $status -eq 0 ] && { 
           echo "success=true" >> "$GITHUB_OUTPUT"
           echo "::debug::Successfully executed: gh variable delete $VARIABLE_NAME ${GH_CMD[*]}"
-          echo "::notice::\e[1;32m✓\e[0m GitHub Variable '$VARIABLE_NAME' deleted successfully"
+          echo "::notice::GitHub Variable '$VARIABLE_NAME' deleted successfully"
         } || { 
           echo "success=false" >> "$GITHUB_OUTPUT"
-          echo "::error::\e[1;31m✗\e[0m Failed to delete GitHub Variable '$VARIABLE_NAME' with arguments: ${GH_CMD[*]}" >&2
+          echo "::error::Failed to delete GitHub Variable '$VARIABLE_NAME' with arguments: ${GH_CMD[*]}" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
         }
