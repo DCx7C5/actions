@@ -72,7 +72,7 @@ runs:
       done <<< "$KEYGRIPS"
       echo "::notice::Preset GPG passphrase in gpg-agent cache"
     fi
-  post-entrypoint: ${{ github.action_path }}/post-entrypoint.sh
+  post-entrypoint: post-entrypoint.sh
   args:
     - ${{ inputs.working_directory }}
     - ${{ inputs.gpg_home }}
