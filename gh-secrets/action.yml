@@ -108,15 +108,17 @@ runs:
             [[ "$EONERROR" =~ ^true$ ]] && exit 1
           fi
           echo "::note::Input validation passed for 'exit-on-error' input"
-          # Build the type flag (env/repo/org)
+
           if [[ -n "$INPUTS_ENV" ]]; then
             TYPE="--env $INPUTS_ENV"
           elif [[ -n "$INPUTS_REPO" ]]; then
             TYPE="--repo $INPUTS_REPO"
           elif [[ -n "$INPUTS_ORG" ]]; then
             TYPE="--org $INPUTS_ORG"
+          else
+            TYPE="--repo ${{ github.repository }}"
           fi
-          echo "::debug::Determined secret type flag: '$TYPE'"
+        
           if [[ -n "$INPUTS_ORG" && "$INPUTS_VISIBILITY" == "selected" && -z "$INPUTS_REPOSITORIES" ]]; then
             echo "::warning::Visibility 'selected' has no repositories specified"
           fi
