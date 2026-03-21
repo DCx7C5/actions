@@ -36,8 +36,8 @@ inputs:
     default: 'false'
   visibility:
     required: false
-    description: "Visibility of the secret in the selected repositories (only for organisation secrets, (all|private|selected) defaults to 'selected')"
-    default: 'selected'
+    description: "Visibility of the secret in the selected repositories (only for organisation secrets, (all|private|selected) defaults to '')"
+    default: ''
   user:
     required: false
     description: "Set a user secret (GitHub Enterprise Server only)"
