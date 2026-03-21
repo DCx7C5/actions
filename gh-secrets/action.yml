@@ -162,7 +162,7 @@ runs:
         }
         
         status=$?
-        ic [ $status -eq 0 ]; then
+        if [ $status -eq 0 ]; then
           echo "success=true" >> "$GITHUB_OUTPUT"
           echo "::debug::Successfully set GitHub Secret '$SECRET_NAME' with arguments: ${GH_CMD[*]}"
           echo "::notice::Successfully set GitHub Secret '$SECRET_NAME'"
