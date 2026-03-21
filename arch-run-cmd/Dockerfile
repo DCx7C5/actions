@@ -73,29 +73,29 @@ RUN mkdir -p /rootfs/dev /rootfs/proc /rootfs/sys /rootfs/run \
     && umount /rootfs/sys 2>/dev/null || true
 
 # Setup user & sudo (no dbus needed in minimal container)
-RUN groupadd -R /rootfs builder 2>/dev/null || true \
-  && useradd -R /rootfs -m -u 1000 -g builder -s /bin/bash builder 2>/dev/null || true \
+RUN groupadd -R /rootfs runner 2>/dev/null || true \
+  && useradd -R /rootfs -m -u 1000 -g runner -s /bin/bash runner 2>/dev/null || true \
   && mkdir -p /rootfs/etc/sudoers.d \
-  && echo "builder ALL=(ALL) NOPASSWD: ALL" > "/rootfs/etc/sudoers.d/builder-nopasswd" \
-  && chmod 0440 "/rootfs/etc/sudoers.d/builder-nopasswd" 2>/dev/null || true
+  && echo "runner ALL=(ALL) NOPASSWD: ALL" > "/rootfs/etc/sudoers.d/runner-nopasswd" \
+  && chmod 0440 "/rootfs/etc/sudoers.d/runner-nopasswd" 2>/dev/null || true
 
 RUN cat <<EOF >> /rootfs/etc/bash.bashrc
 alias ls="ls --color=auto "
 export LANG=C.UTF-8
 export TERM=xterm-256color
 export MAKEFLAGS="-j$(nproc)"
-export CCACHE_DIR=/home/builder/.ccache
+export CCACHE_DIR=/home/runner/.ccache
 force_color_prompt=yes
 export PS1='\[\033[1;32m\]\u\[\033[1;37m\]@\[\033[1;36m\]\h\[\033[00m\]:\[\033[1;34m\]\w\[\033[00m\]\$ '
 EOF
 
 # Create cache directories with correct ownership
-RUN mkdir -p /rootfs/home/builder/.ccache /rootfs/home/builder/.gnupg /rootfs/home/builder/.cache \
-  && chown -R 1000:1000 /rootfs/home/builder/.ccache \
-                        /rootfs/home/builder/.gnupg \
-                        /rootfs/home/builder/.cache \
-  && chmod 700 /rootfs/home/builder/.gnupg \
-  && chmod 700 /rootfs/home/builder/.ccache
+RUN mkdir -p /rootfs/home/runner/.ccache /rootfs/home/runner/.gnupg /rootfs/home/runner/.cache \
+  && chown -R 1000:1000 /rootfs/home/runner/.ccache \
+                        /rootfs/home/runner/.gnupg \
+                        /rootfs/home/runner/.cache \
+  && chmod 700 /rootfs/home/runner/.gnupg \
+  && chmod 700 /rootfs/home/runner/.ccache
 
 # Optimize makepkg.conf for container builds
 RUN cat <<'MAKEPKG' >> /rootfs/etc/makepkg.conf
@@ -109,7 +109,7 @@ CCACHE_MAXSIZE="1G"
 BUILDENV=(!distcc !color !ccache !check !sign !debug)
 OPTIONS=(!strip !docs !libtool !staticlibs !emptydirs !zipman !purge !debug)
 
-PACKAGER="${PACKAGER:-Unknown Packager <builder@container>}"
+PACKAGER="${PACKAGER:-Unknown Packager <runner@container>}"
 MAKEPKG
 
 # Copy entrypoint with secure permissions
