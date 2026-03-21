@@ -1,10 +1,9 @@
 #file: noinspection GithubFunctionSignatureValidation
-name: "Test gh-variables and gh-secrets in GitHub Actions"
+name: "Test gh-variables in GitHub Actions"
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'gh-secrets/**'
       - 'gh-variables/**'
 
 permissions: 
@@ -19,8 +18,6 @@ jobs:
       matrix_variables_set: ${{ steps.set_variables.outputs.matrix_variables_set }}
       matrix_variables_get: ${{ steps.set_variables.outputs.matrix_variables_get }}
       matrix_variables_delete: ${{ steps.set_variables.outputs.matrix_variables_delete }}
-      matrix_secrets_set: ${{ steps.set_variables.outputs.matrix_secrets_set }}
-      matrix_secrets_delete: ${{ steps.set_variables.outputs.matrix_secrets_delete }}
     steps:
 
       - name: Prepare Test Cases
@@ -42,28 +39,13 @@ jobs:
           # Stelle sicher, dass jedes Objekt ein body-Feld hat (ggf. leer)
           jq 'map(if has("body") then . else . + {"body": ""} end)' matrix_variables.json > tmp && mv tmp matrix_variables.json
 
-          # Secrets-Testfälle (nur gültige Kombinationen, nur ein Feld gesetzt)
-          cat > matrix_secrets.json <<EOF
-          [
-            {"action": "set", "secret-name": "TEST_SECRET_REPO", "body": "secretvalue", "repo": "DCx7C5/actions"},
-            {"action": "set", "secret-name": "TEST_SECRET_ENV", "body": "secretvalue", "env": "TEST"},
-            {"action": "delete", "secret-name": "TEST_SECRET_REPO", "body": "secretvalue", "repo": "DCx7C5/actions"},
-            {"action": "delete", "secret-name": "TEST_SECRET_ENV", "body": "secretvalue", "env": "TEST"}
-          ]
-          EOF
-
-          jq 'map(if has("body") then . else . + {"body": ""} end)' matrix_secrets.json > tmp && mv tmp matrix_secrets.json
           matrix_variables_set=$(jq -cr 'map(select(.action == "set"))' matrix_variables.json)
           echo "matrix_variables_set=${matrix_variables_set:-[]}" >> "$GITHUB_OUTPUT"
           matrix_variables_get=$(jq -cr 'map(select(.action == "get"))' matrix_variables.json)
           echo "matrix_variables_get=${matrix_variables_get:-[]}" >> "$GITHUB_OUTPUT"
           matrix_variables_delete=$(jq -cr 'map(select(.action == "delete"))' matrix_variables.json)
           echo "matrix_variables_delete=${matrix_variables_delete:-[]}" >> "$GITHUB_OUTPUT"
-          matrix_secrets_set=$(jq -cr 'map(select(.action == "set"))' matrix_secrets.json)
-          echo "matrix_secrets_set=${matrix_secrets_set:-[]}" >> "$GITHUB_OUTPUT"
-          matrix_secrets_delete=$(jq -cr 'map(select(.action == "delete"))' matrix_secrets.json)
-          echo "matrix_secrets_delete=${matrix_secrets_delete:-[]}" >> "$GITHUB_OUTPUT"
-          
+
 
   test-set-variables:
     runs-on: ubuntu-latest
@@ -98,40 +80,6 @@ jobs:
           repo: ${{ matrix.repo || '' }}
           repos: ${{ matrix.repos || '' }}
           visibility: ${{ matrix.visibility || '' }}
-
-  test-set-secrets:
-    runs-on: ubuntu-latest
-    needs:
-      - create-testcases
-    strategy:
-      matrix:
-        include: ${{ fromJson(needs.create-testcases.outputs.matrix_secrets_set) }}
-    steps:
-      - name: GitHub App Token
-        id: app_token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
-          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
-          
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ steps.app_token.outputs.token }}
-      - name: Test Secret Action
-        id: test_secret
-        uses: ./gh-secrets
-        with:
-          secret-name: ${{ matrix.secret-name }}
-          body: ${{ matrix.body }}
-          action: ${{ matrix.action }}
-          print: ${{ matrix.print }}
-          gh-token: ${{ steps.app_token.outputs.token }}
-          env: ${{ matrix.env }}
-          org: ${{ matrix.org }}
-          repo: ${{ matrix.repo }}
-          repos: ${{ matrix.repos }}
-          visibility: ${{ matrix.visibility }}
-          no-repos-select: ${{ matrix.no-repos-select }}
 
   test-get-variables:
     runs-on: ubuntu-latest
@@ -199,37 +147,3 @@ jobs:
           repo: ${{ matrix.repo || '' }}
           repos: ${{ matrix.repos || '' }}
           visibility: ${{ matrix.visibility || '' }}
-
-  test-delete-secrets:
-    runs-on: ubuntu-latest
-    needs:
-      - create-testcases
-      - test-set-secrets
-    strategy:
-      matrix:
-        include: ${{ fromJson(needs.create-testcases.outputs.matrix_secrets_delete) }}
-    steps:
-      - name: GitHub App Token
-        id: app_token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
-          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
-          
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ steps.app_token.outputs.token }}
-      - name: Test Secret Action
-        id: test_secret
-        uses: ./gh-secrets
-        with:
-          secret-name: ${{ matrix.secret-name }}
-          body: ${{ matrix.body || '' }}
-          action: ${{ matrix.action }}
-          gh-token: ${{ steps.app_token.outputs.token }}
-          env: ${{ matrix.env || '' }}
-          org: ${{ matrix.org || '' }}
-          repo: ${{ matrix.repo || '' }}
-          repos: ${{ matrix.repos || '' }}
-          visibility: ${{ matrix.visibility || '' }}
-          no-repos-select: ${{ matrix.no-repos-select || '' }}
