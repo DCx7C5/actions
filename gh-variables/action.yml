@@ -162,9 +162,10 @@ runs:
         
         if [[ "$INPUTS_VARIABLE_NAME" == *$'\n'* && -n "$INPUTS_JSON" ]]; then
           if [[ "$INPUTS_ACTION" == "set" ]]; then
-            echo "body=$(printf '%s' "$INPUTS_BODY"| jq -rc)" >> "$GITHUB_OUTPUT"
+            echo "body=$(printf '%s' "$INPUTS_BODY" | jq -rc)" >> "$GITHUB_OUTPUT"
           fi
         fi
+  
 
 
     - name: Get GitHub Variable
