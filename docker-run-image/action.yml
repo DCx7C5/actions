@@ -38,7 +38,7 @@ inputs:
     description: "Enable ccache for faster incremental builds"
     required: false
     default: "true"
-  github_token:
+  gh_token:
     description: "GitHub token for API access (defaults to github.token)"
     required: false
     default: ''
@@ -92,6 +92,5 @@ runs:
     GROUP: "${{ inputs.group || env.GROUP || runner.group }}"
     UID: "${{ inputs.uid || env.UID || '1000' }}"
     GID: "${{ inputs.gid || env.GID || '1000' }}"
-  post-entrypoint: /post_entrypoint.sh
   args:
     - ${{ inputs.command }}

@@ -51,7 +51,7 @@ jobs:
           run_with_sudo: ${{ inputs.run_with_sudo || 'false' }}
           enable_ccache: ${{ inputs.enable_ccache || 'false' }}
           working_directory: ${{ github.workspace }}
-          preset_cache: 'false'
+          preset_passphrase_cache: 'false'
 
           command: |
             echo "Hello, World!" && ls -als && pwd

@@ -39,7 +39,7 @@ inputs:
         description: "Enable ccache for faster incremental builds"
         required: false
         default: "true"
-    github_token:
+    gh_token:
         description: "GitHub token for API access (defaults to github.token)"
         required: false
         default: ''
@@ -86,8 +86,10 @@ runs:
         group: ${{ inputs.group || env.GROUP || runner.group }}
         uid: ${{ inputs.uid || env.UID || runner.uid }}
         gid: ${{ inputs.gid || env.GID || runner.gid }}
-        github_token: ${{ inputs.github_token }}
+        gh_token: ${{ inputs.github_token }}
         gpg_key: ${{ inputs.gpg_key }}
+        image_tag: 'arch-run-cmd'
+        image_version: 'latest'
         dockerfile_path: ./Dockerfile
 
     - name: Push Docker image to GitHub Container Registry
@@ -95,11 +97,27 @@ runs:
       uses: ./docker-push-image
       with:
         gh_token: ${{ inputs.github_token }}
-        image_name: ''
+        image_name: ${{ steps.build_image.outputs.image }}
+
+    - name: Run command in Arch Linux container with ccache and GPG support
+      id: run_cmd
+      uses: ./docker-run-image
+      with:
+        ccache_dir: ${{ inputs.ccache_dir }}
+        gpg_home: ${{ inputs.gpg_home }}
+        user: ${{ inputs.user || env.USER || runner.user }}
+        group: ${{ inputs.group || env.GROUP || runner.group }}
+        uid: ${{ inputs.uid || env.UID || runner.uid }}
+        gid: ${{ inputs.gid || env.GID || runner.gid }}
+        enable_ccache: ${{ inputs.enable_ccache }}
+        gpg_key_id: ${{ inputs.gpg_key_id }}
+        gh_token: ${{ inputs.github_token }}
+        command: ''
 
 
     - name: Run command in Arch Linux container
       id: run_cmd
       uses: ./docker-run-image
       with:
+        gh_token: ${{ inputs.github_token }}
         command: ''

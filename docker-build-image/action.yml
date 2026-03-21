@@ -4,9 +4,8 @@ author: "DCx7C5"
 
 inputs:
   image_tag:
-    description: "Docker image tag to build (defaults to 'arch-run-cmd-dcx')"
-    required: false
-    default: 'arch-run-cmd-dcx'
+    description: "Docker image tag to build"
+    required: true
   image_version:
     description: "Docker image version tag (defaults to 'latest')"
     required: false
@@ -14,7 +13,7 @@ inputs:
   dockerfile_path:
     description: "Path to the Dockerfile to use for building the image"
     required: false
-    default: ''
+    default: '.'
   image_working_directory:
     description: "Working directory inside container"
     required: false
@@ -51,7 +50,7 @@ inputs:
     description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
     required: false
     default: ''
-  github_token:
+  gh_token:
     description: "GitHub token for API access (defaults to github.token)"
     required: false
     default: ''
