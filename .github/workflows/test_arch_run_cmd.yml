@@ -26,7 +26,16 @@ on:
   push:
     paths:
       - 'arch-run-cmd/**'
+      - 'docker-build-image/**'
+      - 'docker-push-image/**'
+      - 'docker-run-image/**'
 
+
+
+permissions:
+  packages: write
+  contents: write
+  actions: write
 
 jobs:
   test-run-cmd:
