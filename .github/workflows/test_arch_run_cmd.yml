@@ -5,7 +5,7 @@ on:
       user:
         description: "User name to create inside the container (defaults to runner.user)"
         required: false
-        default: ''
+        default: ${{ runner.user }}
         type: string
       image_tag:
         description: "The name of the Docker image to build and run"
