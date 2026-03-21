@@ -5,19 +5,19 @@ set -euo pipefail
 # Error handling with context
 trap 'echo "ERROR: Script failed on line $LINENO (command: $BASH_COMMAND)" >&2; exit 1' ERR
 
-WORK_DIR="$1"
+WORKING_DIR="$1"
 # Fallback auf Standard, wenn leer, null oder ein Systempfad
-if [[ -z "$WORK_DIR" || "$WORK_DIR" == "null" || "$WORK_DIR" == "/bin/bash" ]]; then
-  WORK_DIR="/home/runner/work"
+if [[ -z "$WORKING_DIR" || "$WORKING_DIR" == "null" || "$WORKING_DIR" == "/bin/bash" ]]; then
+  WORKING_DIR="/home/runner/work"
 fi
-GNUPGHOME="${2:-$WORK_DIR/.gnupg}"
+GNUPGHOME="${2:-$WORKING_DIR/.gnupg}"
 
-if [[ -d "$WORK_DIR" && "$GNUPGHOME" == ".gnupg" ]]; then
-  export GNUPGHOME="$WORK_DIR/.gnupg"
-elif [[ -d "$WORK_DIR" && -d "$GNUPGHOME" ]]; then
+if [[ -d "$WORKING_DIR" && "$GNUPGHOME" == ".gnupg" ]]; then
+  export GNUPGHOME="$WORKING_DIR/.gnupg"
+elif [[ -d "$WORKING_DIR" && -d "$GNUPGHOME" ]]; then
   export GNUPGHOME="$GNUPGHOME"
 else
-  export GNUPGHOME="$WORK_DIR/.gnupg"
+  export GNUPGHOME="$WORKING_DIR/.gnupg"
 fi
 if [[ -d "$GNUPGHOME" && -n "$GPG_KEY_ID" && -n "$GPG_PASSPHRASE" && "$PRESET_CACHE" == "true" ]]; then
   KEYGRIPS=$(gpg --batch --with-colons --list-secret-keys "$GPG_KEY_ID" 2>/dev/null | awk -F: '/^grp:/ {print $10}')
@@ -35,22 +35,22 @@ fi
 COMMAND="$*"
 
 
-if [[ ! -d "$WORK_DIR" ]]; then
-  if [[ "$(sudo -u runner env "${ENV_VARS[@]}" id -u)" == "0" ]]; then
-    sudo -u runner env "${ENV_VARS[@]}" mkdir -p "$WORK_DIR"
+if [[ ! -d "$WORKING_DIR" ]]; then
+  if [[ "$(sudo -u "$USER" env "${ENV_VARS[@]}" id -u)" == "0" ]]; then
+    mkdir -p "$WORKING_DIR"
   else
-    echo "WARNING: Cannot create work directory: $WORK_DIR (no permission, not root)" >&2
+    echo "WARNING: Cannot create work directory: $WORKING_DIR (no permission, not root)" >&2
     if [[ -d "/home/runner/work" && -w "/home/runner/work" ]]; then
       echo "Falling back to /home/runner/work as work directory." >&2
-      WORK_DIR="/home/runner/work"
+      WORKING_DIR="/home/runner/work"
     else
       echo "ERROR: /home/runner/work is not available or not writable. Aborting." >&2
       exit 1
     fi
   fi
 fi
-cd "$WORK_DIR" || {
-  echo "ERROR: Cannot change to work directory: $WORK_DIR" >&2
+cd "$WORKING_DIR" || {
+  echo "ERROR: Cannot change to work directory: $WORKING_DIR" >&2
   exit 1
 }
 
@@ -68,7 +68,7 @@ IS_GITHUB_ACTIONS="${GITHUB_ACTIONS:-false}"
 IS_CI="${CI:-false}"
 
 # Makepkg-specific optimization
-export CCACHE_DIR="${WORK_DIR}/.ccache"
+export CCACHE_DIR="${WORKING_DIR}/.ccache"
 export CCACHE_MAXSIZE="2G"
 
 # In GitHub Actions, be less verbose (save logs, faster)
@@ -83,9 +83,9 @@ if [ "$IS_GITHUB_ACTIONS" != "true" ] && [ $# -eq 0 ]; then
 fi
 
 # Ensure work directory exists (create if needed for makepkg)
-if ! [ -d "$WORK_DIR" ]; then
-  sudo -u runner env "${ENV_VARS[@]}" mkdir -p "$WORK_DIR" || {
-    echo "ERROR: Cannot create work directory: $WORK_DIR" >&2
+if ! [ -d "$WORKING_DIR" ]; then
+  mkdir -p "$WORKING_DIR" || {
+    echo "ERROR: Cannot create work directory: $WORKING_DIR" >&2
     exit 1
   }
 fi
@@ -151,9 +151,13 @@ ENV_VARS=(
 
 if [[ -n "$COMMAND" ]]; then
   if [ "$_RUN_WITH_SUDO" = "true" ]; then
-    exec sudo -u runner env "${ENV_VARS[@]}" bash -c $COMMAND
+    # shellcheck disable=SC2048
+    # shellcheck disable=SC2086
+    exec sudo -u runner env "${ENV_VARS[@]}" bash -c $*
   else
-    exec bash -c "$COMMAND"
+    # shellcheck disable=SC2048
+    # shellcheck disable=SC2086
+    exec bash -c $*
   fi
 else
   if [ "$IS_GITHUB_ACTIONS" != "true" ]; then

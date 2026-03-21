@@ -1,7 +1,17 @@
 FROM alpine:3.22 AS bootstrap
 
-ARG USER=runner
+ARG USER
+ARG WORKING_DIR
+ARG CCACHE_DIR
+ARG UID
+ARG GID
 ARG MAKE_JOBS=4
+ENV USER=${USER} \
+    MAKEFLAGS="-j${MAKE_JOBS}" \
+    CCACHE_DIR=/home/${USER}/.ccache \
+    GNUPGHOME=/home/${USER}/.gnupg \
+    PATH=/home/${USER}/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    SHELL=/bin/bash
 
 # Install minimal pacman + tools (aggressive size optimization)
 RUN apk add --no-cache \
@@ -10,7 +20,6 @@ RUN apk add --no-cache \
     shadow \
     bash \
     zstd \
-    gnupg \
     tar \
     ca-certificates \
     git \
@@ -73,29 +82,29 @@ RUN mkdir -p /rootfs/dev /rootfs/proc /rootfs/sys /rootfs/run \
     && umount /rootfs/sys 2>/dev/null || true
 
 # Setup user & sudo (no dbus needed in minimal container)
-RUN groupadd -R /rootfs runner 2>/dev/null || true \
-  && useradd -R /rootfs -m -u 1000 -g runner -s /bin/bash runner 2>/dev/null || true \
+RUN groupadd -R /rootfs ${USER:-runner} 2>/dev/null || true \
+  && useradd -R /rootfs -m -u ${UID:-1000} -g ${USER:-runner} -s /bin/bash ${USER:-runner} 2>/dev/null || true \
   && mkdir -p /rootfs/etc/sudoers.d \
-  && echo "runner ALL=(ALL) NOPASSWD: ALL" > "/rootfs/etc/sudoers.d/runner-nopasswd" \
-  && chmod 0440 "/rootfs/etc/sudoers.d/runner-nopasswd" 2>/dev/null || true
+  && echo "${USER:-runner} ALL=(ALL) NOPASSWD: ALL" > "/rootfs/etc/sudoers.d/${USER:-runner}-nopasswd" \
+  && chmod 0440 "/rootfs/etc/sudoers.d/${USER:-runner}-nopasswd" 2>/dev/null || true
 
 RUN cat <<EOF >> /rootfs/etc/bash.bashrc
 alias ls="ls --color=auto "
 export LANG=C.UTF-8
 export TERM=xterm-256color
 export MAKEFLAGS="-j$(nproc)"
-export CCACHE_DIR=/home/runner/.ccache
+export CCACHE_DIR=/home/${USER:-runner}/.ccache
 force_color_prompt=yes
 export PS1='\[\033[1;32m\]\u\[\033[1;37m\]@\[\033[1;36m\]\h\[\033[00m\]:\[\033[1;34m\]\w\[\033[00m\]\$ '
 EOF
 
 # Create cache directories with correct ownership
-RUN mkdir -p /rootfs/home/runner/.ccache /rootfs/home/runner/.gnupg /rootfs/home/runner/.cache \
-  && chown -R 1000:1000 /rootfs/home/runner/.ccache \
-                        /rootfs/home/runner/.gnupg \
-                        /rootfs/home/runner/.cache \
-  && chmod 700 /rootfs/home/runner/.gnupg \
-  && chmod 700 /rootfs/home/runner/.ccache
+RUN mkdir -p /rootfs/home/${USER:-runner}/.ccache /rootfs/home/${USER:-runner}/.gnupg /rootfs/home/${USER:-runner}/.cache \
+  && chown -R 1000:1000 /rootfs/home/${USER:-runner}/.ccache \
+                        /rootfs/home/${USER:-runner}/.gnupg \
+                        /rootfs/home/${USER:-runner}/.cache \
+  && chmod 700 /rootfs/home/${USER:-runner}/.gnupg \
+  && chmod 700 /rootfs/home/${USER:-runner}/.ccache
 
 # Optimize makepkg.conf for container builds
 RUN cat <<'MAKEPKG' >> /rootfs/etc/makepkg.conf
@@ -109,7 +118,7 @@ CCACHE_MAXSIZE="1G"
 BUILDENV=(!distcc !color !ccache !check !sign !debug)
 OPTIONS=(!strip !docs !libtool !staticlibs !emptydirs !zipman !purge !debug)
 
-PACKAGER="${PACKAGER:-Unknown Packager <runner@container>}"
+PACKAGER="${PACKAGER:-Unknown Packager <${USER:-runner}@container>}"
 MAKEPKG
 
 # Copy entrypoint with secure permissions
@@ -121,24 +130,20 @@ COPY --chmod=755 --chown=1000:1000 post_entrypoint.sh /rootfs/post_entrypoint.sh
 
 FROM scratch AS arch_minimal
 
-ARG USER=runner
+ARG USER
 ARG BUILD_DATE
 ARG VCS_REF
-
-ENV USER=${USER} \
-    LANG=C.UTF-8 \
-    TERM=xterm-256color \
-    MAKEFLAGS="-j4" \
-    CCACHE_DIR=/home/${USER}/.ccache \
-    PATH=/home/${USER}/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-    SHELL=/bin/bash
+ARG WORKING_DIR
+ARG CCACHE_DIR
+ARG UID
+ARG GID
 
 
 COPY --from=bootstrap /rootfs/ /
 
-USER runner
-WORKDIR /home/runner/work/
+WORKDIR ${WORKING_DIR:-"/home/${USER:-runner}/work"}
 
+USER ${USER:-runner}
 
 # Comprehensive labels for Docker metadata and CI tracking
 LABEL org.opencontainers.image.title="Dystopian AUR Build Environment" \

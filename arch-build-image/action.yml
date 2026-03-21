@@ -1,0 +1,51 @@
+name: "Build Arch Linux Docker Image"
+description: "Build the Arch Linux Docker image used for AUR builds"
+author: "DCx7C5"
+
+inputs:
+  working_directory:
+    description: "Working directory inside container"
+    required: false
+    default: ${{ github.workspace }}
+  gpg_home:
+    description: "GPG home directory (usually in workspace)"
+    required: false
+    default: '${{ github.workspace }}/.gnupg'
+  ccache_dir:
+    description: "ccache directory for build caching"
+    required: false
+    default: "${{ github.workspace }}/.ccache"
+  github_token:
+    description: "GitHub token for API access (defaults to github.token)"
+    required: false
+    default: ''
+
+
+runs:
+  using: composite
+  steps:
+    - id: build_image
+      shell: bash
+      env:
+        WORKING_DIR: ${{ inputs.working_directory || github.workspace }}
+        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || github.token }}"
+        GNUPGHOME: "${{ inputs.gpg_home }}"
+        CCACHE_DIR: "${{ inputs.ccache_dir }}"
+
+      run: |
+        set -euo pipefail
+        
+        IMAGE_TAG="arch-aur-builder"
+        
+        echo "::notice::Building Arch Linux Docker image for AUR builds..."
+        docker build \
+          --build-arg WORKING_DIR=$WORKING_DIR \
+          --build-arg GNUPGHOME=$GNUPGHOME \
+          --build-arg CCACHE_DIR=$CCACHE_DIR \
+          --build-arg USER=$USER \
+          --build-arg UID=$(id -u) \
+          --build-arg GID=$(id -g) \
+          -f ./arch-run-cmd/Dockerfile \
+          -t $IMAGE_TAG:latest .
+        
+        echo "::notice::Docker image built successfully: $IMAGE_TAG"

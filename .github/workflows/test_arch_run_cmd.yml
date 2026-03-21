@@ -21,6 +21,13 @@ jobs:
         with:
           token: ${{ steps.app_token.outputs.token }}
 
+      - name: Build Arch Run Command Action
+        uses: ./arch-build-image
+        with:
+          working_directory: '${{ github.workspace }}'
+          ccache_dir: "${{ inputs.ccache_dir }}"
+          gpg_home: ${{ inputs.gpg_home }}
+
       - name: Test Arch Run Command Action
         uses: ./arch-run-cmd
         with:
@@ -54,7 +61,14 @@ jobs:
           configure_git: 'true'
           setup_home: 'true'
           preset_pass: 'false'
-          gpg_home: '${{ github.workspace }}/.gnupg'
+
+      - name: Build Arch Run Command Action
+        uses: ./arch-build-image
+        with:
+          working_directory: ${{ github.workspace }}
+          ccache_dir: ${{ inputs.ccache_dir }}
+          gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
+          github_token: ${{ steps.app_token.outputs.token }}
 
       - name: Test Arch Run Command Action with Detached Signature
         uses: ./arch-run-cmd
@@ -64,5 +78,5 @@ jobs:
           github_token: ${{ steps.app_token.outputs.token }}
           run_with_sudo: 'true'
           working_directory: '${{ github.workspace }}'
-          gpg_home: '${{ github.workspace }}/.gnupg'
+          gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
           command: 'echo "Hello, World!"'
