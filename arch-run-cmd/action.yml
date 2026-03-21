@@ -113,17 +113,16 @@ runs:
       with:
         working_directory: ${{ github.workspace }}
         gh_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
-        image_name: ${{ steps.build_image.outputs.image_tag }}
-        image_tag: ${{ steps.build_image.outputs.image_version }}
+        image_name: ${{ inputs.image_tag || steps.build_image.outputs.image_tag }}
+        image_tag: ${{ inputs.image_version || steps.build_image.outputs.image_version }}
         registry: 'ghcr.io'
-
 
     - name: Run command in Arch Linux container with ccache and GPG support
       id: run_cmd
       if: success()
       uses: ./docker-run-image
       with:
-        working_directory: "${{ github.workspace }}"
+        working_directory: ${{ github.workspace }}
         ccache_dir: ${{ inputs.ccache_dir }}
         gpg_home: ${{ inputs.gpg_home }}
         user: ${{ inputs.user || env.USER || runner.user }}
@@ -138,4 +137,5 @@ runs:
         preset_passphrase_cache: ${{ inputs.preset_passphrase_cache }}
         run_with_sudo: ${{ inputs.run_with_sudo }}
         gpg_key: ${{ inputs.gpg_key }}
+
         command: 'ls -las && whoami && id && env && echo "Running command: ${{ inputs.command }}" && ${{ inputs.command }}'
