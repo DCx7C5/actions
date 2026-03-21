@@ -148,7 +148,8 @@ runs:
         [ -n "$TYPE_OPT" ] && echo "type_opt=$TYPE_OPT" >> "$GITHUB_OUTPUT"
         
         if [[ -n "$INPUTS_ORG" && ! "$INPUTS_ORG" =~ ^true$ && -n "$INPUTS_VISIBILITY" ]]; then
-          echo "visibility=$INPUTS_VISIBILITY" >> "$GITHUB_OUTPUT"
+          VISIBILITY="$INPUTS_VISIBILITY"
+          echo "visibility=$VISIBILITY" >> "$GITHUB_OUTPUT"
         fi
 
         if [[ "$INPUTS_JSON" =~ ^value|true$ ]]; then
@@ -187,8 +188,8 @@ runs:
       run: |
         GH_CMD=(${TYPE})
         
-        [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
-        [ -n "${VISIBILITY}" ] && GH_CMD+=(--visibility "${VISIBILITY}")
+        [ -n "$TYPE_OPT" ] && GH_CMD+=(${TYPE_OPT})
+        [ -n "$VISIBILITY}" ] && GH_CMD+=(--visibility "${VISIBILITY}")
         [ -n "$JSON" ] && GH_CMD+=(--json "$(echo "$JSON" | tr '\n\ \,' ',' | sed 's/,$//')")
         [ -n "$JQ_FILTER" ] && GH_CMD+=(-q "${JQ_FILTER}")
         
@@ -226,17 +227,9 @@ runs:
         INPUTS_VARIABLE_NAME: "${{ inputs.variable-name }}"
         BODY: "${{ steps.validate_and_parse.outputs.body || inputs.body }}"
       run: |
-
-        read -ra TYPE_ARR <<< "$TYPE"
-        read -ra TYPE_OPT_ARR <<< "$TYPE_OPT"
-        GH_CMD=()
-        for arg in "${TYPE_ARR[@]}"; do
-          [[ -n "$arg" ]] && GH_CMD+=("$arg")
-        done
-        for arg in "${TYPE_OPT_ARR[@]}"; do
-          [[ -n "$arg" ]] && GH_CMD+=("$arg")
-        done
-        [ -n "$VISIBILITY" ] && GH_CMD+=(--visibility "$VISIBILITY")
+        GH_CMD=(${TYPE})
+        [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
+        [ -n "$VISIBILITY" ] && GH_CMD+=(--visibility ${VISIBILITY})
 
         printf '%s' "${{ steps.validate_and_parse.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
         status=$?
@@ -262,10 +255,10 @@ runs:
         EONERROR: "${{ inputs.exit-on-error }}"
         VARIABLE_NAME: "${{ inputs.variable-name }}"
       run: |
-        read -ra TYPE_ARR <<< "$TYPE"
-        read -ra TYPE_OPT_ARR <<< "$TYPE_OPT"
-        GH_CMD=("${TYPE_ARR[@]}")
-        [ ${#TYPE_OPT_ARR[@]} -gt 0 ] && GH_CMD+=("${TYPE_OPT_ARR[@]}")
+        GH_CMD=(${TYPE})
+        
+        [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
+        
         gh variable delete "$VARIABLE_NAME" "${GH_CMD[@]}"
         
         status=$?
