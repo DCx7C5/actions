@@ -56,9 +56,8 @@ jobs:
           permission-packages: 'write'
           owner: true
           repositories: |
-            DCx7C5/actions
+            dcx7c5/actions
             
-
       - id: checkout
         name: Checkout repository
         uses: actions/checkout@v5
