@@ -25,7 +25,7 @@ jobs:
           github_token: ${{ steps.app_token.outputs.token }}
           run_with_sudo: 'true'
           working_directory: ${{ github.workspace }}
-          run: '${{ github.workspace }}' 'echo "Hello, World!"'
+          run: "${{ github.workspace }} 'echo "Hello, World!"'"
 
   test-sign-detached:
     runs-on: ubuntu-latest
