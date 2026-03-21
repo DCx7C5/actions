@@ -94,14 +94,6 @@ runs:
         
         [[ "$(pwd)" != "$IMAGE_WORKING_DIR" ]] && cd "$IMAGE_WORKING_DIR"
         
-        if [[ -z "$DOCKERFILE" || ! -f "$DOCKERFILE" ]]; then
-          DOCKERFILE="${DOCKERFILE:-"Dockerfile"}"
-          if [[ -z "$DOCKERFILE" || ! -f "$DOCKERFILE" ]]; then
-            echo "::error::Dockerfile not found at path: $DOCKERFILE"
-            exit 1
-          fi
-        fi
-        
         DOCKER_BUILD_ARGS=()
         [[ -n $RUNTIME_WORKING_DIR ]] && DOCKER_BUILD_ARGS+=(--build-arg "WORKING_DIR=$RUNTIME_WORKING_DIR")
         [[ -n $GNUPGHOME ]] && DOCKER_BUILD_ARGS+=(--build-arg "GNUPGHOME=$GNUPGHOME")
@@ -124,7 +116,7 @@ runs:
         docker build \
           "${DOCKER_BUILD_ARGS[@]}" \
           -f "$DOCKERFILE" \
-          -t "${{ inputs.image_tag }}:${{ inputs.image_version }}" .
+          -t "$IMAGE" .
         
         cd "${{ github.workspace }}" || true
         
