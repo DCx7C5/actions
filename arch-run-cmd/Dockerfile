@@ -57,7 +57,7 @@ RUN mkdir -p /rootfs/dev /rootfs/proc /rootfs/sys /rootfs/run \
     && pacman -S --noconfirm --needed \
        --root /rootfs \
        --cachedir /var/cache/pacman/pkg \
-       base base-devel git gnupg curl ca-certificates mold ccache iptables-nft \  # ← FIX: explicit iptables-nft (kills provider prompt)
+       base base-devel git gnupg curl ca-certificates mold ccache iptables-nft \
     && rm -rf /tmp/archlinux-keyring.pkg.tar.zst /tmp/usr \
               /rootfs/var/cache/pacman/pkg/* \
               /rootfs/var/lib/pacman/sync/* \
@@ -66,7 +66,7 @@ RUN mkdir -p /rootfs/dev /rootfs/proc /rootfs/sys /rootfs/run \
               /rootfs/boot/* \
               /rootfs/var/log/* \
               /rootfs/etc/pacman.conf.pacnew \
-              /rootfs/etc/pacman.d/mirrorlist.pacnew 2>/dev/null || true \   # ← FIX: remove .pacnew
+              /rootfs/etc/pacman.d/mirrorlist.pacnew 2>/dev/null || true \
     && find /rootfs -type f \( -name "*.a" -o -name "*.la" -o -name "*.go" \) -delete 2>/dev/null || true \
     && find /rootfs -type d -empty -delete 2>/dev/null || true \
     && umount /rootfs/proc 2>/dev/null || true \
