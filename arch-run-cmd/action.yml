@@ -42,11 +42,14 @@ inputs:
     description: "Whether to run the command with sudo inside the container (default: false)"
     required: false
     default: "false"
-
+  image:
+    description: "Docker image to use (if set, skips build and uses this image tag)"
+    required: false
+    default: ''
 
 runs:
   using: docker
-  image: "Dockerfile"
+  image: ${{ inputs.image || 'arch-aur-builder:latest' }}
   env:
     CI: "true"
     GITHUB_ACTIONS: "true"
@@ -64,7 +67,7 @@ runs:
     GPG_PASSPHRASE: ${{ inputs.gpg_passhphrase }}
     PRESET_CACHE: ${{ inputs.preset_cache }}
     WORKING_DIRECTORY: ${{ inputs.working_directory || '/home/runner/work' }}
-    WORK_DIR: ${{ inputs.working_directory || '/home/runner/work' }}
+    WORK_DIR: ${{ inputs.working_directory }}
   post-entrypoint: /post_entrypoint.sh
   args:
     - ${{ inputs.working_directory || github.workspace || '/home/runner/work' }}

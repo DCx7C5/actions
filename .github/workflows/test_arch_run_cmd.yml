@@ -31,10 +31,14 @@ jobs:
       - name: Test Arch Run Command Action
         uses: ./arch-run-cmd
         with:
+          image: ${{ steps.build-arch.outputs.image_tag }}
           github_token: ${{ steps.app_token.outputs.token }}
+          ccache_dir: '${{ github.workspace }}/.ccache'
           run_with_sudo: 'true'
+          enable_ccache: 'true'
           working_directory: ${{ github.workspace }}
-          command: 'echo "Hello, World!"'
+          command: |
+            echo "Hello, World!" && ls -als && pwd
 
   test-sign-detached:
     runs-on: ubuntu-latest
@@ -73,10 +77,13 @@ jobs:
       - name: Test Arch Run Command Action with Detached Signature
         uses: ./arch-run-cmd
         with:
+          image: ${{ steps.build-arch.outputs.image_tag }}
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}
           run_with_sudo: 'true'
+          ccache_dir: '${{ github.workspace }}/.ccache'
+          enable_ccache: 'true'
           working_directory: '${{ github.workspace }}'
           gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
           command: 'echo "Hello, World!"'
