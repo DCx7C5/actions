@@ -122,7 +122,7 @@ runs:
         
         echo "::notice::Building Arch Linux Docker image for AUR builds..."
         docker build \
-          "$DOCKER_BUILD_ARGS[@]" \
+          "${DOCKER_BUILD_ARGS[@]}" \
           -f "$DOCKERFILE" \
           -t "${{ inputs.image_tag }}:${{ inputs.image_version }}" .
         
