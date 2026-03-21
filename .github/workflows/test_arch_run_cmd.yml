@@ -2,6 +2,11 @@ name: "Test Arch Run Command Action"
 on:
   workflow_dispatch:
     inputs:
+      user:
+        description: "User name to create inside the container (defaults to runner.user)"
+        required: false
+        default: ''
+        type: string
       image_tag:
         description: "The name of the Docker image to build and run"
         required: false
@@ -117,4 +122,6 @@ jobs:
           import_key_during_build: 'false'
           preset_passphrase_cache: 'false'
           run_with_sudo: 'true'
+          # noinspection GithubFunctionSignatureValidation
+          user: ${{ inputs.user || toLower(github.actor) || 'dcx7c5' }}
           command: 'ls -la / && whoami && echo "Hello from inside the Arch Linux container!"'

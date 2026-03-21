@@ -1,3 +1,4 @@
+#file: noinspection GithubFunctionSignatureValidation
 name: "Push Docker Image to Registry"
 description: "Push a Docker image to a registry (e.g., Docker Hub, GitHub Container Registry) with optional authentication and tagging"
 author: "DCx7C5"
@@ -41,6 +42,9 @@ runs:
 
     - id: push_image
       shell: bash
+      env:
+        GH_TOKEN: "${{ inputs.gh_token || env.GH_TOKEN || github.token }}"
+        USER: "${{ (inputs.user != '' && toLower(inputs.user)) || inputs.user || github.actor }}"
       run: |
         set -euo pipefail
         echo "image_name: '${{ inputs.image_tag }}'"
