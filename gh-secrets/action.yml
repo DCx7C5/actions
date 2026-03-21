@@ -82,8 +82,8 @@ runs:
         EONERROR: "${{ inputs.exit-on-error }}"
         INPUTS_VISIBILITY: "${{ inputs.visibility }}"
       run: |
-        if [[ -n '${{ inputs.body }}' ]]; then
-          echo '::add-mask::${{ inputs.body }}'
+        if [[ -n "${{ inputs.body }}" ]]; then
+          echo "::add-mask::${{ inputs.body }}"
         fi
         
         if [[ -n "${{ inputs.gh-token }}" ]]; then 
