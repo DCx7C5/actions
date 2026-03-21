@@ -124,9 +124,10 @@ runs:
         EONERROR: "${{ inputs.exit-on-error }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         TYPE: "${{ steps.validate_and_mask.outputs.type }}"
+        INPUTS_REPOS: "${{ inputs.repos }}"
         TYPE_OPT: >-
-          ${{ case( 
-            inputs.org != '' && inputs.repos != '', '--repos $(echo "${{ inputs.repos }}" | tr '\n\ ' ',' | sed 's/,$//")',
+          ${{ case(
+            inputs.org != '' && inputs.repos != '', '--repos $(echo "$INPUTS_REPOS" | tr "\n\ " "," | sed "s/,$//")',
             inputs.org != '' && inputs.no_repos_select == 'true', '--no-repos-select',
           ) }}
         VISIBILITY: "${{ inputs.visibility }}"

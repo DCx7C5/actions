@@ -78,8 +78,10 @@ outputs:
     value: ${{ steps.get_variable.outputs.success || steps.set_variable.outputs.success ||'false' }}
 
 
+
 runs:
   using: composite
+
   steps:
     - name: Validate Inputs
       id: validate_and_parse
@@ -97,7 +99,7 @@ runs:
             '--repo ${{ github.repository }}'
           ) }}
         TYPE_OPT: >-
-          ${{ case( 
+          ${{ case(
             inputs.org != '' && inputs.repos != '', '--repos $(echo "${{ inputs.repos }}" | tr '\n\ \,' ',' | sed 's/,$//')',
           ) }}
         INPUTS_JSON: "${{ inputs.json }}"
@@ -158,6 +160,9 @@ runs:
           fi
         fi
         
+        if [[ "${{ inputs.variable-name }}" == *$'\n'* ]]; then
+          
+        fi
 
 
     - name: Get GitHub Variable
