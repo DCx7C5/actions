@@ -66,14 +66,10 @@ inputs:
     description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
     required: false
     default: ''
-  image:
-    description: "Docker image to use (if set, skips build and uses this image tag)"
-    required: false
-    default: 'arch-run-cmd:latest'
 
 runs:
   using: docker
-  image: arch-run-cmd:latest
+  image: arch-run-cmd-dcx:latest
   env:
     CI: "true"
     GITHUB_ACTIONS: "true"

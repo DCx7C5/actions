@@ -4,9 +4,9 @@ author: "DCx7C5"
 
 inputs:
   image_tag:
-    description: "Docker image tag to build (defaults to 'arch-aur-builder:latest')"
+    description: "Docker image tag to build (defaults to 'arch-run-cmd-dcx')"
     required: false
-    default: 'arch-aur-builder'
+    default: 'arch-run-cmd-dcx'
   image_version:
     description: "Docker image version tag (defaults to 'latest')"
     required: false
