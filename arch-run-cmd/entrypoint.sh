@@ -57,7 +57,7 @@ cd "$WORK_DIR" || {
 # ============================================================================
 # Environment Detection & Setup
 # ============================================================================
-export USER="${USER:-builder}"
+export USER="${USER:-runner}"
 export LANG=C.UTF-8
 export TERM=xterm-256color
 export MAKEFLAGS="${MAKEFLAGS:--j$(nproc)}"
@@ -151,7 +151,7 @@ ENV_VARS=(
 
 if [[ -n "$COMMAND" ]]; then
   if [ "$_RUN_WITH_SUDO" = "true" ]; then
-    exec sudo -u builder env "${ENV_VARS[@]}" bash -c "$COMMAND"
+    exec sudo -u runner env "${ENV_VARS[@]}" bash -c $COMMAND
   else
     exec bash -c "$COMMAND"
   fi
