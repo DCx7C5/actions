@@ -57,7 +57,6 @@ jobs:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
           permission-packages: 'write'
-          owner: 'dcx7c5'
           repositories: |
             ${{ github.repository }}
             
@@ -66,8 +65,21 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          token: '${{ steps.app_token.outputs.token }}'
-          repository: '${{ github.repository }}'
+          token: ${{ steps.app_token.outputs.token }}
+
+      - name: Import GPG key
+        id: gpg_import
+        uses: ./gpg-import
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        with:
+          method: 'inline'
+          gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
+          delete_after_import: 'true'
+          configure_git: 'true'
+          setup_home: 'true'
+          preset_pass: 'false'
 
       - name: Test Arch Run Command Action
         id: test_arch_run_cmd
