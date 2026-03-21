@@ -37,7 +37,7 @@ jobs:
       - name: Test Arch Run Command Action
         uses: ./arch-run-cmd
         with:
-          image: ${{ steps.build-arch.outputs.image || 'arch-run-cmd:latest' }}
+          image: arch-run-cmd:latest
           github_token: ${{ steps.app_token.outputs.token }}
           ccache_dir: '${{ github.workspace }}/.ccache'
           run_with_sudo: 'true'
@@ -92,7 +92,7 @@ jobs:
       - name: Test Arch Run Command Action with Detached Signature
         uses: ./arch-run-cmd
         with:
-          image: ${{ steps.build-arch.outputs.image || 'arch-run-cmd:latest' }}
+          image: arch-run-cmd:latest
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}

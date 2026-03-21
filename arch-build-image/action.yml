@@ -85,7 +85,7 @@ runs:
         IMAGE_WORKING_DIR: "${{ inputs.image_working_directory || env.IMAGE_WORKING_DIR || './arch-run-cmd' }}"
         RUNTIME_WORKING_DIR: "${{ inputs.runtime_working_directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
         DOCKERFILE: "${{ inputs.dockerfile_path || format('{0}/Dockerfile', inputs.image_working_directory || env.IMAGE_WORKING_DIR || './arch-run-cmd') }}"
-      working-directory: ${{ inputs.working_directory || env.WORKING_DIR || github.workspace || '.' }}
+      working-directory: ${{ env.IMAGE_WORKING_DIR }}
       run: |
         set -euo pipefail
         
@@ -96,8 +96,6 @@ runs:
             exit 1
           fi
         fi
-        basedir=$(pwd)
-        cd "$(dirname "$DOCKERFILE")" || exit 1
         
         IMAGE='${{ inputs.image_tag }}:${{ inputs.image_version }}'
         
@@ -123,8 +121,6 @@ runs:
         docker build \
           -f "$DOCKERFILE" \
           -t "$IMAGE" .
-        
-        cd "$basedir" || exit 1
         
         echo "image_tag=${IMAGE%%:*}" >> $GITHUB_OUTPUT
         echo "image_version=${IMAGE##*:}" >> $GITHUB_OUTPUT
