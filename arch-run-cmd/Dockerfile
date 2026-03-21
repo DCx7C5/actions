@@ -16,7 +16,6 @@ RUN apk add --no-cache \
     git \
     && rm -rf /var/cache/apk/*
 
-
 RUN mkdir -p /etc/pacman.d /etc/pacman.d/gnupg /usr/share/pacman/keyrings /rootfs/var/lib/pacman \
     && printf '%s\n' \
    '[options]' \
@@ -46,11 +45,19 @@ RUN mkdir -p /etc/pacman.d /etc/pacman.d/gnupg /usr/share/pacman/keyrings /rootf
     && mkdir -p /rootfs/etc/pacman.d \
     && cp /etc/pacman.conf /rootfs/etc/pacman.conf \
     && cp /etc/pacman.d/mirrorlist /rootfs/etc/pacman.d/mirrorlist \
+
+RUN mkdir -p /rootfs/dev /rootfs/proc /rootfs/sys /rootfs/run \
+    && mknod -m 666 /rootfs/dev/null c 1 3 2>/dev/null || true \
+    && mknod -m 666 /rootfs/dev/zero c 1 5 2>/dev/null || true \
+    && mknod -m 666 /rootfs/dev/random c 1 8 2>/dev/null || true \
+    && mknod -m 666 /rootfs/dev/urandom c 1 9 2>/dev/null || true \
+    && mount --bind /proc /rootfs/proc 2>/dev/null || true \
+    && mount --bind /sys /rootfs/sys 2>/dev/null || true \
     && pacman -Sy --noconfirm --root /rootfs --cachedir /var/cache/pacman/pkg \
     && pacman -S --noconfirm --needed \
        --root /rootfs \
        --cachedir /var/cache/pacman/pkg \
-       base base-devel git gnupg curl ca-certificates mold ccache \
+       base base-devel git gnupg curl ca-certificates mold ccache iptables-nft \  # ← FIX: explicit iptables-nft (kills provider prompt)
     && rm -rf /tmp/archlinux-keyring.pkg.tar.zst /tmp/usr \
               /rootfs/var/cache/pacman/pkg/* \
               /rootfs/var/lib/pacman/sync/* \
@@ -58,8 +65,12 @@ RUN mkdir -p /etc/pacman.d /etc/pacman.d/gnupg /usr/share/pacman/keyrings /rootf
               /rootfs/usr/share/doc/* \
               /rootfs/boot/* \
               /rootfs/var/log/* \
+              /rootfs/etc/pacman.conf.pacnew \
+              /rootfs/etc/pacman.d/mirrorlist.pacnew 2>/dev/null || true \   # ← FIX: remove .pacnew
     && find /rootfs -type f \( -name "*.a" -o -name "*.la" -o -name "*.go" \) -delete 2>/dev/null || true \
-    && find /rootfs -type d -empty -delete 2>/dev/null || true
+    && find /rootfs -type d -empty -delete 2>/dev/null || true \
+    && umount /rootfs/proc 2>/dev/null || true \
+    && umount /rootfs/sys 2>/dev/null || true
 
 # Setup user & sudo (no dbus needed in minimal container)
 RUN groupadd -R /rootfs builder 2>/dev/null || true \
