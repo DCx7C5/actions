@@ -87,21 +87,10 @@ runs:
           # Mask the secret value in logs (GitHub best practice)
           echo "::add-mask::$BODY"
         
-          # Mask the token if it was passed (your *** placeholder)
-          if [[ -n "***" ]]; then
-            echo "::add-mask::***"
+          if [[ -n "${{ inputs.gh-token }}" ]]; then
+            echo "::add-mask::${{ inputs.gh-token }}"
           fi
         
-          # ─────────────────────────────────────────────────────────────
-          # JSON VALIDATION (exactly what you asked for — matches EVERY valid JSON)
-          # Uses jq (pre-installed on all GitHub runners, 100% spec-compliant, handles encoding/Unicode/nesting)
-          if ! echo "$BODY" | jq -e . >/dev/null 2>&1; then
-            echo "::error::Input 'body' is not valid JSON according to the full RFC 8259 spec" >&2
-            [[ "$EONERROR" =~ ^true$ ]] && exit 1
-          fi
-          # ─────────────────────────────────────────────────────────────
-        
-          # FIXED: Proper mutual exclusivity check for env/repo/org (this was the buggy part)
           if [[ -n "$INPUTS_ENV" && -n "$INPUTS_REPO" ]] || \
              [[ -n "$INPUTS_ENV" && -n "$INPUTS_ORG" ]] || \
              [[ -n "$INPUTS_REPO" && -n "$INPUTS_ORG" ]]; then
@@ -109,13 +98,11 @@ runs:
             [[ "$EONERROR" =~ ^true$ ]] && exit 1
           fi
         
-          # Visibility validation
           if [[ -n "$INPUTS_VISIBILITY" && ! "$INPUTS_VISIBILITY" =~ ^(all|private|selected)$ ]]; then
             echo "::error::Invalid visibility '$INPUTS_VISIBILITY'. Valid options are: all, private, selected" >&2
             [[ "$EONERROR" =~ ^true$ ]] && exit 1
           fi
         
-          # exit_on_error validation
           if [[ ! "$EONERROR" =~ ^(true|false)$ ]]; then
             echo "::error::Invalid value for 'exit_on_error': '$EONERROR'. Valid options are: true, false" >&2
             [[ "$EONERROR" =~ ^true$ ]] && exit 1
@@ -130,12 +117,10 @@ runs:
             TYPE="--org $INPUTS_ORG"
           fi
         
-          # Warning for selected visibility with no repos
           if [[ -n "$INPUTS_ORG" && "$INPUTS_VISIBILITY" == "selected" && -z "$INPUTS_REPOSITORIES" ]]; then
             echo "::warning::Visibility 'selected' has no repositories specified"
           fi
         
-          # Output the type for later steps
           [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
         fi
 
