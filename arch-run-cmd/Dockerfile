@@ -1,6 +1,6 @@
 FROM alpine:3.22 AS bootstrap
 
-ARG USER=${USER:-runner}
+ARG USER=runner
 ARG MAKE_JOBS=4
 
 # Install minimal pacman + tools (aggressive size optimization)
@@ -121,7 +121,7 @@ COPY --chmod=755 --chown=1000:1000 post_entrypoint.sh /rootfs/post_entrypoint.sh
 
 FROM scratch AS arch_minimal
 
-ARG USER=${USER:-runner}
+ARG USER=runner
 ARG BUILD_DATE
 ARG VCS_REF
 
@@ -136,9 +136,9 @@ ENV USER=${USER} \
 
 COPY --from=bootstrap /rootfs/ /
 
+USER runner
 WORKDIR /home/runner/work/
 
-USER ${USER}
 
 # Comprehensive labels for Docker metadata and CI tracking
 LABEL org.opencontainers.image.title="Dystopian AUR Build Environment" \
