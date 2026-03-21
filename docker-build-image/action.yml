@@ -87,6 +87,7 @@ runs:
         RUNTIME_WORKING_DIR: "${{ env.WORKING_DIR }}"
         DOCKERFILE: "${{ inputs.dockerfile_path || format('{0}/Dockerfile', inputs.image_working_directory || env.IMAGE_WORKING_DIR) }}"
         IMAGE: "${{ inputs.image_tag }}:${{ inputs.image_version }}"
+        CCACHE_DIR: "${{ inputs.ccache_dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}"
       working-directory: "${{ inputs.image_working_directory || env.IMAGE_WORKING_DIR }}"
       run: |
         set -euo pipefail

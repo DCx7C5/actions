@@ -19,6 +19,11 @@ inputs:
     description: "GitHub Token for authentication (required if pushing to GitHub Container Registry)"
     required: false
     default: ''
+  working_directory:
+    description: "Working directory for the action (defaults to github.workspace)"
+    required: false
+    default: '${{ github.workspace }}'
+
 
 
 runs:
@@ -26,6 +31,7 @@ runs:
   steps:
     - id: push_image
       shell: bash
+      working-directory: ${{ inputs.working_directory || env.WORKING_DIRECTORY || github.workspace }}
       run: |
         set -euo pipefail
         echo "image_name: '${{ inputs.image_name }}'"
