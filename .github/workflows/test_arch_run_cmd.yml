@@ -23,7 +23,7 @@ jobs:
         uses: ./arch-run-cmd
         with:
           github_token: ${{ steps.app_token.outputs.token }}
-          run_with_sudo: 'false'
+          run_with_sudo: 'true'
           working_directory: ${{ github.workspace }}
           run: 'echo "Hello, World!"'
 
@@ -59,7 +59,7 @@ jobs:
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}
-          run_with_sudo: 'false'
+          run_with_sudo: 'true'
           working_directory: ${{ github.workspace }}
           gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
           run: |
