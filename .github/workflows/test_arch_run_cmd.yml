@@ -5,7 +5,7 @@ on:
       user:
         description: "User name to create inside the container (defaults to runner.user)"
         required: false
-        default: ${{ runner.user }}
+        default: "${{ runner.user || 'runner' }}"
         type: string
       image_tag:
         description: "The name of the Docker image to build and run"
@@ -27,26 +27,7 @@ on:
         required: false
         default: true
         type: boolean
-      passphrase:
-        description: "Passphrase for GPG key (if needed, will be passed via environment variable)"
-        required: false
-        default: ''
-        type: string
-      gpg_key:
-        description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
-        required: false
-        default: ''
-        type: string
-      gpg_key_id:
-        description: "GPG key ID or fingerprint to use for signing (if needed, will be passed via environment variable)"
-        required: false
-        default: ''
-        type: string
-      gpg_keygrips:
-        description: "Keygrips of GPG keys to preset in gpg-agent cache (if needed, will be passed via environment variable as a comma-separated list)"
-        required: false
-        default: ''
-        type: string
+
 
   push:
     branches:
