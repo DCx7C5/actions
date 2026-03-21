@@ -36,7 +36,7 @@ COMMAND="$*"
 
 
 if [[ ! -d "$WORK_DIR" ]]; then
-  if [[ "$(id -u)" == "0" ]]; then
+  if [[ "$(sudo -u runner env "${ENV_VARS[@]}" id -u)" == "0" ]]; then
     sudo -u runner env "${ENV_VARS[@]}" mkdir -p "$WORK_DIR"
   else
     echo "WARNING: Cannot create work directory: $WORK_DIR (no permission, not root)" >&2
