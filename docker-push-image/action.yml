@@ -5,42 +5,42 @@ author: "DCx7C5"
 
 inputs:
   image_name:
-        description: "Name of the Docker image to push (e.g., 'my-image' or 'my-registry/my-image')"
-        required: true
+    description: "Name of the Docker image to push (e.g., 'my-image' or 'my-registry/my-image')"
+    required: true
   image_tag:
-        description: "Tag of the Docker image to push (defaults to 'latest')"
-        required: false
-        default: 'latest'
+    description: "Tag of the Docker image to push (defaults to 'latest')"
+    required: false
+    default: 'latest'
   registry:
-        description: "URL of the Docker registry to push to (e.g., 'docker.io' for Docker Hub, 'ghcr.io' for GitHub Container Registry)"
-        required: false
-        default: 'ghcr.io'
+    description: "URL of the Docker registry to push to (e.g., 'docker.io' for Docker Hub, 'ghcr.io' for GitHub Container Registry)"
+    required: false
+    default: 'ghcr.io'
   gh_token:
-        description: "GitHub Token for authentication (required if pushing to GitHub Container Registry)"
-        required: false
-        default: ''
+    description: "GitHub Token for authentication (required if pushing to GitHub Container Registry)"
+    required: false
+    default: ''
 
 
 runs:
-    using: composite
-    steps:
-      - id: push_image
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "image_name: '${{ inputs.image_name }}'"
-          echo "image_tag: '${{ inputs.image_tag }}'"
-          echo "registry: '${{ inputs.registry }}'"
+  using: composite
+  steps:
+    - id: push_image
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "image_name: '${{ inputs.image_name }}'"
+        echo "image_tag: '${{ inputs.image_tag }}'"
+        echo "registry: '${{ inputs.registry }}'"
 
-          if [[ -z "${{ inputs.image_name }}" || -z "${{ inputs.image_tag }}" || -z "${{ inputs.registry }}" ]]; then
-            echo "ERROR: image_name, image_tag und registry dürfen nicht leer sein!" >&2
-            exit 1
-          fi
-          
-          registry_url="${{ inputs.registry }}"
-          registry_url="${registry_url%/}"
-          full_image="$registry_url/${{ inputs.image_name }}:${{ inputs.image_tag }}"
+        if [[ -z "${{ inputs.image_name }}" || -z "${{ inputs.image_tag }}" || -z "${{ inputs.registry }}" ]]; then
+          echo "ERROR: image_name, image_tag und registry dürfen nicht leer sein!" >&2
+          exit 1
+        fi
+        
+        registry_url="${{ inputs.registry }}"
+        registry_url="${registry_url%/}"
+        full_image="$registry_url/${{ inputs.image_name }}:${{ inputs.image_tag }}"
 
-          docker tag "${{ inputs.image_name }}:${{ inputs.image_tag }}" "$full_image"
-          echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "$registry_url" -u ${{ github.actor }} --password-stdin
-          docker push "$full_image"
+        docker tag "${{ inputs.image_name }}:${{ inputs.image_tag }}" "$full_image"
+        echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "$registry_url" -u ${{ github.actor }} --password-stdin
+        docker push "$full_image"

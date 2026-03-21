@@ -86,6 +86,7 @@ runs:
         WORKING_DIR: "${{ inputs.runtime_working_directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
         RUNTIME_WORKING_DIR: "${{ env.WORKING_DIR }}"
         DOCKERFILE: "${{ inputs.dockerfile_path || format('{0}/Dockerfile', inputs.image_working_directory || env.IMAGE_WORKING_DIR) }}"
+        IMAGE: "${{ inputs.image_tag }}:${{ inputs.image_version }}"
       working-directory: "${{ inputs.image_working_directory || env.IMAGE_WORKING_DIR }}"
       run: |
         set -euo pipefail
@@ -100,17 +101,15 @@ runs:
           fi
         fi
         
-        IMAGE='${{ inputs.image_tag }}:${{ inputs.image_version }}'
-        
         DOCKER_BUILD_ARGS=()
-        DOCKER_BUILD_ARGS+=(--build-arg "WORKING_DIR=$RUNTIME_WORKING_DIR")
-        DOCKER_BUILD_ARGS+=(--build-arg "GNUPGHOME=${{ inputs.gpg_home || env.GNUPGHOME || format('{0}/.gnupg', github.workspace) || '.gnupg' }}")
-        DOCKER_BUILD_ARGS+=(--build-arg "CCACHE_DIR=${{ inputs.ccache_dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) || '.ccache' }}")
-        DOCKER_BUILD_ARGS+=(--build-arg "USER=${{ inputs.user }}")
-        DOCKER_BUILD_ARGS+=(--build-arg "GROUP=${{ inputs.group }}")
-        DOCKER_BUILD_ARGS+=(--build-arg "UID=${{ inputs.uid }}")
-        DOCKER_BUILD_ARGS+=(--build-arg "GID=${{ inputs.gid }}")
-        DOCKER_BUILD_ARGS+=(--build-arg "GPG_KEY=${{ inputs.gpg_key }}")
+        [[ -n $RUNTIME_WORKING_DIR ]] && DOCKER_BUILD_ARGS+=(--build-arg "WORKING_DIR=$RUNTIME_WORKING_DIR")
+        [[ -n $GNUPGHOME ]] && DOCKER_BUILD_ARGS+=(--build-arg "GNUPGHOME=$GNUPGHOME")
+        [[ -n $CCACHE_DIR ]] && DOCKER_BUILD_ARGS+=(--build-arg "CCACHE_DIR=$CCACHE_DIR")
+        [[ -n "${{ inputs.user }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "USER=${{ inputs.user }}")
+        [[ -n "${{ inputs.group }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "GROUP=${{ inputs.group }}")
+        [[ -n "${{ inputs.uid }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "UID=${{ inputs.uid }}")
+        [[ -n "${{ inputs.gid }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "GID=${{ inputs.gid }}")
+        [[ -n "${{ inputs.gpg_key }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "GPG_KEY=${{ inputs.gpg_key }}")
         
         if [[ -n "${{ inputs.build_args }}" ]]; then
           while IFS= read -r arg; do
