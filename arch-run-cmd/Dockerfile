@@ -1,6 +1,6 @@
 FROM alpine:3.22 AS bootstrap
 
-ARG USER=runner
+ARG USER=${USER:-runner}
 ARG MAKE_JOBS=4
 
 # Install minimal pacman + tools (aggressive size optimization)
@@ -121,7 +121,7 @@ COPY --chmod=755 --chown=1000:1000 post_entrypoint.sh /rootfs/post_entrypoint.sh
 
 FROM scratch AS arch_minimal
 
-ARG USER=runner
+ARG USER=${USER:-runner}
 ARG BUILD_DATE
 ARG VCS_REF
 

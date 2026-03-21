@@ -40,11 +40,11 @@ if [[ ! -d "$WORK_DIR" ]]; then
     mkdir -p "$WORK_DIR"
   else
     echo "WARNING: Cannot create work directory: $WORK_DIR (no permission, not root)" >&2
-    if [[ -d "/github/workspace" && -w "/github/workspace" ]]; then
-      echo "Falling back to /github/workspace as work directory." >&2
-      WORK_DIR="/github/workspace"
+    if [[ -d "/home/runner/work" && -w "/home/runner/work" ]]; then
+      echo "Falling back to /home/runner/work as work directory." >&2
+      WORK_DIR="/home/runner/work"
     else
-      echo "ERROR: /github/workspace is not available or not writable. Aborting." >&2
+      echo "ERROR: /home/runner/work is not available or not writable. Aborting." >&2
       exit 1
     fi
   fi
