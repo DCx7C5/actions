@@ -118,16 +118,16 @@ runs:
         if [[ ! "${{ inputs.env != '' && 'true' || '' }}${{ inputs.repo != '' && 'true' || '' }}${{ inputs.org != '' && 'true' || '' }}" =~ ^true|''$ ]]; then
           echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
           exit 1
-        elif [[ -n "$INPUTS_VISIBILITY" && ! "$INPUTS_VISIBILITY" =~ ^all|private|selected$ ]]; then
+        elif [[ -n "$INPUTS_VISIBILITY" && ! "$INPUTS_VISIBILITY" =~ ^(all|private|selected)$ ]]; then
           echo "::error::Invalid visibility '$INPUTS_VISIBILITY'. Valid options are: all, private, selected" >&2
           exit 1
         elif [[ "EONERROR" =~ ^(true|false)$ ]]; then
           echo "::error::Invalid value for 'exit_on_error': '$EONERROR'. Valid options are: true, false" >&2
           exit 1
-        elif [[ "$INPUTS_ACTION" =~ ^(get|set|delete)$ ]]; then
+        elif [[ ! "$INPUTS_ACTION" =~ ^(get|set|delete)$ ]]; then
           echo "::error::Invalid action '$INPUTS_ACTION'. Valid actions are: get, set, delete" >&2
           exit 1
-        elif [[ "$INPUTS_JQ_DECODE" =~ ^(true|false)$ ]]; then
+        elif [[ ! "$INPUTS_JQ_DECODE" =~ ^(true|false)$ ]]; then
           echo "::error::Invalid value for 'jq-decode': '$INPUTS_JQ_DECODE'. Valid options are: true, false" >&2
           exit 1
         fi
