@@ -8,7 +8,7 @@ trap 'echo "ERROR: Script failed on line $LINENO (command: $BASH_COMMAND)" >&2; 
 WORK_DIR="$1"
 # Fallback auf Standard, wenn leer, null oder ein Systempfad
 if [[ -z "$WORK_DIR" || "$WORK_DIR" == "null" || "$WORK_DIR" == "/bin/bash" ]]; then
-  WORK_DIR="/github/workspace"
+  WORK_DIR="/home/runner/work"
 fi
 GNUPGHOME="${2:-$WORK_DIR/.gnupg}"
 
@@ -37,7 +37,7 @@ COMMAND="$*"
 
 if [[ ! -d "$WORK_DIR" ]]; then
   if [[ "$(id -u)" == "0" ]]; then
-    mkdir -p "$WORK_DIR"
+    sudo -u runner env "${ENV_VARS[@]}" mkdir -p "$WORK_DIR"
   else
     echo "WARNING: Cannot create work directory: $WORK_DIR (no permission, not root)" >&2
     if [[ -d "/home/runner/work" && -w "/home/runner/work" ]]; then
@@ -84,7 +84,7 @@ fi
 
 # Ensure work directory exists (create if needed for makepkg)
 if ! [ -d "$WORK_DIR" ]; then
-  mkdir -p "$WORK_DIR" || {
+  sudo -u runner env "${ENV_VARS[@]}" mkdir -p "$WORK_DIR" || {
     echo "ERROR: Cannot create work directory: $WORK_DIR" >&2
     exit 1
   }
