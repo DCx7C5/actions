@@ -90,7 +90,7 @@ runs:
         gpg_key: ${{ inputs.gpg_key }}
         image_tag: 'arch-run-cmd'
         image_version: 'latest'
-        dockerfile_path: Dockerfile
+        dockerfile_path: './arch-run-cmd/Dockerfile'
 
     - name: Push Docker image to GitHub Container Registry
       id: push_image
