@@ -25,8 +25,9 @@ jobs:
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}
-          run_with_sudo: 'true'
+          run_with_sudo: 'false'
           run: 'echo "Hello, World!"'
+          working_directory: '${{ github.workspace }}'
 
   test-sign-detached:
     runs-on: ubuntu-latest
@@ -60,7 +61,8 @@ jobs:
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}
-          run_with_sudo: 'true'
+          run_with_sudo: 'false'
+          working_directory: '${{ github.workspace }}'
           run: |
             set -euo pipefail
             echo "Hello, World!" > message.txt
