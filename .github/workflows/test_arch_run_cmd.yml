@@ -22,12 +22,10 @@ jobs:
       - name: Test Arch Run Command Action
         uses: ./arch-run-cmd
         with:
-          gpg_key_id: ${{ secrets.GPG_KEY_ID }}
-          gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}
           run_with_sudo: 'false'
+          working_directory: ${{ github.workspace }}
           run: 'echo "Hello, World!"'
-          working_directory: '${{ github.workspace }}'
 
   test-sign-detached:
     runs-on: ubuntu-latest
@@ -62,8 +60,10 @@ jobs:
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
           github_token: ${{ steps.app_token.outputs.token }}
           run_with_sudo: 'false'
-          working_directory: '${{ github.workspace }}'
+          working_directory: ${{ github.workspace }}
+          gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
           run: |
             set -euo pipefail
             echo "Hello, World!" > message.txt
             printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --local-user "$GPG_KEY_ID" --output message.txt.sig --detach-sig message.txt 
+            ls -als
