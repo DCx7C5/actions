@@ -144,11 +144,6 @@ runs:
           echo "visibility=all" >> "$GITHUB_OUTPUT"
         fi
 
-        if [[ -n "$INPUTS_ORG" && ! "$INPUTS_ORG" =~ ^true$ && -n "$INPUTS_VISIBILITY" ]]; then
-          VISIBILITY="$INPUTS_VISIBILITY"
-          echo "visibility=$VISIBILITY" >> "$GITHUB_OUTPUT"
-        fi
-
         [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
         [ -n "$TYPE_OPT" ] && echo "type_opt=$TYPE_OPT" >> "$GITHUB_OUTPUT"
         
@@ -234,11 +229,9 @@ runs:
         BODY: "${{ steps.validate_and_parse.outputs.body || inputs.body }}"
       run: |
         GH_CMD=(${TYPE})
-
         [ -n "${TYPE_OPT}" ] && GH_CMD+=(${TYPE_OPT})
-        if [[ -n "$VISIBILITY" ]]; then
-          GH_CMD+=(--visibility "$VISIBILITY")
-        fi
+        [ -n "$VISIBILITY" ]] && GH_CMD+=(${VISIBILITY})
+
         printf '%s' "${{ steps.validate_and_parse.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
