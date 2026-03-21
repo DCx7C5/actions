@@ -55,6 +55,7 @@ jobs:
 
       - name: Test Arch Run Command Action with Detached Signature
         uses: ./arch-run-cmd
+        working-directory: ${{ github.workspace }}
         with:
           gpg_key_id: ${{ secrets.GPG_KEY_ID }}
           gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
@@ -62,4 +63,5 @@ jobs:
           run_with_sudo: 'true'
           working_directory: ${{ github.workspace }}
           gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
-          run: "printf '%s' '${{ secrets.GPG_PASSPHRASE }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --local-user $GPG_KEY_ID --output message.txt.sig --detach-sig message.txt"
+
+        run: "printf '%s' '${{ secrets.GPG_PASSPHRASE }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --local-user $GPG_KEY_ID --output message.txt.sig --detach-sig message.txt"

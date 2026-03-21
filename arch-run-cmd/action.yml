@@ -5,7 +5,7 @@ author: "DCx7c5"
 inputs:
   run:
     description: "Command/script to execute inside container"
-    required: true
+    required: false
   working_directory:
     description: "Working directory inside container"
     required: false
