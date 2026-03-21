@@ -37,7 +37,7 @@ runs:
       uses: docker/login-action@v4
       with:
         registry: ghcr.io
-        username: ${{ inputs.user || github.actor }}
+        username: ${{ toLower(inputs.user) || toLower(github.actor) || inputs.user || github.actor }}
         password: ${{ inputs.gh_token || env.GH_TOKEN || github.token }}
 
     - id: push_image
@@ -52,18 +52,19 @@ runs:
         echo "registry: '${{ inputs.registry }}'"
 
         if [[ -z "${{ inputs.image_tag }}" || -z "${{ inputs.image_version }}" || -z "${{ inputs.registry }}" ]]; then
-          echo "ERROR: image_name, image_tag und registry dürfen nicht leer sein!" >&2
+          echo "::error::image_tag, image_version, and registry inputs are required." >&2
           exit 1
         fi
         
         registry_url="${{ inputs.registry }}"
         registry_url="${registry_url%/}"
-
-        full_image="$registry_url/${{ toLower(inputs.user) || toLower(github.actor) }}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
+        repo="${{ github.repository }}"
+        repo_name="${repo##*/}"
+        full_image="$registry_url/${{ inputs.user || github.actor }}/${repo_name}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
 
         docker tag "${{ inputs.image_tag }}:${{ inputs.image_version }}" "$full_image"
         echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "$registry_url" -u ${{ toLower(github.actor) }} --password-stdin
-        docker push "$full_image"
+        docker push "${full_image,,}"
 
     - name: Logout
       if: always()
