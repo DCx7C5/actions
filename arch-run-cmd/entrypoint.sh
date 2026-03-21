@@ -15,7 +15,13 @@ elif [[ -d "$WORK_DIR" && -d "$GNUPGHOME" ]]; then
 else
   export GNUPGHOME="$WORK_DIR/.gnupg"
 fi
-
+if [[ -d "$GNUPGHOME" && -n "$GPG_KEY_ID" && -n "$GPG_PASSPHRASE" && "$PRESET_CACHE" == "true" ]]; then
+  KEYGRIPS=$(gpg --batch --with-colons --list-secret-keys "$GPG_KEY_ID" 2>/dev/null | awk -F: '/^grp:/ {print $10}')
+  while read -r GRIP; do
+    printf '%s' "$GPG_PASSPHRASE" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$GRIP" 2>/dev/null || true
+  done <<< "$KEYGRIPS"
+  echo "::notice::Preset GPG passphrase in gpg-agent cache"
+fi
 shift 2
 COMMAND="$*"
 
