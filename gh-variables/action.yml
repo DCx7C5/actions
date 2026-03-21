@@ -130,11 +130,11 @@ runs:
         fi
 
         if [[ -n "$INPUTS_ENV" ]]; then
-          TYPE="--env \"$INPUTS_ENV\""
+          TYPE="--env $INPUTS_ENV"
         elif [[ -n "$INPUTS_REPO" ]]; then
-          TYPE="--repo \"$INPUTS_REPO\""
+          TYPE="--repo $INPUTS_REPO"
         elif [[ -n "$INPUTS_ORG" ]]; then
-          TYPE="--org \"$INPUTS_ORG\""
+          TYPE="--org $INPUTS_ORG"
         fi
         
         if [[ -n "${{ inputs.org }}" && -n "${{ inputs.repos }}" ]]; then
