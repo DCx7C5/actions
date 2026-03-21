@@ -189,12 +189,12 @@ runs:
         [ -n "$JSON" ] && GH_CMD+=(--json "$(echo "$JSON" | tr '\n\ \,' ',' | sed 's/,$//')")
         [ -n "$JQ_FILTER" ] && GH_CMD+=(-q "${JQ_FILTER}")
         
-        value=$(gh variable get '$INPUTS_VARIABLE_NAME' "${GH_CMD[@]}")
+        value=$(gh variable get "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}")
         
         status=$?
         [ $status -ne 0 ] && {
           echo "success=false" >> "$GITHUB_OUTPUT"
-          echo "::warning::GitHub Variable '$INPUTS_VARIABLE_NAME' not found or has no value"
+          echo "::warning::GitHub Variable "$INPUTS_VARIABLE_NAME" not found or has no value"
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
         }
         
@@ -208,7 +208,7 @@ runs:
         fi
 
         echo "success=true" >> "$GITHUB_OUTPUT"
-        echo "::notice::GitHub Variable '$INPUTS_VARIABLE_NAME' retrieved successfully"
+        echo "::notice::GitHub Variable "$INPUTS_VARIABLE_NAME" retrieved successfully"
 
     - name: Set GitHub Variable
       id: set_variable
