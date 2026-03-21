@@ -32,15 +32,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-run-cmd
     steps:
-      - name: GitHub App Token
-        id: app_token
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
-          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
-      - uses: actions/checkout@v5
-        with:
-          token: ${{ steps.app_token.outputs.token }}
 
       - name: Import GPG key
         id: gpg_import

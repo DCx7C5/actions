@@ -36,7 +36,12 @@ COMMAND="$*"
 
 
 if [[ ! -d "$WORK_DIR" ]]; then
-  mkdir -p "$WORK_DIR"
+  if [[ "$(id -u)" == "0" ]]; then
+    mkdir -p "$WORK_DIR"
+  else
+    echo "ERROR: Cannot create work directory: $WORK_DIR (no permission, not root)" >&2
+    exit 1
+  fi
 fi
 cd "$WORK_DIR" || {
   echo "ERROR: Cannot change to work directory: $WORK_DIR" >&2

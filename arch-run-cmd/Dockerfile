@@ -137,6 +137,10 @@ COPY --from=bootstrap /rootfs/ /
 
 WORKDIR /github/workspace
 
+
+# Erstelle /home/runner für GitHub Actions Kompatibilität
+RUN mkdir -p /home/runner && chown 1000:1000 /home/runner
+
 USER ${USER}
 
 # Comprehensive labels for Docker metadata and CI tracking
