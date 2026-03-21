@@ -11,6 +11,10 @@ inputs:
     description: "Docker image version tag (defaults to 'latest')"
     required: false
     default: 'latest'
+  dockerfile_path:
+    description: "Path to the Dockerfile to use for building the image"
+    required: false
+    default: ''
   working_directory:
     description: "Working directory inside container"
     required: false
@@ -23,8 +27,32 @@ inputs:
     description: "ccache directory for build caching"
     required: false
     default: "${{ github.workspace }}/.ccache"
+  user:
+    description: "User name to create inside the container (defaults to runner.user)"
+    required: false
+    default: ${{ runner.user }}
+  group:
+    description: "Group name to create inside the container (defaults to runner.group)"
+    required: false
+    default: ${{ runner.group }}
+  uid:
+    description: "User ID to use inside the container (defaults to current user ID)"
+    required: false
+    default: ${{ env.UID || '1000' }}
+  gid:
+    description: "Group ID to use inside the container (defaults to current group ID)"
+    required: false
+    default: ${{ env.GID || '1000' }}
+  gpg_key:
+    description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
+    required: false
+    default: ''
   github_token:
     description: "GitHub token for API access (defaults to github.token)"
+    required: false
+    default: ''
+  build_args:
+    description: "New-line separated list of additional build arguments to pass to 'docker build' (optional)"
     required: false
     default: ''
 
@@ -46,25 +74,45 @@ runs:
       shell: bash
       env:
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || github.token }}"
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME || format('{0}/.gnupg', github.workspace) || '.gnupg' }}"
-        CCACHE_DIR: "${{ inputs.ccache_dir }}"
+        DOCKERFILE: "${{ inputs.dockerfile_path || 'Dockerfile' }}"
       working-directory: ${{ inputs.working_directory || env.WORKING_DIR || github.workspace || '.' }}
       run: |
         set -euo pipefail
         
+        if [[ -z "$DOCKERFILE" || ! -f "$DOCKERFILE" ]]; then
+          DOCKERFILE="${DOCKERFILE:-"${{ format('{0}/Dockerfile', github.workspace) }}"}"
+          if [[ -z "$DOCKERFILE" || ! -f "$DOCKERFILE" ]]; then
+            echo "::error::Dockerfile not found at path: $DOCKERFILE"
+            exit 1
+          fi
+        fi
+        
+        cd "$(basename "$DOCKERFILE")" || exit 1
+        
         IMAGE='${{ inputs.image_tag }}:${{ inputs.image_version }}'
+        
+        DOCKER_BUILD_ARGS=()
+        DOCKER_BUILD_ARGS+=(--build-arg "WORKING_DIR=${{ inputs.working_directory || env.WORKING_DIR || github.workspace || '.' }}")
+        DOCKER_BUILD_ARGS+=(--build-arg "GNUPGHOME=${{ inputs.gpg_home || env.GNUPGHOME || format('{0}/.gnupg', github.workspace) || '.gnupg' }}")
+        DOCKER_BUILD_ARGS+=(--build-arg "CCACHE_DIR=${{ inputs.ccache_dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) || '.ccache' }}")
+        DOCKER_BUILD_ARGS+=(--build-arg "USER=${{ inputs.user }}")
+        DOCKER_BUILD_ARGS+=(--build-arg "GROUP=${{ inputs.group }}")
+        DOCKER_BUILD_ARGS+=(--build-arg "UID=${{ inputs.uid }}")
+        DOCKER_BUILD_ARGS+=(--build-arg "GID=${{ inputs.gid }}")
+        DOCKER_BUILD_ARGS+=(--build-arg "GPG_KEY=${{ inputs.gpg_key }}")
+        
+        if [[ -n "${{ inputs.build_args }}" ]]; then
+          while IFS= read -r arg; do
+            if [[ -n "$arg" && "$arg" =~ ^[A-Z]*\=[a-zA-Z0-9\s]*$ ]]; then
+              DOCKER_BUILD_ARGS+=(--build-arg "$arg")
+            fi
+          done <<< "${{ inputs.build_args }}"
+        fi
         
         echo "::notice::Building Arch Linux Docker image for AUR builds..."
         docker build \
-          --build-arg WORKING_DIR=$WORKING_DIR \
-          --build-arg GNUPGHOME=$GNUPGHOME \
-          --build-arg CCACHE_DIR=$CCACHE_DIR \
-          --build-arg USER=$USER \
-          --build-arg GROUP=$GROUP \
-          --build-arg UID=$(id -u) \
-          --build-arg GID=$(id -g) \
-          -f ./arch-run-cmd/Dockerfile \
-          -t $IMAGE .
+          -f "$DOCKERFILE" \
+          -t "$IMAGE" .
         
         echo "image_tag=${IMAGE_TAG%%:*}" >> $GITHUB_OUTPUT
         echo "image_version=${IMAGE_TAG##*:}" >> $GITHUB_OUTPUT
