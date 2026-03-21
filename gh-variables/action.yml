@@ -135,17 +135,17 @@ runs:
         fi
 
         if [[ "${{ inputs.env }}" =~ ^true$ ]]; then
-          TYPE="--env ${{ github.environment }}"
+          TYPE="--env "${{ github.environment }}""
         elif [[ "${{ inputs.repo }}" =~ ^true$ ]]; then
-          TYPE="--repo ${{ github.repository }}"
+          TYPE="--repo "${{ github.repository }}""
         elif [[ "${{ inputs.org }}" =~ ^true$ ]]; then
-          TYPE="--org ${{ github.repository_owner }}"
+          TYPE="--org "${{ github.repository_owner }}""
         elif [[ "${{ inputs.env }}" != '' ]]; then
-          TYPE="--env ${{ inputs.env }}"
+          TYPE="--env "${{ inputs.env }}""
         elif [[ "${{ inputs.repo }}" != '' ]]; then
-          TYPE="--repo ${{ inputs.repo }}"
+          TYPE="--repo "${{ inputs.repo }}""
         elif [[ "${{ inputs.org }}" != '' ]]; then
-          TYPE="--org ${{ inputs.org }}"
+          TYPE="--org "${{ inputs.org }}""
         fi
 
         [ -n "$TYPE" ] && echo "type=$TYPE" >> "$GITHUB_OUTPUT"
