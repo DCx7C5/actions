@@ -44,7 +44,7 @@ RUN mkdir -p /etc/pacman.d /etc/pacman.d/gnupg /usr/share/pacman/keyrings /rootf
     && pacman-key --populate archlinux \
     && mkdir -p /rootfs/etc/pacman.d \
     && cp /etc/pacman.conf /rootfs/etc/pacman.conf \
-    && cp /etc/pacman.d/mirrorlist /rootfs/etc/pacman.d/mirrorlist \
+    && cp /etc/pacman.d/mirrorlist /rootfs/etc/pacman.d/mirrorlist
 
 RUN mkdir -p /rootfs/dev /rootfs/proc /rootfs/sys /rootfs/run \
     && mknod -m 666 /rootfs/dev/null c 1 3 2>/dev/null || true \
