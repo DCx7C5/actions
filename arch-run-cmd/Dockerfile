@@ -4,13 +4,15 @@ ARG USER
 ARG GROUP
 ARG WORKING_DIR
 ARG CCACHE_DIR
+ARG GNUPGHOME
 ARG UID
 ARG GID
 ARG MAKE_JOBS=4
-ENV USER=${USER} \
+ENV USER=${USER:-runner} \
     MAKEFLAGS="-j${MAKE_JOBS}" \
-    CCACHE_DIR=/home/${USER}/.ccache \
-    GNUPGHOME=/home/${USER}/.gnupg \
+    WORKING_DIR=${WORKING_DIR:-"/home/${USER}"/work} \
+    CCACHE_DIR=${CCACHE_DIR:-"/home/${USER}/work/.ccache"} \
+    GNUPGHOME=${GNUPGHOME:-"/home/${USER}/work/.gnupg"} \
     PATH=/home/${USER}/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     SHELL=/bin/bash
 
@@ -138,7 +140,13 @@ ARG WORKING_DIR
 ARG CCACHE_DIR
 ARG UID
 ARG GID
-
+ENV USER=${USER:-runner} \
+    MAKEFLAGS="-j${MAKE_JOBS}" \
+    WORKING_DIR=${WORKING_DIR:-"/home/${USER}"/work} \
+    CCACHE_DIR=${CCACHE_DIR:-"/home/${USER}/work/.ccache"} \
+    GNUPGHOME=${GNUPGHOME:-"/home/${USER}/work/.gnupg"} \
+    PATH=/home/${USER}/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    SHELL=/bin/bash
 
 COPY --from=bootstrap /rootfs/ /
 
