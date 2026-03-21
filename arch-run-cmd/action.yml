@@ -111,7 +111,7 @@ runs:
       if: success()
       uses: ./docker-push-image
       with:
-        working_directory: ${{ github.workspace }}
+        working_directory: ${{ github.action_path }}
         gh_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
         image_tag: ${{ inputs.image_tag || steps.build_image.outputs.image_tag }}
         image_version: ${{ inputs.image_version || steps.build_image.outputs.image_version }}
