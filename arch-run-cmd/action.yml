@@ -100,11 +100,11 @@ runs:
         group: ${{ inputs.group || env.GROUP || runner.group }}
         uid: ${{ inputs.uid || env.UID || runner.uid }}
         gid: ${{ inputs.gid || env.GID || runner.gid }}
-        gh_token: ${{ inputs.github_token }}
+        gh_token: ${{ inputs.gh_token }}
         gpg_key: ${{ inputs.gpg_key }}
         image_tag: ${{ inputs.image_tag }}
         image_version: ${{ inputs.image_version }}
-        dockerfile_path: ${{ format('{0}/arch-run-cmd/Dockerfile', github.workspace)}}
+        dockerfile_path: 'Dockerfile'
 
     - name: Push Docker image to GitHub Container Registry
       id: push_image
@@ -126,6 +126,6 @@ runs:
         gid: ${{ inputs.gid || env.GID || runner.gid }}
         enable_ccache: ${{ inputs.enable_ccache }}
         gpg_key_id: ${{ inputs.gpg_key_id }}
-        gh_token: ${{ inputs.github_token }}
-        command: ''
+        gh_token: ${{ inputs.gh_token }}
+        command: 'ls -las && whoami && id && env && echo "Running command: ${{ inputs.command }}" && ${{ inputs.command }}'
 
