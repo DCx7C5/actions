@@ -6,6 +6,9 @@ set -euo pipefail
 trap 'echo "ERROR: Script failed on line $LINENO (command: $BASH_COMMAND)" >&2; exit 1' ERR
 
 WORK_DIR="$1"
+if [[ -z "$WORK_DIR" || "$WORK_DIR" == "null" ]]; then
+  WORK_DIR="/github/workspace"
+fi
 GNUPGHOME="${2:-$WORK_DIR/.gnupg}"
 
 if [[ -d "$WORK_DIR" && "$GNUPGHOME" == ".gnupg" ]]; then
@@ -22,9 +25,18 @@ if [[ -d "$GNUPGHOME" && -n "$GPG_KEY_ID" && -n "$GPG_PASSPHRASE" && "$PRESET_CA
   done <<< "$KEYGRIPS"
   echo "::notice::Preset GPG passphrase in gpg-agent cache"
 fi
-shift 2
+
+if [[ $# -ge 2 ]]; then
+  shift 2
+else
+  shift $#
+fi
 COMMAND="$*"
 
+
+if [[ ! -d "$WORK_DIR" ]]; then
+  mkdir -p "$WORK_DIR"
+fi
 cd "$WORK_DIR" || {
   echo "ERROR: Cannot change to work directory: $WORK_DIR" >&2
   exit 1
