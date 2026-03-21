@@ -186,7 +186,6 @@ runs:
         GH_CMD=(${TYPE})
         
         [ -n "$TYPE_OPT" ] && GH_CMD+=(${TYPE_OPT})
-        [ -n "$VISIBILITY}" ] && GH_CMD+=(--visibility "${VISIBILITY}")
         [ -n "$JSON" ] && GH_CMD+=(--json "$(echo "$JSON" | tr '\n\ \,' ',' | sed 's/,$//')")
         [ -n "$JQ_FILTER" ] && GH_CMD+=(-q "${JQ_FILTER}")
         
