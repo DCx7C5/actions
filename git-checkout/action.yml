@@ -1,0 +1,87 @@
+name: 'Custom Checkout (Bash Inline)'
+description: 'Checkout repository with custom token (GitHub App/PAT). 100% Bash, no separate script, production hardened.'
+author: 'Your Name'
+branding:
+  icon: 'git-pull-request'
+  color: 'green'
+
+inputs:
+  gh_token:
+    description: 'GitHub token (PAT or GitHub App token)'
+    required: false
+    default: ''
+  repository:
+    description: 'Repository to clone (owner/repo)'
+    default: ''
+  ref:
+    description: 'Branch, tag, or full SHA to checkout'
+    default: ''
+  path:
+    description: 'Path under $GITHUB_WORKSPACE to checkout (leave empty for default workspace)'
+    default: ''
+  action:
+    description: 'Action to cd into after checkout'
+    required: false
+    default: ''
+
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout with custom token (inline Bash)
+      shell: bash
+      env:
+        TOKEN: ${{ inputs.token || env.GH_TOKEN || github.token }}
+        REPOSITORY: ${{ inputs.repository || github.repository }}
+        REF: ${{ inputs.ref || github.ref_name || github.sha }}
+        WORKSPACE: ${{ inputs.path || github.workspace }}
+      run: |
+        set -euo pipefail
+        
+        
+        TOKEN="${TOKEN:-${1:-}}"
+        REPOSITORY="${REPOSITORY:-${2:-${GITHUB_REPOSITORY:-}}}"
+        REF="${REF:-${3:-${GITHUB_REF_NAME:-${GITHUB_SHA:-HEAD}}}}"
+        WORKSPACE="${WORKSPACE:-${4:-${GITHUB_WORKSPACE:-$(pwd)}}}"
+
+        if [[ -z "${TOKEN}" || -z "${REPOSITORY}" ]]; then
+            echo "❌ ERROR: TOKEN and REPOSITORY are required"
+            exit 1
+        fi
+
+        OWNER="${REPOSITORY%%/*:-"${{ github.repository_owner }}}""
+        REPO="${REPOSITORY#*/}"
+        mkdir -p "${WORKSPACE}"
+        cd "${WORKSPACE}"
+
+        GIT_CRED="-c url.https://x-access-token:${TOKEN}@github.com/.insteadOf=https://github.com/"
+
+        echo "🚀 Cloning ${REPOSITORY} @ ${REF} → ${WORKSPACE}"
+
+        if [[ "${REF}" =~ ^[0-9a-f]{40}$ ]]; then
+            IS_SHA=true
+        else
+            IS_SHA=false
+        fi
+
+        if [[ ! -d ".git" ]]; then
+            # Fresh clone
+            if ${IS_SHA}; then
+                git ${GIT_CRED} clone --depth 1 --no-tags \
+                    "https://github.com/${OWNER}/${REPO}.git" .
+                git ${GIT_CRED} fetch --depth 1 origin "${REF}"
+                git checkout "${REF}"
+            else
+                git ${GIT_CRED} clone --depth 1 --no-tags --branch "${REF}" \
+                    "https://github.com/${OWNER}/${REPO}.git" .
+            fi
+        else
+            # Already checked out → update + clean
+            git ${GIT_CRED} fetch --depth 1 origin
+            git checkout "${REF}" 2>/dev/null || git checkout -B "$(basename "${REF}")" "${REF}"
+            git clean -ffdx
+        fi
+        
+        [[ -d "${{ inputs.action }}" ]] && cd "${{ inputs.action }}"
+        
+        echo "✅ Checkout complete!"
