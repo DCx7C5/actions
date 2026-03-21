@@ -98,14 +98,14 @@ runs:
             inputs.repo != '', '--repo ${{ inputs.repo }}',
             '--repo ${{ github.repository }}'
           ) }}
+        INPUTS_REPOS: "${{ inputs.repos }}"
         TYPE_OPT: >-
           ${{ case(
-            inputs.org != '' && inputs.repos != '', '--repos $(echo "${{ inputs.repos }}" | tr '\n\ \,' ',' | sed 's/,$//')',
+            inputs.org != '' && inputs.repos != '', '--repos $(echo "$INPUTS_REPOS" | tr "\n " "," | sed "s/,$//")',
           ) }}
         INPUTS_JSON: "${{ inputs.json }}"
         INPUTS_VISIBILITY: "${{ inputs.visibility }}"
         INPUTS_ACTION: "${{ inputs.action }}"
-        INPUTS_REPOS: "${{ inputs.repos }}"
         INPUTS_ORG: "${{ inputs.org }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         INPUTS_JQ_DECODE: "${{ inputs.jq-decode }}"
