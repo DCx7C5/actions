@@ -129,18 +129,12 @@ runs:
           echo "visibility=all" >> "$GITHUB_OUTPUT"
         fi
 
-        if [[ "${{ inputs.env }}" =~ ^true$ ]]; then
-          TYPE="--env "${{ github.environment }}""
-        elif [[ "${{ inputs.repo }}" =~ ^true$ ]]; then
-          TYPE="--repo "${{ github.repository }}""
-        elif [[ "${{ inputs.org }}" =~ ^true$ ]]; then
-          TYPE="--org "${{ inputs.org || github.repository_owner }}""
-        elif [[ "${{ inputs.env }}" != '' ]]; then
-          TYPE="--env "${{ inputs.env }}""
-        elif [[ "${{ inputs.repo }}" != '' ]]; then
-          TYPE="--repo "${{ inputs.repo }}""
-        elif [[ "${{ inputs.org }}" != '' ]]; then
-          TYPE="--org "${{ inputs.org }}""
+        if [[ -n "$INPUTS_ENV" ]]; then
+          TYPE="--env \"$INPUTS_ENV\""
+        elif [[ -n "$INPUTS_REPO" ]]; then
+          TYPE="--repo \"$INPUTS_REPO\""
+        elif [[ -n "$INPUTS_ORG" ]]; then
+          TYPE="--org \"$INPUTS_ORG\""
         fi
         
         if [[ -n "${{ inputs.org }} && -n "${{ inputs.repos }}" ]]; then
