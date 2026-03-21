@@ -51,7 +51,7 @@ runs:
         
         registry_url="${{ inputs.registry }}"
         registry_url="${registry_url%/}"
-        full_image="$registry_url/${{ inputs.image_tag }}:${{ inputs.image_version }}"
+        full_image='$registry_url/${{ github.repository_owner }}/${{ inputs.image_tag }}:${{ inputs.image_version }}'
 
         docker tag "${{ inputs.image_tag }}:${{ inputs.image_version }}" "$full_image"
         echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "$registry_url" -u ${{ github.actor }} --password-stdin
