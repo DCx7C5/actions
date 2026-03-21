@@ -107,7 +107,7 @@ runs:
         elif [[ -n "$INPUTS_ORG" ]]; then
           TYPE="--org $INPUTS_ORG"
         fi
-        if [[ "$INPUTS_VISIBILITY" = 'selected' && -z "${{ inputs.repos }}" ]]; then
+        if [[  -n "$INPUTS_ORG"  && "$INPUTS_VISIBILITY" = 'selected' && -z "${{ inputs.repos }}" ]]; then
           echo "::warning::Visibility 'selected' has no repositories specified"
         fi
         
@@ -131,6 +131,17 @@ runs:
         SECRET_NAME: "${{ inputs.secret-name }}"
 
       run: |
+        
+        if [[ -n "${{ inputs.org }}" && -n "$INPUTS_REPOS" ]]; then
+          echo "::debug::Setting secret for organisation '${{ inputs.org }}' and repositories: ${INPUTS_REPOS}"
+          TYPE_OPT="--repos $(echo "$INPUTS_REPOS" | tr "\n" "," | sed "s/,$//")"
+        elif [[ -n "${{ inputs.org }}" && "${{ inputs.no_repos_select }}" == 'true' ]]; then
+          echo "::debug::Setting secret for organisation '${{ inputs.org }}' without selecting any repositories"
+          TYPE_OPT="--no-repos-select"
+        elif [[ -n "${{ inputs.org }}" ]]; then
+          echo "::debug::Setting secret for organisation '${{ inputs.org }}' with default repository selection"
+        fi
+        
         GH_CMD=()
         [ -n "$TYPE" ] && GH_CMD+=($TYPE)
         [ -n "$TYPE_OPT" ] && GH_CMD+=($TYPE_OPT)
