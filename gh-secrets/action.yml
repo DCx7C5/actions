@@ -135,13 +135,13 @@ runs:
         SECRET_NAME: "${{ inputs.secret-name }}"
 
       run: |
-        GH_CMD+=(${TYPE} ${TYPE_OPT}) 
-        
+        GH_CMD=()
+        [ -n "$TYPE" ] && GH_CMD+=($TYPE)
+        [ -n "$TYPE_OPT" ] && GH_CMD+=($TYPE_OPT)
         [[ -n "$VISIBILITY" ]] && GH_CMD+=(--visibility "$VISIBILITY")
-        
         [[ "${{ inputs.user }}" == 'true' ]] && GH_CMD+=(--user)
         [[ -n "${{ inputs.app }}" ]] && GH_CMD+=(--app "${{ inputs.app }}")
-        
+
         printf '%s' "${{ inputs.body }}" | gh secret set "$SECRET_NAME" "${GH_CMD[@]}" || {
           echo "::error::Failed to set GitHub Secret" >&2
         }
@@ -150,11 +150,11 @@ runs:
         [ $status -eq 0 ] && { 
           echo "success=true" >> "$GITHUB_OUTPUT"
           echo "::debug::Successfully set GitHub Secret '$SECRET_NAME' with arguments: ${GH_CMD[*]}"
-          echo "::notice::\e[1;32m✓\e[0m Successfully set GitHub Secret '$SECRET_NAME'"
+          echo "::notice::Successfully set GitHub Secret '$SECRET_NAME'"
         } || { 
           echo "success=false" >> "$GITHUB_OUTPUT"
           echo "::error::Failed to set GitHub Secret '$SECRET_NAME' with arguments: ${GH_CMD[*]}" >&2
-          echo "::error::\e[1;31m✗\e[0m Failed to set GitHub Secret '$SECRET_NAME'"
+          echo "::error::Failed to set GitHub Secret '$SECRET_NAME'"
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
         }
 
@@ -175,7 +175,7 @@ runs:
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
         } || { 
           echo "::debug::Successfully printed encrypted, base64-encoded value of the secret to outputs.secret_value"
-          echo "::notice::\e[1;32m✓\e[0m Encrypted, base64-encoded value of the secret is available in 'encrypted-value' output"
+          echo "::notice::Encrypted, base64-encoded value of the secret is available in 'encrypted-value' output"
         }
 
     - name: Delete secret if action is set to 'delete'
@@ -198,9 +198,9 @@ runs:
         [ $status -eq 0 ] && { 
           echo "success=true" >> "$GITHUB_OUTPUT"
           echo "::debug::Successfully executed: gh secret delete $SECRET_NAME ${GH_CMD[*]}"
-          echo "::notice::\e[1;32m✓\e[0m GitHub Secret '$SECRET_NAME' deleted successfully"
+          echo "::notice::GitHub Secret '$SECRET_NAME' deleted successfully"
         } || { 
           echo "success=false" >> "$GITHUB_OUTPUT"
-          echo "::error::\e[1;31m✗\e[0m Failed to delete GitHub Secret '$SECRET_NAME' with arguments: ${GH_CMD[*]}" >&2
+          echo "::error::Failed to delete GitHub Secret '$SECRET_NAME' with arguments: ${GH_CMD[*]}" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
         }
