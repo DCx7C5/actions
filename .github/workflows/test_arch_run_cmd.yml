@@ -24,11 +24,14 @@ on:
         type: boolean
 
   push:
+    branches:
+      - main
     paths:
       - 'arch-run-cmd/**'
       - 'docker-build-image/**'
       - 'docker-push-image/**'
       - 'docker-run-image/**'
+    
 
 concurrency:
   group: 'test-arch-run-cmd'
