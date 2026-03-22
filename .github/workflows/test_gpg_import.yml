@@ -1,0 +1,135 @@
+name: "Test GPG Import Action"
+
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - gpg-import/action.yml
+      - gpg-import/gpg-validate-import/action.yml
+      - gpg-import/gpg-import-file/action.yml
+      - gpg-import/gpg-import-inline/action.yml
+      - gpg-import/gpg-import-keyserver/action.yml
+      - gpg-import/gpg-import-no-protection/action.yml
+      - gpg-import/gpg-import-protected/action.yml
+      - gpg-import/gpg-helpers.sh
+      - gpg-setup-home/action.yml
+      - gpg-preset-pass/action.yml
+      - git-configure-gnupg/action.yml
+      - gpg-set-ownertrust/action.yml
+      - ssl-decrypt/action.yml
+      - .github/workflows/test_gpg_import.yml
+
+jobs:
+  test-gpg-import:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: write
+      actions: write
+    steps:
+      - name: GitHub App Token
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
+          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
+
+      - name: Import GPG key
+        id: gpg_import
+        uses: ./gpg-import
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        with:
+          method: 'inline'
+          gpg_home: ${{ inputs.gpg_home || format('{0}/.gnupg', github.workspace) }}
+          gpg_key: ${{ inputs.gpg_key || secrets.GPG_PRIVATE_KEY }}
+          gpg_pass: ${{ inputs.gpg_pass || secrets.GPG_PASSPHRASE }}
+          ssl_pass: ${{ inputs.ssl_pass || secrets.SSL_PASSPHRASE }}
+          configure_git: 'true'
+          setup_home: ${{ inputs.setup_home || 'true' }}
+          preset_pass: ${{ inputs.preset_pass || 'false' }}
+
+
+      - name: Validate GPG Import
+        id: gpg_validate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          GNUPGHOME: ${{ inputs.gpg_home || format('{0}/.gnupg', github.workspace) }}
+        run: |
+          set -euo pipefail
+          gpg --list-secret-keys --keyid-format long --with-keygrip --with-fingerprint
+          
+
+      - name: Parse and display GPG keys (detailed)
+        id: gpg_parse_detailed
+        shell: bash
+        env:
+          GNUPGHOME: ${{ inputs.gpg_home || format('{0}/.gnupg', github.workspace) }}
+        run: |
+          set -euo pipefail
+          echo "Typ   Status   Prim. Dummy  Key-ID                Fingerprint                           Keygrip                              Parent      User-ID"
+          echo "----  -------  ----- -----  --------------------  ------------------------------------  ------------------------------------  ----------  ------------------------------------------"
+          gpg --list-secret-keys --keyid-format long --with-keygrip --with-fingerprint --with-colons | awk -F: '
+          function print_row(typ, status, prim, dummy, keyid, fpr, grip, parent, uid) {
+            printf "%-4s  %-7s  %-5s %-5s  %-20s  %-36s  %-36s  %-10s  %s\n", typ, status, prim, dummy, keyid, fpr, grip, parent, uid
+          }
+          {
+            if ($1 == "sec" || $1 == "pub") {
+              typ = $1
+              status = $2
+              keyid = $5
+              prim = "yes"
+              dummy = ($2 ~ /d/) ? "yes" : "no"
+              parent = ""
+              fpr = ""
+              grip = ""
+              uid = ""
+              show = 1
+            }
+            if ($1 == "ssb" || $1 == "sub") {
+              typ = $1
+              status = $2
+              keyid = $5
+              prim = "no"
+              dummy = ($2 ~ /d/) ? "yes" : "no"
+              parent = last_primary
+              fpr = ""
+              grip = ""
+              uid = ""
+              show = 1
+            }
+            if ($1 == "fpr" && show) {
+              fpr = $10
+            }
+            if ($1 == "grp" && show) {
+              grip = $10
+            }
+            if ($1 == "uid" && show) {
+              uid = $10
+              print_row(typ, status, prim, dummy, keyid, fpr, grip, parent, uid)
+              show = 0
+            }
+            if (($1 == "sec" || $1 == "pub") && $5 != "") {
+              last_primary = $5
+            }
+            if (($1 == "sec" || $1 == "pub") && show && uid == "") {
+              print_row(typ, status, prim, dummy, keyid, fpr, grip, parent, "-")
+              show = 0
+            }
+            if (($1 == "ssb" || $1 == "sub") && show) {
+              print_row(typ, status, prim, dummy, keyid, fpr, grip, parent, "-")
+              show = 0
+            }
+          }
+          '
+          echo ""
+          echo "Legende:"
+          echo "Typ: sec=Secret Primary, ssb=Secret Subkey, pub=Public Primary, sub=Public Subkey"
+          echo "Prim.: yes=Primary Key, no=Subkey"
+          echo "Dummy: yes=Dummy Key, no=Echter Key"
+          echo "Parent: Key-ID des zugehörigen Primary Keys (bei Subkeys)"
+          echo "User-ID: Anzeigename und E-Mail (bei UID-Zeilen, sonst '-')"
