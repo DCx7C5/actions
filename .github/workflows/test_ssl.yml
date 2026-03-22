@@ -37,23 +37,23 @@ jobs:
           pass="${{ inputs.ssl_pass || secrets.GPG_PASSPHRASE }}"
           cat << EOF > test_encrypt.json
           [
-            {"input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "text"},
-            {"input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "base64"},
-            {"input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "raw"},
-            {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "text"},
-            {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "base64"},
-            {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "raw"}
-          [
-          EOF
-          
+            { "input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "text" },
+            { "input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "base64" },
+            { "input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "raw" },
+            { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "text" },
+            { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "base64" },
+            { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "raw" }
+          [   
+          EOF 
+              
           cat << EOF > test_decrypt.json
-          [
-            {"input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "text"},
-            {"input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "base64"},
-            {"input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "raw"},
-            {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "text"},
-            {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "base64"},
-            {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "raw"}
+          [   
+            { "input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "text" },
+            { "input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "base64" },
+            { "input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "raw" },
+            { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "text" },
+            { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "base64" },
+            { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "raw" }
           [
           EOF
           echo "matrix_encrypt=$(jq -cr '.[]' test_encrypt.json)" >> "$GITHUB_OUTPUT"
