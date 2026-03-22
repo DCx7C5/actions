@@ -43,7 +43,7 @@ jobs:
             { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "text" },
             { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "base64" },
             { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "raw" }
-          [   
+          ]
           EOF 
               
           cat << EOF > test_decrypt.json
@@ -54,7 +54,7 @@ jobs:
             { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "text" },
             { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "base64" },
             { "input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "raw" }
-          [
+          ]
           EOF
           echo "matrix_encrypt=$(jq -cr '.[]' test_encrypt.json)" >> "$GITHUB_OUTPUT"
           echo "matrix_decrypt=$(jq -cr '.[]' test_decrypt.json)" >> "$GITHUB_OUTPUT"
