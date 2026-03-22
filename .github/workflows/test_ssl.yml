@@ -1,4 +1,4 @@
-name: "Test Everything SSL Action relevant to GPG Import"
+name: "Test OpenSSL Encryption & Decryption"
 
 on:
   workflow_dispatch:
@@ -12,9 +12,9 @@ on:
     branches:
       - main
     paths:
-      - 'ssl-decrypt/action.yml'
-      - 'ssl-encrypt/action.yml'
-      - '.github/workflows/test_ssl.yml'
+      - ssl-decrypt/action.yml
+      - ssl-encrypt/action.yml
+      - .github/workflows/test_ssl.yml
 
 
 jobs:
