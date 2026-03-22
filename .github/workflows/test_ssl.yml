@@ -3,7 +3,6 @@ name: "Test Everything SSL Action relevant to GPG Import"
 on:
   workflow_dispatch:
     inputs:
-
       ssl_pass:
         description: "Passphrase to use for SSL decryption (if applicable)"
         required: false
@@ -16,7 +15,6 @@ on:
       - 'ssl-decrypt/action.yml'
       - 'ssl-encrypt/action.yml'
       - '.github/workflows/test_ssl.yml'
-
 
 
 jobs:
@@ -34,7 +32,7 @@ jobs:
         id: ssl_prepare
         shell: bash
         run: |
-          inputsl="${{ inputs.in || format('test\n') }}"
+          inputsl="${{ inputs.in || format('test') }}"
           inputml="$(printf '%s\n' "${{ inputs.in }}" "${{ inputs.in }}" "${{ inputs.in }}" "${{ inputs.in }}")"
           pass="${{ inputs.ssl_pass || secrets.GPG_PASSPHRASE }}"
           cat << EOF > test_encrypt.json
@@ -44,7 +42,7 @@ jobs:
             {"input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "raw"},
             {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "text"},
             {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "base64"},
-            {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "raw"},
+            {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "raw"}
           [
           EOF
           
@@ -55,7 +53,7 @@ jobs:
             {"input": "$inputsl", "passphrase": "$pass", "input_type": "inline", "input_encoding": "raw"},
             {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "text"},
             {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "base64"},
-            {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "raw"},
+            {"input": "$inputml", "passphrase": "$pass", "input_type": "file", "input_encoding": "raw"}
           [
           EOF
           echo "matrix_encrypt=$(jq -cr '.[]' test_encrypt.json)" >> "$GITHUB_OUTPUT"
