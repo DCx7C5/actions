@@ -230,15 +230,15 @@ runs:
         printf '%s' "${{ steps.validate_and_parse.outputs.body || inputs.body }}" | gh variable set "$INPUTS_VARIABLE_NAME" "${GH_CMD[@]}"
         status=$?
         [[ $status -ne 0 && "$EONERROR" =~ ^true$ ]] && exit $status
-        [ $status -eq 0 ] && { 
+        if [ $status -eq 0 ]; then 
           echo "success=true" >> "$GITHUB_OUTPUT"
           echo "::debug::Successfully executed: printf '%s' $BODY | gh variable set $INPUTS_VARIABLE_NAME ${GH_CMD[*]}"
           echo "::notice::GitHub Variable '$INPUTS_VARIABLE_NAME' set successfully"
-        } || { 
+        else
           echo "success=false" >> "$GITHUB_OUTPUT"
           echo "::error::Failed to set GitHub Variable '$INPUTS_VARIABLE_NAME' with arguments: ${GH_CMD[*]}" >&2
           [[ "$EONERROR" =~ ^true$ ]] && exit $status
-        }
+        fi
 
     - name: Delete Variable
       id: delete_variable
