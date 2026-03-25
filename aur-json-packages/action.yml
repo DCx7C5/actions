@@ -36,7 +36,7 @@ inputs:
     required: false
     description: "Set repository variable (defaults to current repository)"
     default: ''
-  gh_token:
+  gh-token:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
     default: ''
@@ -70,7 +70,7 @@ runs:
       env:
         PKG_NAME: "${{ inputs.pkg_name }}"
         JSON_PATH: "${{ inputs.json_in }}"
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+        GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         ACTION: "${{ inputs.action }}"
       run: |
         set -euo pipefail
@@ -148,26 +148,31 @@ runs:
         INPUT_PKG_NAME: "${{ inputs.pkg_name }}"
         IS_JSON_VALUE: "${{ steps.validate_inputs.outputs.json_value }}"
         GHVAR_NAME: "${{ inputs.variable_name }}"
+        GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
       working-directory: "${{ github.action_path }}"
       run: |
         chmod +x libpackages.sh
         args=$(./libpackages.sh "$INPUT_ACTION" "$INPUT_PKGNAMES" "$INPUT_KEYS" "$INPUT_VALUES" "$IS_JSON_VALUE")
-        
-        
+
+        # Splitte args in ARGS (alle bis auf das letzte) und FILTER (letztes Argument)
+        eval "set -- $args"
+        FILTER="${!#}"
+        ARGS=("${@:1:$(($#-1))}")
+
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
-          echo "out=$(jq -rc "${args}" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
-        
+          echo "out=$(jq -rc "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
+
         elif [[ ("$INPUT_ACTION" == "add" || "$INPUT_ACTION" == "update") && "$IS_FILE" == "false" ]]; then
           echo "Running 'add/update' action..."
-          jq -c "${args}" <<< "$INPUT_JSON" | gh variable set $GHVAR_NAME "--${ACCESS_LEVEL}" "$LEVEL_NAME"
-        
+          jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON" | gh variable set $GHVAR_NAME "--${ACCESS_LEVEL}" "$LEVEL_NAME"
+
         elif [[ "$INPUT_ACTION" == "remove" && "$IS_FILE" == "false" ]]; then
           echo "Running 'remove' action..."
-          jq -c "${args}" ${filter} <<< "$INPUT_JSON" | gh variable set $GHVAR_NAME "--${ACCESS_LEVEL}" "$LEVEL_NAME" 
-        
+          jq -c "${ARGS[@]}" "$FILTER" ${filter} <<< "$INPUT_JSON" | gh variable set $GHVAR_NAME "--${ACCESS_LEVEL}" "$LEVEL_NAME" 
+
         elif [[ "$INPUT_ACTION" == "count" ]]; then
-        
+
           echo "Running 'count' action..."
           echo "out=$(jq -rc '.packages | length' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
         else
