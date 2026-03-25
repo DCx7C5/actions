@@ -98,9 +98,15 @@ runs:
         if [[ ! " ${valid_actions[*]} " =~ " ${ACTION} " ]]; then
           echo "::error::Invalid action '${ACTION}'. Valid actions are: ${valid_actions[*]}" >&2
           exit 1
-        elif [[ ! "${{ inputs.env != '' && 'true' }}${{ inputs.repo != '' && 'true' }}${{ inputs.org != '' && 'true' }}" =~ ^true$ ]]; then
+        # Prüfe, dass nicht mehr als eines von env, repo oder org gesetzt ist
+        count=0
+        [[ -n "${{ inputs.env }}" ]] && ((count++))
+        [[ -n "${{ inputs.repo }}" ]] && ((count++))
+        [[ -n "${{ inputs.org }}" ]] && ((count++))
+        if (( count > 1 )); then
           echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
           exit 1
+        fi
         elif [[ -n "${{ inputs.key }}" && -z "${{ inputs.value }}" && ! "$ACTION" =~ '^(remove|get)$' ]]; then
           echo "::error::Both 'key' and 'value' inputs must be provided together for add/update actions." >&2
           exit 1
