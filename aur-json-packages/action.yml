@@ -141,7 +141,7 @@ runs:
       shell: bash
       env:
         INPUT_ACTION: "${{ inputs.action }}"
-        INPUT_JSONV: "${{ steps.validate_inputs.outputs.json_input }}"
+        INPUT_JSON: "${{ steps.validate_inputs.outputs.json_input }}"
         IS_JSON_VALUE: "${{ steps.validate_inputs.outputs.json_value }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         ACCESS_LEVEL: "${{ steps.validate_inputs.outputs.access_level }}"
@@ -150,18 +150,32 @@ runs:
       run: |
         chmod +x libpackages.sh
         echo "## Starting run_action" >> "$GITHUB_STEP_SUMMARY"
-        INPUT_JSON=$(gh variable get "$INPUT_JSONV" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value'  2>/dev/null)
+        
+        # Hole JSON aus Variable, falls nötig
+        INPUT_JSON_CONTENT=$(gh variable get "$INPUT_JSON" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value' 2>/dev/null)
+        if [[ -n "$INPUT_JSON_CONTENT" ]]; then
+          INPUT_JSON="$INPUT_JSON_CONTENT"
+        fi
+        
         {
           echo "Retrieved JSON content:"
           echo "```json"
           echo "$INPUT_JSON"
           echo "```"
         } >> "$GITHUB_STEP_SUMMARY"
-        readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "${{ steps.validate_inputs.outputs.value }}" "$IS_JSON_VALUE")
+        
+        if [[ -z "$INPUT_JSON" ]] || ! echo "$INPUT_JSON" | jq empty 2>/dev/null; then
+          echo "::error::INPUT_JSON ist leer oder kein valides JSON!"
+          exit 1
+        fi
+        
+        readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "nvidia
+        toolchain
+        " "" "" "$IS_JSON_VALUE")
         FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
         ARGS=("${ALL_ARGS[@]}")
-
+        
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
           echo "out=$(jq -rc "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
