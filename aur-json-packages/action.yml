@@ -64,7 +64,9 @@ outputs:
   out:
     description: "Output channel for the action. "
     value: ${{ steps.run_action.outputs.out || '' }}
-
+  debug:
+    description: "Debug output containing the generated jq filter and arguments for troubleshooting (only if 'step_summary' input is set to 'true')."
+    value: ${{ steps.run_action.outputs.args || '' }}
 
 runs:
   using: composite
@@ -197,3 +199,4 @@ runs:
           exit 1
         fi
 
+        echo "args=${ARGS[*]} $FILTER" >> "$GITHUB_OUTPUT"
