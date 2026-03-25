@@ -151,7 +151,7 @@ runs:
         chmod +x libpackages.sh
         echo "## Starting run_action" >> "$GITHUB_STEP_SUMMARY"
 
-        INPUT_JSON_CONTENT=$(gh variable get "$INPUT_JSON" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value' 2>/dev/null)
+        INPUT_JSON_CONTENT=$(gh variable get "$INPUT_JSON" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value')
         if [[ -n "$INPUT_JSON_CONTENT" ]]; then
           INPUT_JSON="$INPUT_JSON_CONTENT"
         fi
