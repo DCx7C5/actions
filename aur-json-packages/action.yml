@@ -126,13 +126,13 @@ runs:
         fi
         
         if [[ -n "${{ inputs.org }}" ]]; then
-          echo "access_level=org" >> "$GITHUB_OUTPUT"
+          echo "access_level=--org" >> "$GITHUB_OUTPUT"
           echo "level_name=${{ inputs.org }}" >> "$GITHUB_OUTPUT"
         elif [[ -n "${{ inputs.env }}" ]]; then
-          echo "access_level=env" >> "$GITHUB_OUTPUT"
+          echo "access_level=--env" >> "$GITHUB_OUTPUT"
           echo "level_name=${{ inputs.env }}" >> "$GITHUB_OUTPUT"
         else
-          echo "access_level=repo" >> "$GITHUB_OUTPUT"
+          echo "access_level=--repo" >> "$GITHUB_OUTPUT"
           echo "level_name=${{ inputs.repo }}" >> "$GITHUB_OUTPUT"
         fi
 
@@ -143,14 +143,13 @@ runs:
         INPUT_ACTION: "${{ inputs.action }}"
         INPUT_JSON: "${{ steps.validate_inputs.outputs.json_input }}"
         IS_JSON_VALUE: "${{ steps.validate_inputs.outputs.json_value }}"
-        GHVAR_NAME: "${{ inputs.variable_name }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         ACCESS_LEVEL: "${{ steps.validate_inputs.outputs.access_level }}"
         LEVEL_NAME: "${{ steps.validate_inputs.outputs.level_name }}"
       working-directory: "${{ github.action_path }}"
       run: |
         chmod +x libpackages.sh
-        INPUT_JSON=$(gh variable get "$INPUT_JSON" --${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value'  2>/dev/null)
+        INPUT_JSON=$(gh variable get "$INPUT_JSON" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value'  2>/dev/null)
         readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "${{ steps.validate_inputs.outputs.value }}" "$IS_JSON_VALUE")
         FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
@@ -162,11 +161,11 @@ runs:
 
         elif [[ ("$INPUT_ACTION" == "add" || "$INPUT_ACTION" == "update") && "$IS_FILE" == "false" ]]; then
           echo "Running 'add/update' action..."
-          jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON" | gh variable set $GHVAR_NAME "--${ACCESS_LEVEL}" "$LEVEL_NAME"
+          jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME"
 
         elif [[ "$INPUT_ACTION" == "remove" && "$IS_FILE" == "false" ]]; then
           echo "Running 'remove' action..."
-          jq -c "${ARGS[@]}" "$FILTER" ${filter} <<< "$INPUT_JSON" | gh variable set $GHVAR_NAME "--${ACCESS_LEVEL}" "$LEVEL_NAME" 
+          jq -c "${ARGS[@]}" "$FILTER" ${filter} <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME" 
 
         elif [[ "$INPUT_ACTION" == "count" ]]; then
 
