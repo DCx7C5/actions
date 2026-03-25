@@ -106,7 +106,7 @@ runs:
           echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
           exit 1
         fi
-        elif [[ -n "${{ inputs.key }}" && -z "${{ inputs.value }}" && ! "$ACTION" =~ '^(remove|get)$' ]]; then
+        elif [[ -n "${{ inputs.key }}" && -z "${{ inputs.value }}" && ! "$ACTION" =~ '^(remove)$' ]]; then
           echo "::error::Both 'key' and 'value' inputs must be provided together for add/update actions." >&2
           exit 1
         elif [[ -n "${{ inputs.key }}" && -n "${{ inputs.value }}" && ! "$ACTION" =~ ^(add|update|get)$ ]]; then
