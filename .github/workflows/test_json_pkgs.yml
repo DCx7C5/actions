@@ -83,7 +83,7 @@ jobs:
       - id: check2
         run: |
           echo "Checking outputs..."
-          echo '##### Args: ${{ steps.get_all.outputs.debug }}' >> "$GITHUB_STEP_SUMMARY"
+          echo '##### Args: `${{ steps.get_all.outputs.debug }}`' >> "$GITHUB_STEP_SUMMARY"
           if [[ -n "${{ steps.get_all.outputs.out }}" ]]; then
             echo "Output from steps.get_all.outputs.out is available"
             echo "#### Output from steps.get_all.outputs.out" >> "$GITHUB_STEP_SUMMARY"
