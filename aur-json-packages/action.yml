@@ -150,6 +150,7 @@ runs:
       working-directory: "${{ github.action_path }}"
       run: |
         chmod +x libpackages.sh
+        INPUT_JSON=$(gh variable get "$GHVAR_NAME" "--${ACCESS_LEVEL}" "$LEVEL_NAME" --json value --jq '.value'  2>/dev/null)
         readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "${{ steps.validate_inputs.outputs.value }}" "$IS_JSON_VALUE")
         FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
