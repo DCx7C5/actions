@@ -165,9 +165,7 @@ runs:
           exit 1
         fi
         
-        readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "nvidia
-        toolchain
-        " "" "" "$IS_JSON_VALUE")
+        readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "${{ steps.validate_inputs.outputs.value }}" "$IS_JSON_VALUE")
         FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
         ARGS=("${ALL_ARGS[@]}")
