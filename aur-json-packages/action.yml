@@ -44,6 +44,10 @@ inputs:
     required: false
     default: 'dict'
     description: "Output structure for retrieved package information (only for 'get' action, can be either 'dict' or 'list', defaults to 'dict')."
+  step_summary:
+    required: false
+    default: 'false'
+    description: "Whether to include the generated jq filter and arguments in the step summary for debugging purposes (true/false, defaults to 'false')"
   action:
     required: false
     default: 'get'
@@ -146,19 +150,12 @@ runs:
       working-directory: "${{ github.action_path }}"
       run: |
         chmod +x libpackages.sh
-        echo "## Starting run_action" >> "$GITHUB_STEP_SUMMARY"
+        echo "### Starting run_action" >> "$GITHUB_STEP_SUMMARY"
 
         INPUT_JSON_CONTENT=$(gh variable get "$INPUT_JSON" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value')
         if [[ -n "$INPUT_JSON_CONTENT" ]]; then
           INPUT_JSON="$INPUT_JSON_CONTENT"
         fi
-        
-        {
-          echo "Retrieved JSON content:"
-          echo "```json"
-          echo "$INPUT_JSON"
-          echo "```"
-        } >> "$GITHUB_STEP_SUMMARY"
         
         if [[ -z "$INPUT_JSON" ]] || ! echo "$INPUT_JSON" | jq empty 2>/dev/null; then
           echo "::error::INPUT_JSON ist leer oder kein valides JSON!"
@@ -169,7 +166,16 @@ runs:
         FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
         ARGS=("${ALL_ARGS[@]}")
-        
+        if [[ "${{ inputs.step_summary }}" == "true" ]]; then
+          echo "#### Args" >> "$GITHUB_STEP_SUMMARY"
+          echo "```bash" >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' "${ARGS[@]}" | sed 's/"/\\"/g' >> "$GITHUB_STEP_SUMMARY"
+          echo "```" >> "$GITHUB_STEP_SUMMARY"
+          echo "#### Filter" >> "$GITHUB_STEP_SUMMARY"
+          echo "```jq" >> "$GITHUB_STEP_SUMMARY"
+          echo "$FILTER" | sed 's/"/\\"/g' >> "$GITHUB_STEP_SUMMARY"
+          echo "```" >> "$GITHUB_STEP_SUMMARY"
+        fi
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
           echo "out=$(jq -rc "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
