@@ -44,10 +44,6 @@ inputs:
     required: false
     default: 'dict'
     description: "Output structure for retrieved package information (only for 'get' action, can be either 'dict' or 'list', defaults to 'dict')."
-  step_summary:
-    required: false
-    default: 'false'
-    description: "Whether to include the generated jq filter and arguments in the step summary for debugging purposes (true/false, defaults to 'false')"
   action:
     required: false
     default: 'get'
@@ -168,27 +164,18 @@ runs:
         FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
         ARGS=("${ALL_ARGS[@]}")
-        if [[ "${{ inputs.step_summary }}" == "true" ]]; then
-          echo "#### Args" >> "$GITHUB_STEP_SUMMARY"
-          echo "```bash" >> "$GITHUB_STEP_SUMMARY"
-          printf '%s\n' "${ARGS[@]}" >> "$GITHUB_STEP_SUMMARY"
-          echo "```" >> "$GITHUB_STEP_SUMMARY"
-          echo "#### Filter" >> "$GITHUB_STEP_SUMMARY"
-          echo "```jq" >> "$GITHUB_STEP_SUMMARY"
-          echo "$FILTER" >> "$GITHUB_STEP_SUMMARY"
-          echo "```" >> "$GITHUB_STEP_SUMMARY"
-        fi
+
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
-          echo "out=$(jq -rc "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
+          echo "out=$(jq -rc "${ARGS[@]}" "'$FILTER'" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
 
         elif [[ ("$INPUT_ACTION" == "add" || "$INPUT_ACTION" == "update") && "$IS_FILE" == "false" ]]; then
           echo "Running 'add/update' action..."
-          jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME"
+          jq -c "${ARGS[@]}" "'$FILTER'" <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME"
 
         elif [[ "$INPUT_ACTION" == "remove" && "$IS_FILE" == "false" ]]; then
           echo "Running 'remove' action..."
-          jq -c "${ARGS[@]}" "$FILTER" ${filter} <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME" 
+          jq -c "${ARGS[@]}" "'$FILTER'" ${filter} <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME" 
 
         elif [[ "$INPUT_ACTION" == "count" ]]; then
 
@@ -199,4 +186,4 @@ runs:
           exit 1
         fi
 
-        echo "args=${ARGS[*]} $FILTER" >> "$GITHUB_OUTPUT"
+        echo "args=${ARGS[*]} '$FILTER'" >> "$GITHUB_OUTPUT"
