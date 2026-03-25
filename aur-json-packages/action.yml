@@ -151,12 +151,10 @@ runs:
       working-directory: "${{ github.action_path }}"
       run: |
         chmod +x libpackages.sh
-        args=$(./libpackages.sh "$INPUT_ACTION" "$INPUT_PKGNAMES" "$INPUT_KEYS" "$INPUT_VALUES" "$IS_JSON_VALUE")
-
-        # Splitte args in ARGS (alle bis auf das letzte) und FILTER (letztes Argument)
-        eval "set -- $args"
-        FILTER="${!#}"
-        readarray -t ARGS < <(printf '%s\n' "${@:1:$(($#-1))}")
+        readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "$INPUT_PKGNAMES" "$INPUT_KEYS" "$INPUT_VALUES" "$IS_JSON_VALUE")
+        FILTER="${ALL_ARGS[-1]}"
+        unset 'ALL_ARGS[-1]'
+        ARGS=("${ALL_ARGS[@]}")
 
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
