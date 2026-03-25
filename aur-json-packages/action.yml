@@ -165,7 +165,7 @@ runs:
         fi
         
         readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "${{ steps.validate_inputs.outputs.value }}" "$IS_JSON_VALUE")
-        FILTER="'${ALL_ARGS[-1]}'"
+        FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
         ARGS=("${ALL_ARGS[@]}")
 
@@ -191,4 +191,4 @@ runs:
         fi
 
         echo "args=${ARGS[*]}" >> "$GITHUB_OUTPUT"
-        echo "filter=$FILTER" >> "$GITHUB_OUTPUT"
+        echo "filter='${FILTER}'" >> "$GITHUB_OUTPUT"
