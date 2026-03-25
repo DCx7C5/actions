@@ -150,8 +150,7 @@ runs:
       run: |
         chmod +x libpackages.sh
         echo "## Starting run_action" >> "$GITHUB_STEP_SUMMARY"
-        
-        # Hole JSON aus Variable, falls nötig
+
         INPUT_JSON_CONTENT=$(gh variable get "$INPUT_JSON" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value' 2>/dev/null)
         if [[ -n "$INPUT_JSON_CONTENT" ]]; then
           INPUT_JSON="$INPUT_JSON_CONTENT"
