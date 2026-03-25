@@ -25,12 +25,24 @@ jobs:
       actions: write
 
     steps:
+      - name: Get GitHub App Token
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
+          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
+
+      - uses: actions/checkout@v6
+        with:
+          token: '${{ steps.app_token.outputs.token }}'
+
       - name: Test JSON_PACKAGES
         id: get
         uses: ./aur-json-packages
         with:
           action: 'get'
           org: 'DystopianOS'
+          gh_token: ${{ steps.app_token.outputs.token }}
           pkg_name: |
             nvidia
             toolchain
