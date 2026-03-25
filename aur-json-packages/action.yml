@@ -169,11 +169,11 @@ runs:
         if [[ "${{ inputs.step_summary }}" == "true" ]]; then
           echo "#### Args" >> "$GITHUB_STEP_SUMMARY"
           echo "```bash" >> "$GITHUB_STEP_SUMMARY"
-          printf '%s\n' "${ARGS[@]}" | sed 's/"/\\"/g' >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' "${ARGS[@]}" >> "$GITHUB_STEP_SUMMARY"
           echo "```" >> "$GITHUB_STEP_SUMMARY"
           echo "#### Filter" >> "$GITHUB_STEP_SUMMARY"
           echo "```jq" >> "$GITHUB_STEP_SUMMARY"
-          echo "$FILTER" | sed 's/"/\\"/g' >> "$GITHUB_STEP_SUMMARY"
+          echo "$FILTER" >> "$GITHUB_STEP_SUMMARY"
           echo "```" >> "$GITHUB_STEP_SUMMARY"
         fi
         if [[ "$INPUT_ACTION" == "get" ]]; then
