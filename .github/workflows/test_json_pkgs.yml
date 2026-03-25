@@ -50,7 +50,6 @@ jobs:
         with:
           action: 'get'
           org: 'DystopianOS'
-          step_summary: 'true'
           gh-token: ${{ steps.app_token.outputs.token }}
           json_in: 'JSON_PACKAGES'
           pkg_name: |
@@ -75,7 +74,6 @@ jobs:
         id: get_all
         uses: ./aur-json-packages
         with:
-          step_summary: 'true'
           action: 'get'
           org: 'DystopianOS'
           gh-token: ${{ steps.app_token.outputs.token }}
@@ -101,7 +99,6 @@ jobs:
         with:
           action: 'get'
           org: 'DystopianOS'
-          step_summary: 'true'
           gh-token: ${{ steps.app_token.outputs.token }}
           json_in: 'JSON_PACKAGES'
           pkg_name: |
