@@ -157,7 +157,6 @@ runs:
         FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
         ARGS=("${ALL_ARGS[@]}")
-        ARGS+=("--${ACCESS_LEVEL}" "$LEVEL_NAME")
 
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
