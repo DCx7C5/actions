@@ -60,7 +60,7 @@ jobs:
       - id: check1
         run: |
           echo "Checking outputs..."
-          echo "##### Args: ${{ steps.get.outputs.args }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "##### Args: ${{ steps.get.outputs.debug }}" >> "$GITHUB_STEP_SUMMARY"
           if [[ -n "${{ steps.get.outputs.out }}" ]]; then
             echo "Output from steps.get.outputs.out is available"
             echo "#### Output from steps.get.outputs.out" >> "$GITHUB_STEP_SUMMARY"
@@ -83,7 +83,7 @@ jobs:
       - id: check2
         run: |
           echo "Checking outputs..."
-          echo "##### Args: ${{ steps.get_all.outputs.args }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "##### Args: ${{ steps.get_all.outputs.debug }}" >> "$GITHUB_STEP_SUMMARY"
           if [[ -n "${{ steps.get_all.outputs.out }}" ]]; then
             echo "Output from steps.get_all.outputs.out is available"
             echo "#### Output from steps.get_all.outputs.out" >> "$GITHUB_STEP_SUMMARY"
@@ -113,7 +113,7 @@ jobs:
       - id: check3
         run: |
           echo "Checking outputs..."
-          echo "##### Args: ${{ steps.get_keys.outputs.args }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "##### Args: ${{ steps.get_keys.outputs.debug }}" >> "$GITHUB_STEP_SUMMARY"
           if [[ -n "${{ steps.get_keys.outputs.out }}" ]]; then
             echo "Output from steps.get_keys.outputs.out is available"
             echo "#### Output from steps.get_keys.outputs.out" >> "$GITHUB_STEP_SUMMARY"
