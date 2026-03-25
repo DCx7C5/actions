@@ -15,15 +15,15 @@ inputs:
   pkg_name:
     required: false
     default: ''
-    description: "Name of the package to operate on. Required for targeted actions."
+    description: "New-line separated list of package names to manage. For 'get' action, retrieves details for the specified packages; for 'add', 'update', and 'remove' actions, specifies the package(s) to modify."
   key:
     required: false
     default: ''
-    description: "Key in the package object to add, update, or remove (e.g. 'repository', 'custom')."
+    description: "New-line separated list of keys to add/update/remove for the specified package(s). Used for add/update/remove actions."
   value:
     required: false
     default: ''
-    description: "Value to set for the given key. Used for add/update actions."
+    description: "New-line separated list of values corresponding to the keys for add/update actions. For remove action, this input is ignored. If the value is a valid JSON string, it will be parsed as JSON; otherwise, it will be treated as a plain string."
   env:
     required: false
     description: "Set deployment environment variable"
@@ -36,14 +36,14 @@ inputs:
     required: false
     description: "Set repository variable (defaults to current repository)"
     default: ''
-  steps_out:
-    required: false
-    default: 'false'
-    description: "Whether to set the updated JSON as a step output (true/false)."
   gh_token:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
     default: ''
+  output-structure:
+    required: false
+    default: 'dict'
+    description: "Output structure for retrieved package information (only for 'get' action, can be either 'dict' or 'list', defaults to 'dict')."
   action:
     required: false
     default: 'get'
@@ -54,13 +54,12 @@ inputs:
       - update: Update an existing package entry. Requires pkg_name, key, and value inputs.
       - remove: Remove a package entry. Requires  pkg_name input.
       - count: Count the number of packages in the dictionary.
-      - dict-to-list: Convert the packages dictionary to a list format (useful for matrix generation).
       
 
 outputs:
   out:
     description: "Output channel for the action. "
-    value: ${{ steps.get_pkg.outputs.out || '' }}
+    value: ${{ steps.run_action.outputs.out || '' }}
 
 
 runs:
@@ -79,14 +78,14 @@ runs:
         valid_actions=("get" "add" "update" "remove" "count")
         
         # Check if JSON_PATH is a file or inline string
-        if [[ -n "$JSON_PATH" && -f "$JSON_PATH" && $(cat "$JSON_PATH") == ^.*\n.* ]]; then
+        if [[ -n "$JSON_PATH" && -f "$JSON_PATH" && $(cat "$JSON_PATH") == *$'\n'* ]]; then
           { 
             echo "json_input<<EOF"
             cat "$JSON_PATH"
-            echo "EOF" 
+            echo "EOF"
           } >> "$GITHUB_OUTPUT"
           echo "is_file=true" >> "$GITHUB_OUTPUT"
-        elif [[ -n "$JSON_PATH" && -f "$JSON_PATH" && $(cat "$JSON_PATH") != ^.*\n.* ]]; then
+        elif [[ -n "$JSON_PATH" && -f "$JSON_PATH" && $(cat "$JSON_PATH") != *$'\n'* ]]; then
           echo "json_input=$(cat "$JSON_PATH")" >> "$GITHUB_OUTPUT"
           echo "is_file=true" >> "$GITHUB_OUTPUT"
         elif [[ -n "${{ vars[format('{}', inputs.json_in)] }}" ]]; then
@@ -118,6 +117,7 @@ runs:
           echo "json_value=true" >> "$GITHUB_OUTPUT"
         else
           echo "value=${{ inputs.value }}" >> "$GITHUB_OUTPUT"
+          echo "json_value=false" >> "$GITHUB_OUTPUT"
         fi
         
         if [[ -n "${{ inputs.org }}" ]]; then
@@ -131,111 +131,41 @@ runs:
           echo "level_name=${{ inputs.repo }}" >> "$GITHUB_OUTPUT"
         fi
 
-    - name: Get Package
-      id: get_pkg
-      if: inputs.action == 'get'
+    - name: Run Action
+      id: run_action
       shell: bash
       env:
-        PKG_NAME: "${{ inputs.pkg_name }}"
-        INPUT_JSON: "${{ steps.validate_inputs.outputs.json_input }}"
-        INPUT_KEY: "${{ inputs.key }}"
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
-      run: |
-        args=()
-        filter=".packages"
-        [[ -n "$PKG_NAME" ]] && args+=(--arg pkg "$PKG_NAME") && filter+="[\$pkg]"
-        [[ -n "${{ inputs.key }}" ]] && args+=(--arg key "${{ inputs.key }}") && filter+="[\$key]"
-        echo "out=$(jq -rc ${args[@]} ${filter} <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
-
-    - name: Add or Update Package Entry
-      id: add_update_pkg
-      if: (inputs.action == 'add' || inputs.action == 'update')
-      shell: bash
-      env:
-        PKG_PREFIX: '.packages'
-        PKG_NAME: "${{ inputs.pkg_name }}"
+        INPUT_ACTION: "${{ inputs.action }}"
         INPUT_JSON: "${{ steps.validate_inputs.outputs.json_input }}"
         INPUT_KEY: "${{ inputs.key }}"
         INPUT_VALUE: "${{ steps.validate_inputs.outputs.value }}"
-        VALUE_IS_JSON: "${{ steps.validate_inputs.outputs.json_value }}"
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
-        ACCESS_LEVEL: ${{ steps.validate_inputs.outputs.access_level }}
-        LEVEL_NAME: ${{ steps.validate_inputs.outputs.level_name }}
+        INPUT_PKG_NAME: "${{ inputs.pkg_name }}"
+        IS_JSON_VALUE: "${{ steps.validate_inputs.outputs.json_value }}"
+        GHVAR_NAME: "${{ inputs.variable_name }}"
+      working-directory: "${{ github.action_path }}"
       run: |
-        args=(--arg pkg "$PKG_NAME")
-        filter=".packages[\$pkg]"
-        [[ -n "$INPUT_KEY" ]] && args+=(--arg key "$INPUT_KEY") && filter+="[\$key]"
-        [[ "$VALUE_IS_JSON" == "true" ]] && args+=(--argjson val "$INPUT_VALUE") || args+=(--arg val "$INPUT_VALUE")
-        filter+=" = \$val"
-        jq -c "${args[@]}" ${filter} <<< "$INPUT_JSON" | \
-          gh variable set ${{ inputs.variable_name }} "--${ACCESS_LEVEL}" "$LEVEL_NAME" || {
-              echo "::error::Failed to update package entry in variable" >&2
-              exit 1
-          }
-
-    - name: Remove Package Entry
-      id: remove_pkg
-      if: inputs.action == 'remove'
-      shell: bash
-      env:
-        PKG_PREFIX: '.packages'
-        PKG_NAME: "${{ inputs.pkg_name }}"
-        INPUT_JSON: "${{ steps.validate_inputs.outputs.json_input }}"
-        INPUT_KEY: "${{ inputs.key }}"
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
-        ACCESS_LEVEL: ${{ steps.validate_inputs.outputs.access_level }}
-        LEVEL_NAME: ${{ steps.validate_inputs.outputs.level_name }}
-      run: |
-        args=(--arg pkg "$PKG_NAME")
-        filter=""
-        [[ -n "$INPUT_KEY" ]] && { 
-          args+=(--arg key "${{ inputs.key }}") && filter+=" | del(.packages[\$pkg][\$key])" 
-        } || filter+=" | del(.packages[\$pkg])"
         
-        jq -c "${args[@]}" ${filter} <<< "$INPUT_JSON" | \
-          gh variable set ${{ inputs.variable_name }} "--${ACCESS_LEVEL}" "$LEVEL_NAME" || {
-              echo "::error::Failed to remove package entry from variable" >&2
-              exit 1
-          }
-
-    - name: Count Packages
-      id: count_pkgs
-      if: inputs.action == 'count'
-      shell: bash
-      env:
-        INPUT_JSON: "${{ steps.validate_inputs.outputs.json_input }}"
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
-      run: |
-        echo "out=$(jq -rc '.packages | length' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
-
-    - name: Convert Dict to List
-      id: dict_to_list
-      if: inputs.action == 'dict-to-list'
-      shell: bash
-      env:
-        INPUT_JSON: "${{ steps.validate_inputs.outputs.json_input }}"
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
-        INPUT_VALUE: "${{ steps.validate_inputs.outputs.value }}"
-      run: |
-        args=()
-        filter=" | map({name: .key} + .value)" 
-        if [[ -n "$INPUT_VALUE" ]]; then
-          filter+=" | map({($inpval): .})"
-          args+=(--arg inpval "$INPUT_VALUE")
-        fi
+        args=$(./libpackages.sh "$INPUT_ACTION" "$INPUT_PKGNAMES" "$INPUT_KEYS" "$INPUT_VALUES" "$IS_JSON_VALUE")
         
-        echo "out=$(jq -rc '.packages | to_entries${filter}' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
-
-    - name: Save Updated JSON to File
-      id: save_updated_json
-      if: steps.validate_inputs.outputs.is_file == 'true' && (steps.add_update_pkg.outputs.out != '' || steps.remove_pkg.outputs.out != '')
-      shell: bash
-      env:
-        JSON_PATH: "${{ inputs.json_in }}"
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
-        JSON_OUT: "${{ steps.add_update_pkg.outputs.out || steps.remove_pkg.outputs.out || '' }}"
-      run: |
-        jq -c '.' <<< "$JSON_OUT" > "$JSON_PATH" || {
-          echo "::error::Failed to write updated JSON to file '$JSON_PATH'" >&2
+        
+        if [[ "$INPUT_ACTION" == "get" ]]; then
+          echo "Running 'get' action..."
+          echo "out=$(jq -rc ${args} <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
+        
+        elif [[ ("$INPUT_ACTION" == "add" || "$INPUT_ACTION" == "update") && "$IS_FILE" == "false" ]]; then
+          echo "Running 'add/update' action..."
+          jq -c ${args} <<< "$INPUT_JSON" | gh variable set $GHVAR_NAME "--${ACCESS_LEVEL}" "$LEVEL_NAME"
+        
+        elif [[ "$INPUT_ACTION" == "remove" && "$IS_FILE" == "false" ]]; then
+          echo "Running 'remove' action..."
+          jq -c "${args}" ${filter} <<< "$INPUT_JSON" | gh variable set $GHVAR_NAME "--${ACCESS_LEVEL}" "$LEVEL_NAME" 
+        
+        elif [[ "$INPUT_ACTION" == "count" ]]; then
+        
+          echo "Running 'count' action..."
+          echo "out=$(jq -rc '.packages | length' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::Invalid action '$INPUT_ACTION'" >&2
           exit 1
-        }
+        fi
+
