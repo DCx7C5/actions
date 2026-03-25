@@ -116,7 +116,7 @@ jobs:
         run: |
           echo "Checking outputs..."
           echo '##### Args: ' >> "$GITHUB_STEP_SUMMARY"
-          echo '`${{ steps.get_all.outputs.debug }}`' >> "$GITHUB_STEP_SUMMARY"
+          echo '`${{ steps.get_keys.outputs.debug }}`' >> "$GITHUB_STEP_SUMMARY"
           if [[ -n "${{ steps.get_keys.outputs.out }}" ]]; then
             echo "Output from steps.get_keys.outputs.out is available"
             echo "#### Output from steps.get_keys.outputs.out" >> "$GITHUB_STEP_SUMMARY"
