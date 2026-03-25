@@ -145,7 +145,7 @@ runs:
         INPUT_JSON: "${{ steps.validate_inputs.outputs.json_input }}"
         INPUT_KEY: "${{ inputs.key }}"
         INPUT_VALUE: "${{ steps.validate_inputs.outputs.value }}"
-        INPUT_PKG_NAME: "${{ inputs.pkg_name }}"
+        INPUT_PKGNAMES: "${{ inputs.pkg_name }}"
         IS_JSON_VALUE: "${{ steps.validate_inputs.outputs.json_value }}"
         GHVAR_NAME: "${{ inputs.variable_name }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
