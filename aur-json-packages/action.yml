@@ -11,7 +11,7 @@ inputs:
   json_in:
     required: false
     description: "Path to the packages.json file to manage. Can also be GitHub Actions Variable string (default: .ci/packages.json)."
-    default: ${{ 'JSON_PACKAGES' || format('{0}/.ci/packages.json', github.workspace) }}
+    default: ${{ vars.JSON_PACKAGES || format('{0}/.ci/packages.json', github.workspace) }}
   pkg_name:
     required: false
     default: ''
@@ -88,8 +88,8 @@ runs:
         elif [[ -n "$JSON_PATH" && -f "$JSON_PATH" && $(cat "$JSON_PATH") != *$'\n'* ]]; then
           echo "json_input=$(cat "$JSON_PATH")" >> "$GITHUB_OUTPUT"
           echo "is_file=true" >> "$GITHUB_OUTPUT"
-        elif [[ -n "${{ vars[format('{}', inputs.json_in)] }}" ]]; then
-          echo "json_input=$(echo "${{ vars[format('{}', inputs.json_in)] }}" | jq -c)" >> "$GITHUB_OUTPUT"
+        elif [[ -n "$JSON_PATH" ]]; then
+          echo "json_input=$(echo "$JSON_PATH" | jq -c)" >> "$GITHUB_OUTPUT"
         else
           echo "::error::'json_file' input is required and must point to a valid file or variable name." >&2
           exit 1
