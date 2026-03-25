@@ -67,3 +67,52 @@ jobs:
             echo "No output from steps.get.outputs.out"
             echo "### No output from steps.get.outputs.out" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Test JSON_PACKAGES
+        id: get_all
+        uses: ./aur-json-packages
+        with:
+          action: 'get'
+          org: 'DystopianOS'
+          gh-token: ${{ steps.app_token.outputs.token }}
+          json_in: 'JSON_PACKAGES'
+
+      - id: check
+        run: |
+          echo "Checking outputs..."
+          if [[ -n "${{ steps.get_all.outputs.out }}" ]]; then
+            echo "Output from steps.get_all.outputs.out is available"
+            echo "### Output from steps.get_all.outputs.out" >> "$GITHUB_STEP_SUMMARY"
+            echo '${{ steps.get_all.outputs.out }}' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No output from steps.get_all.outputs.out"
+            echo "### No output from steps.get_all.outputs.out" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Test JSON_PACKAGES
+        id: get_keys
+        uses: ./aur-json-packages
+        with:
+          action: 'get'
+          org: 'DystopianOS'
+          gh-token: ${{ steps.app_token.outputs.token }}
+          json_in: 'JSON_PACKAGES'
+          pkg_name: |
+            nvidia
+            toolchain
+          key: |
+            submodule
+            custom
+            remote_dir
+
+      - id: check
+        run: |
+          echo "Checking outputs..."
+          if [[ -n "${{ steps.get_keys.outputs.out }}" ]]; then
+            echo "Output from steps.get_keys.outputs.out is available"
+            echo "### Output from steps.get_keys.outputs.out" >> "$GITHUB_STEP_SUMMARY"
+            echo '${{ steps.get_keys.outputs.out }}' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No output from steps.get_keys.outputs.out"
+            echo "### No output from steps.get_keys.outputs.out" >> "$GITHUB_STEP_SUMMARY"
+          fi
