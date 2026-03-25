@@ -30,6 +30,7 @@ jobs:
         uses: ./aur-json-packages
         with:
           action: 'get'
+          org: 'DystopianOS'
           pkg_name: |
             nvidia
             toolchain
