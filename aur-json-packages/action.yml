@@ -156,11 +156,11 @@ runs:
         
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
-          echo "out=$(jq -rc ${args} <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
+          echo "out=$(jq -rc "${args}" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
         
         elif [[ ("$INPUT_ACTION" == "add" || "$INPUT_ACTION" == "update") && "$IS_FILE" == "false" ]]; then
           echo "Running 'add/update' action..."
-          jq -c ${args} <<< "$INPUT_JSON" | gh variable set $GHVAR_NAME "--${ACCESS_LEVEL}" "$LEVEL_NAME"
+          jq -c "${args}" <<< "$INPUT_JSON" | gh variable set $GHVAR_NAME "--${ACCESS_LEVEL}" "$LEVEL_NAME"
         
         elif [[ "$INPUT_ACTION" == "remove" && "$IS_FILE" == "false" ]]; then
           echo "Running 'remove' action..."
