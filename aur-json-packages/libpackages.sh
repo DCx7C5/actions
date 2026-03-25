@@ -45,9 +45,11 @@ get_packages_with_pkgname_and_keys() {
   local args=()
   local n=0 i=0
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
+    [[ -z "${INPUT_PKGNAMES[i]}" ]] && continue
     pkgname="${INPUT_PKGNAMES[i]}"
     filter+="\$pkg$i: {"
     for ((n=0; n<${#INPUT_KEYS[@]}; n++)); do
+      [[ -z "${INPUT_KEYS[n]}" ]] && continue
       key="${INPUT_KEYS[n]}"
       filter+="\$key$n: .[\$pkg$i][\$key$n],"
       arg="--arg key$n $key"
@@ -81,6 +83,7 @@ get_packages_with_pkgnames() {
   local filter="$FILTER | {"
   local args=()
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
+    [[ -z "${INPUT_PKGNAMES[i]}" ]] && continue
     pkgname="${INPUT_PKGNAMES[i]}"
     args+=(--arg "pkg$i" "$pkgname")
     filter+="\$pkg$i: .[\$pkg$i],"
@@ -100,6 +103,8 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
   local args=()
   local filter="$FILTER + {"
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
+    [[ -z "${INPUT_PKGNAMES[i]}" ]] && continue
+    [[ -z "${INPUT_VALUES[i]}" ]] && continue
     pkgname="${INPUT_PKGNAMES[i]}"
     value="${INPUT_VALUES[i]}"
     args+=(--arg "pkg$i" "$pkgname")
@@ -119,6 +124,8 @@ add_package_with_one_pkgname_and_multiple_keys_and_multiple_values() {
   args+=(--arg "pkg" "$pkgname")
   filter+="\$pkg: {"
   for ((i=0; i<${#INPUT_KEYS[@]}; i++)); do
+    [[ -z "${INPUT_KEYS[i]}" ]] && continue
+    [[ -z "${INPUT_VALUES[i]}" ]] && continue
     key="${INPUT_KEYS[i]}"
     value="${INPUT_VALUES[i]}"
     args+=(--arg "key$i" "$key")
@@ -135,6 +142,7 @@ add_package_with_no_pkgname_and_multiple_values_and_no_keys() {
   local args=()
   local filter="$FILTER + "
   for ((i=0; i<${#INPUT_VALUES[@]}; i++)); do
+    [[ -z "${INPUT_VALUES[i]}" ]] && continue
     value="${INPUT_VALUES[i]}"
     args+=(--argjson "val$i" "'$value'")
     filter+="\$val$i,"
@@ -149,6 +157,7 @@ remove_packages_with_multiple_pkgnames() {
   local args=()
   local filter="$FILTER | del("
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
+    [[ -z "${INPUT_PKGNAMES[i]}" ]] && continue
     pkgname="${INPUT_PKGNAMES[i]}"
     args+=(--arg "pkg$i" "$pkgname")
     filter+=".[\$pkg$i],"
@@ -165,6 +174,7 @@ remove_from_one_package_multiple_keys() {
   pkgname="${INPUT_PKGNAMES[0]}"
   args+=(--arg "pkg" "$pkgname")
   for ((i=0; i<${#INPUT_KEYS[@]}; i++)); do
+    [[ -z "${INPUT_KEYS[i]}" ]] && continue
     key="${INPUT_KEYS[i]}"
     args+=(--arg "key$i" "$key")
     filter+=".[\$key$i],"
