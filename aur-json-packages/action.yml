@@ -68,7 +68,6 @@ runs:
     - id: validate_inputs
       shell: bash
       env:
-        PKG_NAME: "${{ inputs.pkg_name }}"
         JSON_PATH: "${{ inputs.json_in }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         ACTION: "${{ inputs.action }}"
