@@ -150,7 +150,7 @@ runs:
         GHVAR_NAME: "${{ inputs.variable_name }}"
       working-directory: "${{ github.action_path }}"
       run: |
-        
+        chmod +x libpackages.sh
         args=$(./libpackages.sh "$INPUT_ACTION" "$INPUT_PKGNAMES" "$INPUT_KEYS" "$INPUT_VALUES" "$IS_JSON_VALUE")
         
         
