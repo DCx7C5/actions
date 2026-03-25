@@ -42,7 +42,7 @@ jobs:
         with:
           action: 'get'
           org: 'DystopianOS'
-          gh_token: ${{ steps.app_token.outputs.token }}
+          gh-token: ${{ steps.app_token.outputs.token }}
           pkg_name: |
             nvidia
             toolchain
