@@ -31,10 +31,18 @@ jobs:
         with:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
+          owner: 'DystopianOS'
+
 
       - uses: actions/checkout@v6
         with:
           token: '${{ steps.app_token.outputs.token }}'
+
+      - name: TEST
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          gh variable get JSON_PACKAGES --org DystopianOS 
 
       - name: Test JSON_PACKAGES
         id: get
