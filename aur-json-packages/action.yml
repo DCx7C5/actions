@@ -149,6 +149,7 @@ runs:
       working-directory: "${{ github.action_path }}"
       run: |
         chmod +x libpackages.sh
+        echo "# TEST" >> "$GITHUB_STEP_SUMMARY"
         INPUT_JSON=$(gh variable get "$INPUT_JSON" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value'  2>/dev/null)
         echo "Retrieved JSON content: $INPUT_JSON" >> "$GITHUB_STEP_SUMMARY"
         readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "${{ steps.validate_inputs.outputs.value }}" "$IS_JSON_VALUE")
