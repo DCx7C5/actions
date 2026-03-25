@@ -60,9 +60,13 @@ outputs:
   out:
     description: "Output channel for the action. "
     value: ${{ steps.run_action.outputs.out || '' }}
-  debug:
+  debug-args:
     description: "Debug output containing the generated jq filter and arguments for troubleshooting (only if 'step_summary' input is set to 'true')."
     value: ${{ steps.run_action.outputs.args || '' }}
+  debug-filter:
+    description: "Debug output containing the generated jq filter for troubleshooting (only if 'step_summary' input is set to 'true')."
+    value: ${{ steps.run_action.outputs.filter || '' }}
+
 
 runs:
   using: composite
@@ -167,7 +171,7 @@ runs:
 
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
-          echo "out=$(jq -rc "${ARGS[@]}" "'$FILTER'" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
+          echo "out=$(jq -rc "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
 
         elif [[ ("$INPUT_ACTION" == "add" || "$INPUT_ACTION" == "update") && "$IS_FILE" == "false" ]]; then
           echo "Running 'add/update' action..."
@@ -186,4 +190,5 @@ runs:
           exit 1
         fi
 
-        echo "args=${ARGS[*]} '$FILTER'" >> "$GITHUB_OUTPUT"
+        echo "args=${ARGS[*]}" >> "$GITHUB_OUTPUT"
+        echo "filter=$FILTER" >> "$GITHUB_OUTPUT"
