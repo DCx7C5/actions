@@ -161,13 +161,13 @@ runs:
         fi
         
         readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "${{ steps.validate_inputs.outputs.value }}" "$IS_JSON_VALUE")
-        FILTER="'${ALL_ARGS[-1]}'"
+        FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
         ARGS=("${ALL_ARGS[@]}")
 
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
-          echo "out=$(jq -rc "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
+          echo "out=$(jq -rc "${ARGS[@]}" "'$FILTER'" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
 
         elif [[ ("$INPUT_ACTION" == "add" || "$INPUT_ACTION" == "update") && "$IS_FILE" == "false" ]]; then
           echo "Running 'add/update' action..."
