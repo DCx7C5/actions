@@ -142,9 +142,6 @@ runs:
       env:
         INPUT_ACTION: "${{ inputs.action }}"
         INPUT_JSON: "${{ steps.validate_inputs.outputs.json_input }}"
-        INPUT_KEY: "${{ inputs.key }}"
-        INPUT_VALUE: "${{ steps.validate_inputs.outputs.value }}"
-        INPUT_PKGNAMES: "${{ inputs.pkg_name }}"
         IS_JSON_VALUE: "${{ steps.validate_inputs.outputs.json_value }}"
         GHVAR_NAME: "${{ inputs.variable_name }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
@@ -153,7 +150,7 @@ runs:
       working-directory: "${{ github.action_path }}"
       run: |
         chmod +x libpackages.sh
-        readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "$INPUT_PKGNAMES" "$INPUT_KEYS" "$INPUT_VALUES" "$IS_JSON_VALUE")
+        readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "${{ steps.validate_inputs.outputs.value }}" "$IS_JSON_VALUE")
         FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
         ARGS=("${ALL_ARGS[@]}")
