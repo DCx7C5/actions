@@ -12,13 +12,11 @@ comma_separated() {
 INPUT_ACTION="$1"
 INPUT_PKGNAMES="$2"
 INPUT_KEYS="$3"
-INPUT_VALUES="$4" # receives ''
+INPUT_VALUES="$4"
 IS_JSON_VALUE="$5"
 
 if [[ "$INPUT_ACTION" =~ ^(add|update)$ ]]; then
-  echo "DEBUG: $4"
   [[ "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUES="$(echo "${4}" | jq -c '@json')"
-  echo "DEBUG: $INPUT_VALUES"
 fi
 
 readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
@@ -106,7 +104,7 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
     [[ -z "${INPUT_VALUES[i]}" ]] && continue
     value="${INPUT_VALUES[i]}"
     args+=(--arg "pkg$i" "${INPUT_PKGNAMES[i]}")
-    args+=(--argjson "val$i" "$(echo "$value" | jq -c '@json')")
+    args+=(--argjson "val$i" "$value")
     filter+="\$pkg$i: \$val$i,"
   done
   filter="${filter%,}}"
@@ -140,7 +138,7 @@ add_package_with_no_pkgname_and_multiple_values_and_no_keys() {
   for ((i=0; i<${#INPUT_VALUES[@]}; i++)); do
     [[ -z "${INPUT_VALUES[i]}" ]] && continue
     value="${INPUT_VALUES[i]}"
-    args+=(--argjson "val$i" "$(echo "$value" | jq -c '@json')")
+    args+=(--argjson "val$i" "$value")
     filter+="\$val$i,"
   done
   filter="${filter%,}"
