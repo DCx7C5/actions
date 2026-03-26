@@ -121,7 +121,7 @@ runs:
         fi
         
         if echo "$INPUTS_VALUE" | jq -e 2>/dev/null; then
-          echo "value=$(echo $INPUTS_VALUE | jq -c)" >> "$GITHUB_OUTPUT"
+          echo "value=$(echo "$INPUTS_VALUE" | jq -c '@json')" >> "$GITHUB_OUTPUT"
           echo "json_value=true" >> "$GITHUB_OUTPUT"
         else
           echo "value=$INPUTS_VALUE" >> "$GITHUB_OUTPUT"
@@ -145,7 +145,7 @@ runs:
       env:
         INPUT_ACTION: "${{ inputs.action }}"
         INPUT_JSON: "${{ steps.validate_inputs.outputs.json_input }}"
-        INPUT_VALUE: '${{ steps.validate_inputs.outputs.value }}'
+        INPUT_VALUE: "${{ steps.validate_inputs.outputs.value }}"
         IS_JSON_VALUE: "${{ steps.validate_inputs.outputs.json_value }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         ACCESS_LEVEL: "${{ steps.validate_inputs.outputs.access_level }}"
@@ -162,7 +162,7 @@ runs:
         fi
                 
         readarray -t ALL_ARGS < <(
-          ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" '${{ inputs.value }}'
+          ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "$INPUT_VALUE" "$IS_JSON_VALUE"
         )
         
         FILTER="${ALL_ARGS[-1]}"
@@ -171,11 +171,11 @@ runs:
 
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
-          echo "out=$(jq -c "${ARGS[@]}" '$FILTER' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
+          echo "out=$(jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
 
         elif [[ "$INPUT_ACTION" =~ ^(update|add|remove|delete)$ && "$IS_FILE" == "false" ]]; then
           echo "Running 'add/update' action..."
-          if jq -c "${ARGS[@]}" "'$FILTER'" <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME"; then
+          if jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME"; then
             echo "out=saved" >> "$GITHUB_OUTPUT"
           fi
         elif [[ "$INPUT_ACTION" == "count" ]]; then

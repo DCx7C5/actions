@@ -14,14 +14,14 @@ INPUT_PKGNAMES="$2"
 INPUT_KEYS="$3"
 INPUT_VALUES="$4"
 
-echo "$INPUT_VALUES" "$4"
+echo "DEBUG: $INPUT_VALUES"
 readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
 readarray -t INPUT_PKGNAMES < <(printf '%s\n' "$INPUT_PKGNAMES")
 readarray -t INPUT_VALUES < <(printf '%s\n' "$INPUT_VALUES")
 if [[ "$INPUT_ACTION" =~ ^(add|update|remove|delete)$ ]]; then
   ARGS+=(set)
 fi
-echo "${INPUT_VALUES[@]}"
+
 array_contains_not() {
   local search="$1"; shift
   local item
