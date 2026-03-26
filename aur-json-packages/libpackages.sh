@@ -39,6 +39,37 @@ is_json() {
   echo "$input" | jq -e . >/dev/null 2>&1
 }
 
+get_all_packages() {
+  local filter="$FILTER"
+  printf '%s\n' "$filter"
+}
+
+get_all_packages_with_keys() {
+  local filter="$FILTER | map_values({"
+  local args=()
+  for ((n=0; n<${#INPUT_KEYS[@]}; n++)); do
+    key="${INPUT_KEYS[n]}"
+    args+=(--arg "key$n" "$key")
+    filter+="\$key$n: .[\$key$n],"
+  done
+  filter="${filter%,}})"
+  printf '%s\n' "${args[@]}"
+  printf '%s\n' "$filter"
+}
+
+get_packages_with_pkgnames() {
+  local filter="$FILTER | {"
+  local args=()
+  for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
+    [[ -z "${INPUT_PKGNAMES[i]}" ]] && continue
+    pkgname="${INPUT_PKGNAMES[i]}"
+    args+=(--arg "pkg$i" "$pkgname")
+    filter+="\$pkg$i: .[\$pkg$i],"
+  done
+  filter="${filter%,}}"
+  printf '%s\n' "${args[@]}"
+  printf '%s\n' "$filter"
+}
 
 get_packages_with_pkgname_and_keys() {
   local filter="$FILTER | {"
@@ -62,40 +93,6 @@ get_packages_with_pkgname_and_keys() {
   printf '%s\n' "$filter"
 }
 
-get_all_packages_with_keys() {
-  local filter="$FILTER | map_values({"
-  local args=()
-  for ((n=0; n<${#INPUT_KEYS[@]}; n++)); do
-    key="${INPUT_KEYS[n]}"
-    args+=(--arg "key$n" "$key")
-    filter+="\$key$n: .[\$key$n],"
-  done
-  filter="${filter%,}"
-  filter+="})"
-  printf '%s\n' "${args[@]}"
-  printf '%s\n' "$filter"
-}
-
-get_packages_with_pkgnames() {
-  local filter="$FILTER | {"
-  local args=()
-  for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
-    [[ -z "${INPUT_PKGNAMES[i]}" ]] && continue
-    pkgname="${INPUT_PKGNAMES[i]}"
-    args+=(--arg "pkg$i" "$pkgname")
-    filter+="\$pkg$i: .[\$pkg$i],"
-  done
-  filter=$(printf '%s\n' "$filter" | sed -e 's/,$//')
-  filter+="}"
-  printf '%s\n' "${args[@]}"
-  printf '%s\n' "$filter"
-}
-
-get_all_packages() {
-  local filter="$FILTER"
-  printf '%s\n' "$filter"
-}
-
 add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
   local args=()
   local filter="$FILTER + {"
@@ -108,8 +105,7 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
     args+=(--argjson "val$i" "'$value'")
     filter+="\$pkg$i: \$val$i,"
   done
-  filter="${filter%,}"
-  filter+="}"
+  filter="${filter%,}}"
   printf '%s\n' "${args[@]}"
   printf '%s\n' "$filter"
 }
@@ -129,8 +125,7 @@ add_package_with_one_pkgname_and_multiple_keys_and_multiple_values() {
     args+=(--arg "val$i" "$value")
     filter+="\$key$i: \$val$i,"
   done
-  filter="${filter%,}"
-  filter+="}}"
+  filter="${filter%,}}}"
   printf '%s\n' "${args[@]}"
   printf '%s\n' "$filter"
 }
@@ -159,8 +154,7 @@ remove_packages_with_multiple_pkgnames() {
     args+=(--arg "pkg$i" "$pkgname")
     filter+=".[\$pkg$i],"
   done
-  filter="${filter%,}"
-  filter+=")"
+  filter="${filter%,})"
   printf '%s\n' "${args[@]}"
   printf '%s\n' "$filter"
 }
@@ -176,8 +170,7 @@ remove_from_one_package_multiple_keys() {
     args+=(--arg "key$i" "$key")
     filter+=".[\$key$i],"
   done
-  filter="${filter%,}"
-  filter+="))"
+  filter="${filter%,}))"
   printf '%s\n' "${args[@]}"
   printf '%s\n' "$filter"
 }
