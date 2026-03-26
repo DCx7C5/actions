@@ -157,12 +157,12 @@ runs:
           exit 1
         fi
         
-        [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUE="$(echo "${{ inputs.value }}" | jq -c '@json')"
+        [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUE="$(echo "${{ inputs.value }}" | tr -d ' ' | jq -c '@json')"
         
         [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "false" ]] && INPUT_VALUE="${{ inputs.value }}"
         
         readarray -t ALL_ARGS < <(
-          ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "$INPUT_VALUE"
+          ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "$INPUT_VALUE" "$IS_JSON_VALUE"
         )
         
         FILTER="${ALL_ARGS[-1]}"

@@ -12,7 +12,9 @@ comma_separated() {
 INPUT_ACTION="$1"
 INPUT_PKGNAMES="$2"
 INPUT_KEYS="$3"
-INPUT_VALUES="$4"
+IS_JSON_VALUE="$5"
+
+[[ "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUES="$(echo "$4" | jq -c '@json')" || INPUT_VALUES="$4"
 
 readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
 readarray -t INPUT_PKGNAMES < <(printf '%s\n' "$INPUT_PKGNAMES")
@@ -100,7 +102,7 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
     pkgname="${INPUT_PKGNAMES[i]}"
     value="${INPUT_VALUES[i]}"
     args+=(--arg "pkg$i" "$pkgname")
-    args+=(--argjson "val$i" "{$value}")
+    args+=(--argjson "val$i" "$value")
     filter+="\$pkg$i: \$val$i,"
   done
   filter="${filter%,}}"
