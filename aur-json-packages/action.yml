@@ -121,7 +121,7 @@ runs:
         fi
         
         if echo "$INPUTS_VALUE" | jq -e 2>/dev/null; then
-          echo "value=$(echo "$INPUTS_VALUE" | jq -c)" >> "$GITHUB_OUTPUT"
+          echo "value=$(echo $INPUTS_VALUE | jq -c)" >> "$GITHUB_OUTPUT"
           echo "json_value=true" >> "$GITHUB_OUTPUT"
         else
           echo "value=$INPUTS_VALUE" >> "$GITHUB_OUTPUT"
@@ -160,9 +160,7 @@ runs:
           echo "::error::inputs.json_in does not contain valid JSON data or is empty." >&2
           exit 1
         fi
-        
-        [[ -n "$INPUT_VALUE" && "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUE=$(echo "$INPUT_VALUE" | sed -e 's/"/\\"/g')
-        
+                
         readarray -t ALL_ARGS < <(
           ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "$INPUT_VALUE"
         )
