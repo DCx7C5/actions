@@ -107,7 +107,7 @@ jobs:
             echo "${{ steps.get_all_keys.outputs.debug-args }} ${{ steps.get_all_keys.outputs.debug-filter}}"
             echo '```'
             echo '```json'
-            echo "${{ steps.get_all_keys.outputs.out }}"
+            echo '${{ steps.get_all_keys.outputs.out }}' | jq -c
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -117,7 +117,7 @@ jobs:
             echo "${{ steps.get_pkgs.outputs.debug-args }} ${{ steps.get_pkgs.outputs.debug-filter}}"
             echo '```'
             echo '```json'
-            echo "${{ steps.get_pkgs.outputs.out }}"
+            echo '${{ steps.get_pkgs.outputs.out }}' | jq -c
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -127,6 +127,6 @@ jobs:
             echo "${{ steps.get_pkgs_keys.outputs.debug-args }} ${{ steps.get_pkgs_keys.outputs.debug-filter}}"
             echo '```'
             echo '```json'
-            echo "${{ steps.get_pkgs_keys.outputs.out }}"
+            echo '${{ steps.get_pkgs_keys.outputs.out }}' | jq -c
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
