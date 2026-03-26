@@ -113,8 +113,7 @@ runs:
         fi
         IMAGE_NAME="${{ inputs.image_tag }}:${{ inputs.image_version }}"
         echo "::notice::Building Arch Linux Docker image for AUR builds..."
-        docker build \
-          "${DOCKER_BUILD_ARGS[@]}" \
+        docker build "${DOCKER_BUILD_ARGS[@]}" \
           -f "$DOCKERFILE" \
           -t "$IMAGE_NAME" .
         

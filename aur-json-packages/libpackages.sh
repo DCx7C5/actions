@@ -99,9 +99,8 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
     [[ -z "${INPUT_PKGNAMES[i]}" ]] && continue
     [[ -z "${INPUT_VALUES[i]}" ]] && continue
-    pkgname="${INPUT_PKGNAMES[i]}"
-    value="${INPUT_VALUES[i]}"
-    args+=(--arg "pkg$i" "$pkgname")
+    value="$(echo "${INPUT_VALUES[i]}" | jq -c '@json')"
+    args+=(--arg "pkg$i" "${INPUT_PKGNAMES[i]}")
     args+=(--argjson "val$i" "$value")
     filter+="\$pkg$i: \$val$i,"
   done
@@ -135,7 +134,7 @@ add_package_with_no_pkgname_and_multiple_values_and_no_keys() {
   local filter="$FILTER + "
   for ((i=0; i<${#INPUT_VALUES[@]}; i++)); do
     [[ -z "${INPUT_VALUES[i]}" ]] && continue
-    value="${INPUT_VALUES[i]}"
+    value="$(echo "${INPUT_VALUES[i]}" | jq -c '@json')"
     args+=(--argjson "val$i" "$value")
     filter+="\$val$i,"
   done
@@ -150,8 +149,7 @@ remove_packages_with_multiple_pkgnames() {
   local filter="$FILTER | del("
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
     [[ -z "${INPUT_PKGNAMES[i]}" ]] && continue
-    pkgname="${INPUT_PKGNAMES[i]}"
-    args+=(--arg "pkg$i" "$pkgname")
+    args+=(--arg "pkg$i" "${INPUT_PKGNAMES[i]}")
     filter+=".[\$pkg$i],"
   done
   filter="${filter%,})"
