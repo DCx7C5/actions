@@ -182,6 +182,5 @@ runs:
           echo "out=$(jq -rc '.packages | length' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
         fi
         
-        echo "::notice::DEBUG FILTER: '$FILTER'"
         echo "args=${ARGS[*]}" >> "$GITHUB_OUTPUT"
-        echo "filter='$FILTER'" >> "$GITHUB_OUTPUT"
+        echo "filter='$(echo $FILTER | sed -e 's/\$/\\$/')'" >> "$GITHUB_OUTPUT"
