@@ -157,7 +157,7 @@ runs:
           exit 1
         fi
         
-        [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUE="$(echo ${{ inputs.value }} | jq -c '. | @json')"
+        [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUE="$(echo "${{ inputs.value }}" | jq -c '@json')"
         
         [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "false" ]] && INPUT_VALUE="${{ inputs.value }}"
         
@@ -171,7 +171,7 @@ runs:
 
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
-          echo "out=$(jq -c ${ARGS[@]} '$FILTER' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
+          echo "out=$(jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
 
         elif [[ "$INPUT_ACTION" =~ ^(update|add|remove|delete)$ && "$IS_FILE" == "false" ]]; then
           echo "Running 'add/update' action..."

@@ -97,7 +97,7 @@ jobs:
             echo "${{ steps.get_all.outputs.debug-args }} ${{ steps.get_all.outputs.debug-filter}}"
             echo '```'
             echo '```json'
-            echo '${{ steps.get_all.outputs.out }}' | jq -c
+            echo '${{ steps.get_all.outputs.out }}' | jq -c '.'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
