@@ -46,7 +46,7 @@ jobs:
           gh-token: ${{ steps.app_token.outputs.token }}
           json_in: 'JSON_PACKAGES'
 
-      - name: get_packages_with_pkgnames
+      - name: get_all_packages_with_keys
         id: get_all_keys
         uses: ./aur-json-packages
         with:
@@ -91,7 +91,6 @@ jobs:
       - id: check
         run: |
           echo "Checking outputs..." >> "$GITHUB_STEP_SUMMARY"
-          
           {
             echo '##### Args (get_all):'
             echo '```bash'

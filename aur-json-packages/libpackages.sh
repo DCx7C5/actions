@@ -41,6 +41,7 @@ is_json() {
 
 get_all_packages() {
   local filter="$FILTER"
+  printf '%s\n' ""
   printf '%s\n' "$filter"
 }
 
@@ -48,6 +49,7 @@ get_all_packages_with_keys() {
   local filter="$FILTER | map_values({"
   local args=()
   for ((n=0; n<${#INPUT_KEYS[@]}; n++)); do
+    [[ -z "${INPUT_KEYS[i]}" ]] && continue
     key="${INPUT_KEYS[n]}"
     args+=(--arg "key$n" "$key")
     filter+="\$key$n: .[\$key$n],"
