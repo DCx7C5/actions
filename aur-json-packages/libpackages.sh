@@ -13,9 +13,7 @@ INPUT_ACTION="$1"
 INPUT_PKGNAMES="$2"
 INPUT_KEYS="$3"
 INPUT_VALUES="$4"
-IS_JSON_VALUE="${5:-false}"
 
-[[ "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUES=$(pint "$INPUT_VALUES" | jq -c .) || INPUT_VALUES=$(comma_separated "$INPUT_VALUES")
 
 readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
 readarray -t INPUT_PKGNAMES < <(printf '%s\n' "$INPUT_PKGNAMES")
