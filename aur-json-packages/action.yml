@@ -120,7 +120,7 @@ runs:
         fi
         
         if echo "${{ inputs.value }}" | jq -e 2>/dev/null; then
-          echo "value=$(echo "${{ inputs.value }}" | jq -c)" >> "$GITHUB_OUTPUT"
+          echo "value=$(echo "${{ inputs.value }}" | head -1 | jq -c)" >> "$GITHUB_OUTPUT"
           echo "json_value=true" >> "$GITHUB_OUTPUT"
         else
           echo "value=${{ inputs.value }}" >> "$GITHUB_OUTPUT"
@@ -144,6 +144,7 @@ runs:
       env:
         INPUT_ACTION: "${{ inputs.action }}"
         INPUT_JSON: "${{ steps.validate_inputs.outputs.json_input }}"
+        INPUT_VALUE: '${{ steps.validate_inputs.outputs.value }}'
         IS_JSON_VALUE: "${{ steps.validate_inputs.outputs.json_value }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         ACCESS_LEVEL: "${{ steps.validate_inputs.outputs.access_level }}"
@@ -160,8 +161,7 @@ runs:
         fi
         
         readarray -t ALL_ARGS < <(
-          ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" \
-            "${{ steps.validate_inputs.outputs.value }}" "$IS_JSON_VALUE"
+          ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "$INPUT_VALUE" "$IS_JSON_VALUE"
         )
         
         FILTER="${ALL_ARGS[-1]}"
