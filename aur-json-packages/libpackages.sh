@@ -13,7 +13,11 @@ INPUT_ACTION="$1"
 INPUT_PKGNAMES="$2"
 INPUT_KEYS="$3"
 INPUT_VALUES="$4"
+IS_JSON_VALUE="$5"
 
+if [[ "$INPUT_ACTION" =~ ^(add|update)$ ]]; then
+  [[ "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUES="$(echo "${INPUT_VALUES}" | jq -c '@json')"
+fi
 
 readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
 readarray -t INPUT_PKGNAMES < <(printf '%s\n' "$INPUT_PKGNAMES")
