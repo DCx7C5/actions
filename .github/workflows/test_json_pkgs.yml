@@ -99,8 +99,8 @@ jobs:
             zzzzz-test0
             zzzzz-test1
           value: |
-            {"name": "test0", "value": false}
-            {"name": "test1", "value": true}
+            '{"name": "test0", "value": false}'
+            '{"name": "test1", "value": true}'
 
       - name: add_package_with_one_pkgname_and_multiple_keys_and_multiple_values
         id: one_pkg_multi_keys_multi_values
@@ -128,8 +128,8 @@ jobs:
           gh-token: ${{ steps.app_token.outputs.token }}
           json_in: 'JSON_PACKAGES'
           value: |
-            {"zzzzz-test0":{"name": "test0", "value": false}}
-            {"zzzzz-test1":{"name": "test1", "value": true}}
+            '{"zzzzz-test0":{"name": "test0", "value": false}}'
+            '{"zzzzz-test1":{"name": "test1", "value": true}}'
 
       - id: check
         run: |
