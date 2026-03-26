@@ -100,7 +100,7 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
     pkgname="${INPUT_PKGNAMES[i]}"
     value="${INPUT_VALUES[i]}"
     args+=(--arg "pkg$i" "$pkgname")
-    args+=(--argjson "val$i" "'$value'")
+    args+=(--argjson "val$i" "{$value}")
     filter+="\$pkg$i: \$val$i,"
   done
   filter="${filter%,}}"
@@ -134,7 +134,7 @@ add_package_with_no_pkgname_and_multiple_values_and_no_keys() {
   for ((i=0; i<${#INPUT_VALUES[@]}; i++)); do
     [[ -z "${INPUT_VALUES[i]}" ]] && continue
     value="${INPUT_VALUES[i]}"
-    args+=(--argjson "val$i" "'$value'")
+    args+=(--argjson "val$i" "$value")
     filter+="\$val$i,"
   done
   filter="${filter%,}"
