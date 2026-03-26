@@ -120,7 +120,7 @@ runs:
         fi
         
         if echo "${{ inputs.value }}" | jq -e 2>/dev/null; then
-          echo "value=$(echo "${{ inputs.value }}" | head -1 | jq -c)" >> "$GITHUB_OUTPUT"
+          echo "value=$(echo '${{ inputs.value }}' | head -1 | jq -c)" >> "$GITHUB_OUTPUT"
           echo "json_value=true" >> "$GITHUB_OUTPUT"
         else
           echo "value=${{ inputs.value }}" >> "$GITHUB_OUTPUT"
