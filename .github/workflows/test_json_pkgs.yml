@@ -33,7 +33,6 @@ jobs:
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
           owner: 'DystopianOS'
 
-
       - uses: actions/checkout@v6
         with:
           token: '${{ steps.app_token.outputs.token }}'
@@ -56,7 +55,6 @@ jobs:
             nvidia
             toolchain
 
-
       - name: Test JSON_PACKAGES
         id: get_all
         uses: ./aur-json-packages
@@ -65,19 +63,6 @@ jobs:
           org: 'DystopianOS'
           gh-token: ${{ steps.app_token.outputs.token }}
           json_in: 'JSON_PACKAGES'
-
-      - id: check2
-        run: |
-          echo "Checking outputs..."
-
-          if [[ -n "${{ steps.get_all.outputs.out }}" ]]; then
-            echo "Output from steps.get_all.outputs.out is available"
-            echo "#### Output from steps.get_all.outputs.out" >> "$GITHUB_STEP_SUMMARY"
-            echo '${{ steps.get_all.outputs.out }}' >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No output from steps.get_all.outputs.out"
-            echo "#### No output from steps.get_all.outputs.out" >> "$GITHUB_STEP_SUMMARY"
-          fi
 
       - name: Test JSON_PACKAGES
         id: get_keys
@@ -100,28 +85,28 @@ jobs:
           echo "Checking outputs..."
           echo '##### Args (get): ' >> "$GITHUB_STEP_SUMMARY"
           echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.get.outputs.debug-args }} '${{ steps.get.outputs.debug-filter}}'" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.get.outputs.debug-args }} ${{ steps.get.outputs.debug-filter}}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           {
             echo '```json'
-            echo "${{ steps.get.outputs.out }}"
+            echo "${{ steps.get.outputs.out }}" | jq -c
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           echo '##### Args (get_all): ' >> "$GITHUB_STEP_SUMMARY"
           echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.get_all.outputs.debug-args }} '${{ steps.get_all.outputs.debug-filter}}'" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.get_all.outputs.debug-args }} ${{ steps.get_all.outputs.debug-filter}}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           {
             echo '```json'
-            echo "${{ steps.get_all.outputs.out }}"
+            echo "${{ steps.get_all.outputs.out }}" | jq -c
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           echo '##### Args (get_keys): ' >> "$GITHUB_STEP_SUMMARY"
           echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.get_keys.outputs.debug-args }} '${{ steps.get_keys.outputs.debug-filter}}'" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.get_keys.outputs.debug-args }} ${{ steps.get_keys.outputs.debug-filter}}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           {
             echo '```json'
-            echo "${{ steps.get_keys.outputs.out }}"
+            echo "${{ steps.get_keys.outputs.out }}" | jq -c
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

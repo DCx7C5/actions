@@ -43,24 +43,21 @@ is_json() {
 get_packages_with_pkgname_and_keys() {
   local filter="$FILTER | {"
   local args=()
-  local n=0 i=0
+  local i=0 n=0
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
     [[ -z "${INPUT_PKGNAMES[i]}" ]] && continue
     pkgname="${INPUT_PKGNAMES[i]}"
+    args+=(--arg "pkg$i" "$pkgname")
     filter+="\$pkg$i: {"
     for ((n=0; n<${#INPUT_KEYS[@]}; n++)); do
       [[ -z "${INPUT_KEYS[n]}" ]] && continue
       key="${INPUT_KEYS[n]}"
+      args+=(--arg "key$n" "$key")
       filter+="\$key$n: .[\$pkg$i][\$key$n],"
-      arg="--arg key$n $key"
-      array_contains_not "$arg" "${args[@]}" && args+=("$arg")
     done
-    args+=(--arg "pkg$i" "$pkgname")
-    filter="${filter%,}"
-    filter+="},"
+    filter="${filter%,}},"
   done
-  filter="${filter%,}"
-  filter+="}"
+  filter="${filter%,}}"
   printf '%s\n' "${args[@]}"
   printf '%s\n' "$filter"
 }
@@ -189,12 +186,12 @@ action_get() {
   # pkgnames and keys
   if [[ -z "$1" && -z "$2" ]]; then
     get_all_packages
-  elif [[ -n "$1" && -n "$2" ]]; then
-    get_packages_with_pkgname_and_keys
-  elif [[ -n "$1" && -z "$2" ]]; then
-    get_packages_with_pkgnames
   elif [[ -z "$1" && -n "$2" ]]; then
     get_all_packages_with_keys
+  elif [[ -n "$1" && -z "$2" ]]; then
+    get_packages_with_pkgnames
+  elif [[ -n "$1" && -n "$2" ]]; then
+    get_packages_with_pkgname_and_keys
   else
     echo "Invalid input combination for 'get' action." >&2
     exit 1
@@ -227,7 +224,7 @@ action_remove() {
 
 case "$INPUT_ACTION" in
   get)
-    action_get "$2" "$3"
+    action_get "$INPUT_PKGNAMES" "$INPUT_KEYS"
     ;;
   update|add)
     action_update "$2" "$3"
