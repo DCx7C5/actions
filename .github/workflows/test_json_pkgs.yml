@@ -37,14 +37,30 @@ jobs:
         with:
           token: '${{ steps.app_token.outputs.token }}'
 
-      - name: TEST
-        env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
-        run: |
-          gh variable get JSON_PACKAGES --org DystopianOS 
+      - name: get_all_packages
+        id: get_all
+        uses: ./aur-json-packages
+        with:
+          action: 'get'
+          org: 'DystopianOS'
+          gh-token: ${{ steps.app_token.outputs.token }}
+          json_in: 'JSON_PACKAGES'
 
-      - name: Test JSON_PACKAGES
-        id: get
+      - name: get_packages_with_pkgnames
+        id: get_all_keys
+        uses: ./aur-json-packages
+        with:
+          action: 'get'
+          org: 'DystopianOS'
+          gh-token: ${{ steps.app_token.outputs.token }}
+          json_in: 'JSON_PACKAGES'
+          key: |
+            submodule
+            custom
+            remote_dir
+
+      - name: get_packages_with_pkgnames
+        id: get_pkgs
         uses: ./aur-json-packages
         with:
           action: 'get'
@@ -55,17 +71,8 @@ jobs:
             nvidia
             toolchain
 
-      - name: Test JSON_PACKAGES
-        id: get_all
-        uses: ./aur-json-packages
-        with:
-          action: 'get'
-          org: 'DystopianOS'
-          gh-token: ${{ steps.app_token.outputs.token }}
-          json_in: 'JSON_PACKAGES'
-
-      - name: Test JSON_PACKAGES
-        id: get_keys
+      - name: get_packages_with_pkgname_and_keys
+        id: get_pkgs_keys
         uses: ./aur-json-packages
         with:
           action: 'get'
@@ -80,33 +87,47 @@ jobs:
             custom
             remote_dir
 
+
       - id: check3
         run: |
-          echo "Checking outputs..."
-          echo '##### Args (get): ' >> "$GITHUB_STEP_SUMMARY"
-          echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.get.outputs.debug-args }} ${{ steps.get.outputs.debug-filter}}" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "Checking outputs..." >> "$GITHUB_STEP_SUMMARY"
+          
           {
+            echo '##### Args (get_all):'
+            echo '```bash'
+            echo "${{ steps.get_all.outputs.debug-args }} ${{ steps.get_all.outputs.debug-filter}}"
+            echo '```'
             echo '```json'
-            echo "${{ steps.get.outputs.out }}" | jq -c
+            echo '${{ steps.get_all.outputs.out }}' | jq -c
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          echo '##### Args (get_all): ' >> "$GITHUB_STEP_SUMMARY"
-          echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.get_all.outputs.debug-args }} ${{ steps.get_all.outputs.debug-filter}}" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
           {
+            echo '##### Args (get_all_keys):'
+            echo '```bash'
+            echo "${{ steps.get_all_keys.outputs.debug-args }} ${{ steps.get_all_keys.outputs.debug-filter}}"
+            echo '```'
             echo '```json'
-            echo "${{ steps.get_all.outputs.out }}" | jq -c
+            echo '${{ steps.get_all_keys.outputs.out }}' | jq -c
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          echo '##### Args (get_keys): ' >> "$GITHUB_STEP_SUMMARY"
-          echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.get_keys.outputs.debug-args }} ${{ steps.get_keys.outputs.debug-filter}}" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
           {
+            echo '##### Args (get_pkgs):'
+            echo '```bash'
+            echo "${{ steps.get_pkgs.outputs.debug-args }} ${{ steps.get_pkgs.outputs.debug-filter}}"
+            echo '```'
             echo '```json'
-            echo "${{ steps.get_keys.outputs.out }}" | jq -c
+            echo '${{ steps.get_pkgs.outputs.out }}' | jq -c
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          {
+            echo '##### Args (get_pkgs_keys):'
+            echo '```bash'
+            echo "${{ steps.get_pkgs_keys.outputs.debug-args }} ${{ steps.get_pkgs_keys.outputs.debug-filter}}"
+            echo '```'
+            echo '```json'
+            echo '${{ steps.get_pkgs_keys.outputs.out }}' | jq -c
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
