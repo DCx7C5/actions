@@ -121,7 +121,7 @@ runs:
         fi
         
         if echo "$INPUTS_VALUE" | jq -e 2>/dev/null; then
-          echo "value=$(echo "$INPUTS_VALUE" | head -1 | jq -c)" >> "$GITHUB_OUTPUT"
+          echo "value=$(echo "$INPUTS_VALUE" | jq -c)" >> "$GITHUB_OUTPUT"
           echo "json_value=true" >> "$GITHUB_OUTPUT"
         else
           echo "value=$INPUTS_VALUE" >> "$GITHUB_OUTPUT"
