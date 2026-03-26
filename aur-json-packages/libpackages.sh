@@ -41,7 +41,6 @@ is_json() {
 
 get_all_packages() {
   local filter="$FILTER"
-  printf '%s\n' ""
   printf '%s\n' "$filter"
 }
 
