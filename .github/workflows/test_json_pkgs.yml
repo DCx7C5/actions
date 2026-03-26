@@ -150,7 +150,7 @@ jobs:
             echo "${{ steps.get_all_keys.outputs.debug-args }} ${{ steps.get_all_keys.outputs.debug-filter}}"
             echo '```'
             echo '```json'
-            echo '${{ steps.get_all_keys.outputs.out }}' | jq -c
+            echo '${{ steps.get_all_keys.outputs.out }}' | jq -c '.'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -160,7 +160,7 @@ jobs:
             echo "${{ steps.get_pkgs.outputs.debug-args }} ${{ steps.get_pkgs.outputs.debug-filter}}"
             echo '```'
             echo '```json'
-            echo '${{ steps.get_pkgs.outputs.out }}' | jq -c
+            echo '${{ steps.get_pkgs.outputs.out }}' | jq -c '.'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -170,7 +170,7 @@ jobs:
             echo "${{ steps.get_pkgs_keys.outputs.debug-args }} ${{ steps.get_pkgs_keys.outputs.debug-filter}}"
             echo '```'
             echo '```json'
-            echo '${{ steps.get_pkgs_keys.outputs.out }}' | jq -c
+            echo '${{ steps.get_pkgs_keys.outputs.out }}' | jq -c '.'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           
@@ -180,7 +180,7 @@ jobs:
             echo "${{ steps.multi_pkg_multi_value_no_keys.outputs.debug-args }} ${{ steps.multi_pkg_multi_value_no_keys.outputs.debug-filter}}"
             echo '```'
             echo '```json'
-            echo '${{ steps.multi_pkg_multi_value_no_keys.outputs.out }}' | jq -c
+            echo "${{ steps.multi_pkg_multi_value_no_keys.outputs.out }}"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           {
@@ -189,7 +189,7 @@ jobs:
             echo "${{ steps.one_pkg_multi_keys_multi_values.outputs.debug-args }} ${{ steps.one_pkg_multi_keys_multi_values.outputs.debug-filter}}"
             echo '```'
             echo '```json'
-            echo '${{ steps.one_pkg_multi_keys_multi_values.outputs.out }}'
+            echo "${{ steps.one_pkg_multi_keys_multi_values.outputs.out }}"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           {
@@ -198,6 +198,6 @@ jobs:
             echo "${{ steps.no_pkg_multi_value_no_keys.outputs.debug-args }} ${{ steps.no_pkg_multi_value_no_keys.outputs.debug-filter}}"
             echo '```'
             echo '```json'
-            echo '${{ steps.no_pkg_multi_value_no_keys.outputs.out }}'
+            echo "${{ steps.no_pkg_multi_value_no_keys.outputs.out }}"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

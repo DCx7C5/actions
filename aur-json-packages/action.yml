@@ -157,13 +157,12 @@ runs:
           exit 1
         fi
         
-        [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n "${{ inputs.value }}" && "$IS_JSON_VALUE" == "true" ]] && \
-          INPUT_VALUE=$(echo "${{ inputs.value }}" | jq -c '. | @json')
-        [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n "${{ inputs.value }}" && "$IS_JSON_VALUE" == "false" ]] && \
-          INPUT_VALUE="${{ inputs.value }}"
+        [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUE="$(echo ${{ inputs.value }} | jq -c '. | @json')"
+        
+        [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "false" ]] && INPUT_VALUE="${{ inputs.value }}"
         
         readarray -t ALL_ARGS < <(
-          ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "$INPUT_VALUE" 
+          ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "$INPUT_VALUE"
         )
         
         FILTER="${ALL_ARGS[-1]}"
@@ -172,7 +171,7 @@ runs:
 
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
-          echo "out=$(jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
+          echo "out=$(jq -c "${ARGS[@]}" '$FILTER' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
 
         elif [[ "$INPUT_ACTION" =~ ^(update|add|remove|delete)$ && "$IS_FILE" == "false" ]]; then
           echo "Running 'add/update' action..."
