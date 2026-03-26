@@ -98,7 +98,7 @@ jobs:
           pkg_name: |
             zzzzz-test0
             zzzzz-test1
-          key: |
+          value: |
             {"name": "test0", "value": false}
             {"name": "test1", "value": true}
 

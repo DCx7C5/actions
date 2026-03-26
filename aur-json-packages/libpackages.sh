@@ -193,11 +193,11 @@ action_get() {
 }
 
 action_update() {
-  if [[ -n "$1" && -n "$2" ]]; then
+  if [[ -n "$1" && -n "$2" && -n "$3" ]]; then
     add_package_with_one_pkgname_and_multiple_keys_and_multiple_values
-  elif [[ -z "$1" && -n "$2" ]]; then
+  elif [[ -z "$1" && -z "$2" && -n "$3" ]]; then
     add_package_with_no_pkgname_and_multiple_values_and_no_keys
-  elif [[ -n "$1" && -z "$2" ]]; then
+  elif [[ -n "$1" && -z "$2" && -n "$3" ]]; then
     add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys
   else
     echo "Invalid input combination for 'update' action." >&2
@@ -221,10 +221,10 @@ case "$INPUT_ACTION" in
     action_get "$INPUT_PKGNAMES" "$INPUT_KEYS"
     ;;
   update|add)
-    action_update "$2" "$3"
+    action_update "$INPUT_PKGNAMES" "$INPUT_KEYS" "$INPUT_VALUES"
     ;;
   remove|delete)
-    action_remove "$2" "$3"
+    action_remove "$INPUT_PKGNAMES" "$INPUT_KEYS"
     ;;
   *)
     echo "Invalid action: $INPUT_ACTION. Supported actions are: get, add, update, remove, delete." >&2

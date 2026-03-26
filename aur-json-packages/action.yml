@@ -103,7 +103,6 @@ runs:
         if [[ ! " ${valid_actions[*]} " =~ " ${ACTION} " ]]; then
           echo "::error::Invalid action '${ACTION}'. Valid actions are: ${valid_actions[*]}" >&2
           exit 1
-        # Prüfe, dass nicht mehr als eines von env, repo oder org gesetzt ist
         count=0
         [[ -n "${{ inputs.env }}" ]] && ((count++))
         [[ -n "${{ inputs.repo }}" ]] && ((count++))
