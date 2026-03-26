@@ -171,16 +171,17 @@ runs:
 
         if [[ "$INPUT_ACTION" == "get" ]]; then
           echo "Running 'get' action..."
-          echo "out=$(jq -rc "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
+          echo "out=$(jq -rc "${ARGS[@]}" "'$FILTER'" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
 
         elif [[ "$INPUT_ACTION" =~ ^(update|add|remove|delete)$ && "$IS_FILE" == "false" ]]; then
           echo "Running 'add/update' action..."
-          jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME"
+          jq -c "${ARGS[@]}" "'$FILTER'" <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME"
 
         elif [[ "$INPUT_ACTION" == "count" ]]; then
           echo "Running 'count' action..."
           echo "out=$(jq -rc '.packages | length' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
         fi
         
+        echo "::notice::DEBUG FILTER: '$FILTER'"
         echo "args=${ARGS[*]}" >> "$GITHUB_OUTPUT"
-        echo "filter=$FILTER" >> "$GITHUB_OUTPUT"
+        echo "filter='$FILTER'" >> "$GITHUB_OUTPUT"
