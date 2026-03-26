@@ -87,6 +87,49 @@ jobs:
             custom
             remote_dir
 
+      - name: add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys
+        id: multi_pkg_multi_value_no_keys
+        uses: ./aur-json-packages
+        with:
+          action: 'add'
+          org: 'DystopianOS'
+          gh-token: ${{ steps.app_token.outputs.token }}
+          json_in: 'JSON_PACKAGES'
+          pkg_name: |
+            zzzzz-test0
+            zzzzz-test1
+          value: |
+            {\"name\": \"test0\", \"value\": false}
+            {\"name\": \"test1\", \"value\": true}
+
+      - name: add_package_with_one_pkgname_and_multiple_keys_and_multiple_values
+        id: one_pkg_multi_keys_multi_values
+        uses: ./aur-json-packages
+        with:
+          action: 'add'
+          org: 'DystopianOS'
+          gh-token: ${{ steps.app_token.outputs.token }}
+          json_in: 'JSON_PACKAGES'
+          pkg_name: |
+            zzzzz-test0
+          key: |
+            submodule
+            custom
+          value: |
+            false
+            true
+
+      - name: add_package_with_no_pkgname_and_multiple_values_and_no_keys
+        id: no_pkg_multi_value_no_keys
+        uses: ./aur-json-packages
+        with:
+          action: 'add'
+          org: 'DystopianOS'
+          gh-token: ${{ steps.app_token.outputs.token }}
+          json_in: 'JSON_PACKAGES'
+          value: |
+            {\"zzzzz-test0\":{\"name\": \"test0\", \"value\": false}}
+            {\"zzzzz-test1\":{\"name\": \"test1\", \"value\": true}}
 
       - id: check
         run: |
@@ -131,3 +174,30 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           
+          {
+            echo '##### Args (multi_pkg_multi_value_no_keys):'
+            echo '```bash'
+            echo "${{ steps.multi_pkg_multi_value_no_keys.outputs.debug-args }} ${{ steps.multi_pkg_multi_value_no_keys.outputs.debug-filter}}"
+            echo '```'
+            echo '```json'
+            echo "${{ steps.multi_pkg_multi_value_no_keys.outputs.out }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '##### Args (one_pkg_multi_keys_multi_values):'
+            echo '```bash'
+            echo "${{ steps.one_pkg_multi_keys_multi_values.outputs.debug-args }} ${{ steps.one_pkg_multi_keys_multi_values.outputs.debug-filter}}"
+            echo '```'
+            echo '```json'
+            echo "${{ steps.one_pkg_multi_keys_multi_values.outputs.out }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '##### Args (no_pkg_multi_value_no_keys):'
+            echo '```bash'
+            echo "${{ steps.no_pkg_multi_value_no_keys.outputs.debug-args }} ${{ steps.no_pkg_multi_value_no_keys.outputs.debug-filter}}"
+            echo '```'
+            echo '```json'
+            echo "${{ steps.no_pkg_multi_value_no_keys.outputs.out }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
