@@ -152,19 +152,19 @@ runs:
       working-directory: "${{ github.action_path }}"
       run: |
         chmod +x libpackages.sh
-        echo "### Starting run_action" >> "$GITHUB_STEP_SUMMARY"
 
-        INPUT_JSON_CONTENT=$(gh variable get "$INPUT_JSON" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value')
-        if [[ -n "$INPUT_JSON_CONTENT" ]]; then
-          INPUT_JSON="$INPUT_JSON_CONTENT"
-        fi
-        
+        INPUT_JSON=$(gh variable get "$INPUT_JSON" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value')
+
         if [[ -z "$INPUT_JSON" ]] || ! echo "$INPUT_JSON" | jq empty 2>/dev/null; then
-          echo "::error::INPUT_JSON ist leer oder kein valides JSON!"
+          echo "::error::inputs.json_in does not contain valid JSON data or is empty." >&2
           exit 1
         fi
         
-        readarray -t ALL_ARGS < <(./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "${{ steps.validate_inputs.outputs.value }}" "$IS_JSON_VALUE")
+        readarray -t ALL_ARGS < <(
+          ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" \
+            "${{ steps.validate_inputs.outputs.value }}" "$IS_JSON_VALUE"
+        )
+        
         FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
         ARGS=("${ALL_ARGS[@]}")
@@ -173,22 +173,14 @@ runs:
           echo "Running 'get' action..."
           echo "out=$(jq -rc "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
 
-        elif [[ ("$INPUT_ACTION" == "add" || "$INPUT_ACTION" == "update") && "$IS_FILE" == "false" ]]; then
+        elif [[ "$INPUT_ACTION" =~ ^(update|add|remove|delete)$ && "$IS_FILE" == "false" ]]; then
           echo "Running 'add/update' action..."
           jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME"
 
-        elif [[ "$INPUT_ACTION" == "remove" && "$IS_FILE" == "false" ]]; then
-          echo "Running 'remove' action..."
-          jq -c "${ARGS[@]}" "$FILTER" ${filter} <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME" 
-
         elif [[ "$INPUT_ACTION" == "count" ]]; then
-
           echo "Running 'count' action..."
           echo "out=$(jq -rc '.packages | length' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
-        else
-          echo "::error::Invalid action '$INPUT_ACTION'" >&2
-          exit 1
         fi
 
         echo "args=${ARGS[*]}" >> "$GITHUB_OUTPUT"
-        echo "filter='$(echo $FILTER | sed -e 's/\$/\\$/g')'" >> "$GITHUB_OUTPUT"
+        echo "filter=$(echo "$FILTER" | sed -e 's/\$/\\$/')" >> "$GITHUB_OUTPUT"

@@ -56,21 +56,6 @@ jobs:
             nvidia
             toolchain
 
-      - id: check1
-        run: |
-          echo "Checking outputs..."
-          echo '##### Args: ' >> "$GITHUB_STEP_SUMMARY"
-          echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.get.outputs.debug-args }} ${{ steps.get.outputs.debug-filter}}" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          if [[ -n "${{ steps.get.outputs.out }}" ]]; then
-            echo "Output from steps.get.outputs.out is available"
-            echo "#### Output from steps.get.outputs.out" >> "$GITHUB_STEP_SUMMARY"
-            echo '${{ steps.get.outputs.out }}' >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No output from steps.get.outputs.out"
-            echo "#### No output from steps.get.outputs.out" >> "$GITHUB_STEP_SUMMARY"
-          fi
 
       - name: Test JSON_PACKAGES
         id: get_all
@@ -84,10 +69,7 @@ jobs:
       - id: check2
         run: |
           echo "Checking outputs..."
-          echo '##### Args: ' >> "$GITHUB_STEP_SUMMARY"
-          echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.get_all.outputs.debug-args }} ${{ steps.get_all.outputs.debug-filter}}" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
           if [[ -n "${{ steps.get_all.outputs.out }}" ]]; then
             echo "Output from steps.get_all.outputs.out is available"
             echo "#### Output from steps.get_all.outputs.out" >> "$GITHUB_STEP_SUMMARY"
@@ -116,16 +98,15 @@ jobs:
       - id: check3
         run: |
           echo "Checking outputs..."
-          echo '##### Args: ' >> "$GITHUB_STEP_SUMMARY"
+          echo '##### Args (${{ steps.get.id }}): ' >> "$GITHUB_STEP_SUMMARY"
           echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.get_keys.outputs.debug-args }} ${{ steps.get_keys.outputs.debug-filter}}" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.get.outputs.debug-args }} '${{ steps.get.outputs.debug-filter}}'" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          
-          if [[ -n "${{ steps.get_keys.outputs.out }}" ]]; then
-            echo "Output from steps.get_keys.outputs.out is available"
-            echo "##### Output from steps.get_keys.outputs.out" >> "$GITHUB_STEP_SUMMARY"
-            echo '${{ steps.get_keys.outputs.out }}' >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No output from steps.get_keys.outputs.out"
-            echo "#### No output from steps.get_keys.outputs.out" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          echo '##### Args (${{ steps.get_all.id }}): ' >> "$GITHUB_STEP_SUMMARY"
+          echo '```bash' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.get_all.outputs.debug-args }} '${{ steps.get_all.outputs.debug-filter}}'" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo '##### Args (${{ steps.get_keys.id }}): ' >> "$GITHUB_STEP_SUMMARY"
+          echo '```bash' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.get_keys.outputs.debug-args }} '${{ steps.get_keys.outputs.debug-filter}}'" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
