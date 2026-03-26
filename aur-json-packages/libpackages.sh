@@ -41,7 +41,7 @@ is_json() {
 
 get_all_packages() {
   local filter="$FILTER"
-  printf '%s\n' "$filter"
+  printf '%s\n' "'$filter'"
 }
 
 get_all_packages_with_keys() {
@@ -54,7 +54,7 @@ get_all_packages_with_keys() {
   done
   filter="${filter%,}})"
   printf '%s\n' "${args[@]}"
-  printf '%s\n' "$filter"
+  printf '%s\n' "'$filter'"
 }
 
 get_packages_with_pkgnames() {
@@ -68,7 +68,7 @@ get_packages_with_pkgnames() {
   done
   filter="${filter%,}}"
   printf '%s\n' "${args[@]}"
-  printf '%s\n' "$filter"
+  printf '%s\n' "'$filter'"
 }
 
 get_packages_with_pkgname_and_keys() {
@@ -90,7 +90,7 @@ get_packages_with_pkgname_and_keys() {
   done
   filter="${filter%,}}"
   printf '%s\n' "${args[@]}"
-  printf '%s\n' "$filter"
+  printf '%s\n' "'$filter'"
 }
 
 add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
@@ -107,7 +107,7 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
   done
   filter="${filter%,}}"
   printf '%s\n' "${args[@]}"
-  printf '%s\n' "$filter"
+  printf '%s\n' "'$filter'"
 }
 
 add_package_with_one_pkgname_and_multiple_keys_and_multiple_values() {
@@ -127,7 +127,7 @@ add_package_with_one_pkgname_and_multiple_keys_and_multiple_values() {
   done
   filter="${filter%,}}}"
   printf '%s\n' "${args[@]}"
-  printf '%s\n' "$filter"
+  printf '%s\n' "'$filter'"
 }
 
 add_package_with_no_pkgname_and_multiple_values_and_no_keys() {
@@ -141,7 +141,7 @@ add_package_with_no_pkgname_and_multiple_values_and_no_keys() {
   done
   filter="${filter%,}"
   printf '%s\n' "${args[@]}"
-  printf '%s\n' "$filter"
+  printf '%s\n' "'$filter'"
 }
 
 
@@ -156,7 +156,7 @@ remove_packages_with_multiple_pkgnames() {
   done
   filter="${filter%,})"
   printf '%s\n' "${args[@]}"
-  printf '%s\n' "$filter"
+  printf '%s\n' "'$filter'"
 }
 
 remove_from_one_package_multiple_keys() {
@@ -172,7 +172,7 @@ remove_from_one_package_multiple_keys() {
   done
   filter="${filter%,}))"
   printf '%s\n' "${args[@]}"
-  printf '%s\n' "$filter"
+  printf '%s\n' "'$filter'"
 }
 
 action_get() {

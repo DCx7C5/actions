@@ -183,4 +183,4 @@ runs:
         fi
         
         echo "args=${ARGS[*]}" >> "$GITHUB_OUTPUT"
-        echo "filter='$(echo "$FILTER" | sed -e 's/\$/\\$/')'" >> "$GITHUB_OUTPUT"
+        echo "filter=$FILTER" >> "$GITHUB_OUTPUT"
