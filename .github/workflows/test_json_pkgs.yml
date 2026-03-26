@@ -98,15 +98,30 @@ jobs:
       - id: check3
         run: |
           echo "Checking outputs..."
-          echo '##### Args (${{ steps.get.id }}): ' >> "$GITHUB_STEP_SUMMARY"
+          echo '##### Args (get): ' >> "$GITHUB_STEP_SUMMARY"
           echo '```bash' >> "$GITHUB_STEP_SUMMARY"
           echo "${{ steps.get.outputs.debug-args }} '${{ steps.get.outputs.debug-filter}}'" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo '##### Args (${{ steps.get_all.id }}): ' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '```json'
+            echo "${{ steps.get.outputs.out }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo '##### Args (get_all): ' >> "$GITHUB_STEP_SUMMARY"
           echo '```bash' >> "$GITHUB_STEP_SUMMARY"
           echo "${{ steps.get_all.outputs.debug-args }} '${{ steps.get_all.outputs.debug-filter}}'" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo '##### Args (${{ steps.get_keys.id }}): ' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '```json'
+            echo "${{ steps.get_all.outputs.out }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo '##### Args (get_keys): ' >> "$GITHUB_STEP_SUMMARY"
           echo '```bash' >> "$GITHUB_STEP_SUMMARY"
           echo "${{ steps.get_keys.outputs.debug-args }} '${{ steps.get_keys.outputs.debug-filter}}'" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '```json'
+            echo "${{ steps.get_keys.outputs.out }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

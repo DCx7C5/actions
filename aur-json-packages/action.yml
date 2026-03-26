@@ -181,6 +181,6 @@ runs:
           echo "Running 'count' action..."
           echo "out=$(jq -rc '.packages | length' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
         fi
-
+        
         echo "args=${ARGS[*]}" >> "$GITHUB_OUTPUT"
-        echo "filter=$(echo "$FILTER" | sed -e 's/\$/\\$/')" >> "$GITHUB_OUTPUT"
+        echo "filter='$(echo "$FILTER" | sed -e 's/\$/\\$/')'" >> "$GITHUB_OUTPUT"
