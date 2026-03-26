@@ -12,9 +12,8 @@ comma_separated() {
 INPUT_ACTION="$1"
 INPUT_PKGNAMES="$2"
 INPUT_KEYS="$3"
-IS_JSON_VALUE="$5"
+INPUT_VALUES="$4"
 
-[[ "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUES="$(echo "$4" | jq -c '@json')" || INPUT_VALUES="$4"
 
 readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
 readarray -t INPUT_PKGNAMES < <(printf '%s\n' "$INPUT_PKGNAMES")
