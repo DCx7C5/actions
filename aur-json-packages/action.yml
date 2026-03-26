@@ -77,6 +77,7 @@ runs:
         JSON_PATH: "${{ inputs.json_in }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         ACTION: "${{ inputs.action }}"
+        INPUTS_VALUE: '${{ inputs.value }}'
       run: |
         set -euo pipefail
 
@@ -111,19 +112,19 @@ runs:
           echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
           exit 1
         fi
-        elif [[ -n "${{ inputs.key }}" && -n "${{ inputs.value }}" && ! "$ACTION" =~ ^(add|update|get)$ ]]; then
+        elif [[ -n "${{ inputs.key }}" && -n "$INPUTS_VALUE" && ! "$ACTION" =~ ^(add|update|get)$ ]]; then
           echo "::error::'key' and 'value' inputs are only valid for 'add' and 'update' actions." >&2
           exit 1
-        elif [[ -n "${{ inputs.key }}" && -n "${{ inputs.value }}" && ! "$ACTION" =~ ^(add|update|get)$ ]]; then
+        elif [[ -n "${{ inputs.key }}" && -n "$INPUTS_VALUE" && ! "$ACTION" =~ ^(add|update|get)$ ]]; then
           echo "::error::'key' and 'value' inputs are only valid for 'add' and 'update' actions." >&2
           exit 1
         fi
         
-        if echo "${{ inputs.value }}" | jq -e 2>/dev/null; then
-          echo "value=$(echo '${{ inputs.value }}' | head -1 | jq -c)" >> "$GITHUB_OUTPUT"
+        if echo "$INPUTS_VALUE" | jq -e 2>/dev/null; then
+          echo "value=$(echo "$INPUTS_VALUE" | head -1 | jq -c)" >> "$GITHUB_OUTPUT"
           echo "json_value=true" >> "$GITHUB_OUTPUT"
         else
-          echo "value=${{ inputs.value }}" >> "$GITHUB_OUTPUT"
+          echo "value=$INPUTS_VALUE" >> "$GITHUB_OUTPUT"
           echo "json_value=false" >> "$GITHUB_OUTPUT"
         fi
         
