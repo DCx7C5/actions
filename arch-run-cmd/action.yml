@@ -117,9 +117,9 @@ runs:
       if: steps.build_image.outcome == 'success'
       uses: ./docker-push-image
       with:
-        gh-token: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
+        gh-token: ${{ github.token }}
         registry: 'ghcr.io'
-        user: ${{ github.repository_owner || github.actor }}
+        user: ${{ github.actor }}
         image-tag: ${{ inputs.image-tag || steps.build_image.outputs.image_tag }}
         image-version: ${{ inputs.image-version || steps.build_image.outputs.image_version }}
 
