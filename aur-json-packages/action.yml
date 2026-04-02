@@ -127,15 +127,15 @@ runs:
         echo "level_name=$LEVEL_NAME" >> "$GITHUB_OUTPUT"
 
         if [[ -n "$INPUT_PKGNAMES" ]]; then
-          echo "lenpkg=$(printf '%s\n' "$INPUT_PKGNAMES" | wc -l)" >> "$GITHUB_OUTPUT"
+          echo "lenpkg=$(printf '%s\n' "$INPUT_PKGNAMES" | sed -e '/^$/d' | wc -l)" >> "$GITHUB_OUTPUT"
         fi
         
         if [[ -n "$INPUT_KEYS" ]]; then
-          echo "lenkey=$(printf '%s\n' "$INPUT_KEYS" | wc -l)" >> "$GITHUB_OUTPUT"
+          echo "lenkey=$(printf '%s\n' "$INPUT_KEYS" | sed -e '/^$/d' | wc -l)" >> "$GITHUB_OUTPUT"
         fi
         
         if [[ -n "$INPUT_VALUES" ]]; then
-          echo "lenval=$(printf '%s\n' "$INPUT_VALUES" | wc -l)" >> "$GITHUB_OUTPUT"
+          echo "lenval=$(printf '%s\n' "$INPUT_VALUES" | sed -e '/^$/d' | wc -l)" >> "$GITHUB_OUTPUT"
         fi
         
         JSON_DICT="$(gh variable get "$JSON_VAR_NAME" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value')"
@@ -250,7 +250,7 @@ runs:
         
         INPUT_PKGNAMES="$(printf '%s\n' "$INPUT_PKGNAMES" | tr -d ' ')"
         INPUT_KEYS="$(printf '%s\n' "$INPUT_KEYS" | tr -d ' ')"
-        INPUT_VALUES="$(printf '%s\n' "$INPUT_VALUES" | sed 's/\\n/ /g' | tr ' ' '\n')"
+        INPUT_VALUES="$(printf '%s\n' "$INPUT_VALUES" | sed 's/\\n$//; s/\\n/ /g' | tr ' ' '\n')"
         
         for pkg in $INPUT_PKGNAMES; do INPUT_PKGNAMES_ARR+=("$pkg"); done
         for key in $INPUT_KEYS; do INPUT_KEYS_ARR+=("$key"); done
