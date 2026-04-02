@@ -145,7 +145,7 @@ runs:
           exit 1
         fi
 
-        echo "json_dict=$JSON_DICT" >> "$GITHUB_OUTPUT"
+        echo "json_dict="$JSON_DICT"" >> "$GITHUB_OUTPUT"
 
     - name: Build Get Args
       id: build_get_args
