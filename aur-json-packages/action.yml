@@ -276,7 +276,7 @@ runs:
 
         # add_package_with_one_pkgname_and_multiple_keys_and_multiple_values
         if [[ -n "$INPUT_PKGNAMES" && -n "$INPUT_KEYS" && -n "$INPUT_VALUES" ]]; then
-          filter="$FILTER + {\$pkg: {"
+          filter="$FILTER += {\$pkg: {"
           pkgname="${INPUT_PKGNAMES_ARR[0]}"
           args+=(--arg "pkg" "$pkgname")
           for ((i=0; i<$LEN_KEYS; i++)); do
@@ -296,7 +296,7 @@ runs:
         
         # add_package_with_no_pkgname_and_multiple_values_and_no_keys
         elif [[ -z "$INPUT_PKGNAMES" && -z "$INPUT_KEYS" && -n "$INPUT_VALUES" ]]; then
-          filter="$FILTER + "
+          filter="$FILTER += ("
           for ((i=0; i<$LEN_VALS; i++)); do
             [[ -z "${INPUT_VALUES_ARR[i]}" ]] && continue
             value="${INPUT_VALUES_ARR[i]}"
@@ -306,13 +306,13 @@ runs:
             else
               args+=(--arg "val$i" "$value")
             fi
-            filter+="\$val$i,"
+            filter+="\$val$i + "
           done
-          filter="${filter%,}"
+          filter="${filter% + })"
         
         # add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys
         elif [[ -n "$INPUT_PKGNAMES" && -z "$INPUT_KEYS" && -n "$INPUT_VALUES" ]]; then
-          filter="$FILTER + {"
+          filter="$FILTER += {"
           for ((i=0; i<$LEN_PKGS; i++)); do
             [[ -z "${INPUT_PKGNAMES_ARR[i]}" || -z "${INPUT_VALUES_ARR[i]}" ]] && continue
             args+=(--arg "pkg$i" "${INPUT_PKGNAMES_ARR[i]}")
@@ -369,7 +369,7 @@ runs:
         
         # remove_packages_with_multiple_pkgnames
         if [[ -n "$INPUT_PKGNAMES" && -z "$INPUT_KEYS" ]]; then
-          filter="$FILTER | del("
+          filter="$FILTER |= del("
           for ((i=0; i<$LEN_PKGS; i++)); do
             [[ -z "${INPUT_PKGNAMES_ARR[i]}" ]] && continue
             args+=(--arg "pkg$i" "${INPUT_PKGNAMES_ARR[i]}")
