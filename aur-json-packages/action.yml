@@ -134,7 +134,7 @@ runs:
         
         echo "json_dict=$(gh variable get "$JSON_VAR_NAME" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value')" >> "$GITHUB_OUTPUT"
 
-        if ! echo "$JSON_VAR_NAME" | jq -c '.' 2>/dev/null; then
+        if ! $(echo "$JSON_VAR_NAME" | jq -c '.' 2>/dev/null); then
           echo "::error::inputs.json-in does not contain valid JSON data or is empty." >&2
           exit 1
         fi
