@@ -125,6 +125,55 @@ jobs:
             {"zzzzz-test0":{"name":"test0","value":false}}
             {"zzzzz-test1":{"name":"test1","value":true}}
 
+      - name: remove_from_one_package_multiple_keys
+        id: del_keys
+        uses: ./aur-json-packages
+        with:
+          action: 'remove'
+          org: 'DystopianOS'
+          gh-token: ${{ steps.app_token.outputs.token }}
+          var-name: 'JSON_PACKAGES'
+          pkg-name: |
+            zzzzz-test0
+          key: |
+            submodule
+            custom
+
+      - name: verify_key_delete
+        id: verify_key_del
+        uses: ./aur-json-packages
+        with:
+          action: 'get'
+          org: 'DystopianOS'
+          gh-token: ${{ steps.app_token.outputs.token }}
+          var-name: 'JSON_PACKAGES'
+          pkg-name: |
+            zzzzz-test0
+
+      - name: remove_packages_with_multiple_pkgnames
+        id: del_multi_pkg
+        uses: ./aur-json-packages
+        with:
+          action: 'remove'
+          org: 'DystopianOS'
+          gh-token: ${{ steps.app_token.outputs.token }}
+          var-name: 'JSON_PACKAGES'
+          pkg-name: |
+            zzzzz-test0
+            zzzzz-test1
+
+      - name: verify_delete_cleaned_up
+        id: verify_del
+        uses: ./aur-json-packages
+        with:
+          action: 'get'
+          org: 'DystopianOS'
+          gh-token: ${{ steps.app_token.outputs.token }}
+          var-name: 'JSON_PACKAGES'
+          pkg-name: |
+            zzzzz-test0
+            zzzzz-test1
+
       - id: check
         run: |
           echo "Checking outputs..." >> "$GITHUB_STEP_SUMMARY"
@@ -195,5 +244,39 @@ jobs:
             echo '```'
             echo '```json'
             echo "${{ steps.no_pkg_multi_value_no_keys.outputs.out }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          {
+            echo '##### Args (del_keys - remove keys from one package):'
+            echo '```bash'
+            echo "${{ steps.del_keys.outputs.debug-args }} ${{ steps.del_keys.outputs.debug-filter}}"
+            echo '```'
+            echo '```json'
+            echo "${{ steps.del_keys.outputs.out }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          {
+            echo '##### Verify key delete (zzzzz-test0 should have no submodule/custom keys):'
+            echo '```json'
+            echo '${{ steps.verify_key_del.outputs.out }}' | jq '.'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          {
+            echo '##### Args (del_multi_pkg):'
+            echo '```bash'
+            echo "${{ steps.del_multi_pkg.outputs.debug-args }} ${{ steps.del_multi_pkg.outputs.debug-filter}}"
+            echo '```'
+            echo '```json'
+            echo "${{ steps.del_multi_pkg.outputs.out }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          {
+            echo '##### Verify delete (should be null/empty):'
+            echo '```json'
+            echo '${{ steps.verify_del.outputs.out }}' | jq '.'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
