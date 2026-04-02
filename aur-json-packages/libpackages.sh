@@ -96,9 +96,9 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
   local filter="$FILTER + {"
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
     [[ -z "${INPUT_PKGNAMES[i]}" || -z "${INPUT_VALUES[i]}" ]] && continue
-    echo "DEBUG: '${INPUT_VALUES[i]}'"
+    value="$(jq -c 'fromjson' <<< "'${INPUT_VALUES[i]}'")"
     args+=(--arg "pkg$i" "${INPUT_PKGNAMES[i]}")
-    args+=(--argjson "val$i" "'$(jq -c 'fromjson' <<< "${INPUT_VALUES[i]}")'")
+    args+=(--argjson "val$i" "'$value'")
     filter+="\$pkg$i: \$val$i,"
   done
   filter="${filter%,}}"
