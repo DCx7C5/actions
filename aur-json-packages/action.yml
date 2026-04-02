@@ -35,7 +35,7 @@ inputs:
   repo:
     required: false
     description: "Set repository variable (defaults to current repository)"
-    default: ${{ github.repository }}
+    default: ''
   gh-token:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
@@ -115,9 +115,12 @@ runs:
         elif [ -n "${{ inputs.env }}" ]; then
           ACCESS_LEVEL='--env'
           LEVEL_NAME="${{ inputs.env }}"
-        else
+        elif [ -n "${{ inputs.repo }}" ]; then
           ACCESS_LEVEL='--repo'
           LEVEL_NAME="${{ inputs.repo }}"
+        else
+          ACCESS_LEVEL='--repo'
+          LEVEL_NAME="${{ github.repository }}"
         fi
         
         echo "access_level=$ACCESS_LEVEL" >> "$GITHUB_OUTPUT"
