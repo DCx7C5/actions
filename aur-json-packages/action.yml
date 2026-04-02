@@ -84,7 +84,7 @@ runs:
       run: |
         
         if [[ ! "$ACTION" =~ ^(get|add|update|remove|count|delete)$ ]]; then
-          echo "::error::Invalid action '${ACTION}'. Valid actions are: ${valid_actions[*]}" >&2
+          echo "::error::Invalid action '${ACTION}'. Valid actions are: get, add, update, remove, count, delete" >&2
           exit 1
         fi
         
@@ -144,6 +144,9 @@ runs:
           echo "::error::inputs.json-in does not contain valid JSON data or is empty." >&2
           exit 1
         fi
+
+        # GitHub output format requires single-line key=value entries.
+        JSON_DICT="$(jq -c '.' <<< "$JSON_DICT")"
 
         echo "json_dict=$JSON_DICT" >> "$GITHUB_OUTPUT"
 
@@ -221,10 +224,18 @@ runs:
           exit 1
         fi
         
-        echo "out=$(jq -c "${args[@]}" "$filter" <<< "$JSON_DICT")" >> "$GITHUB_OUTPUT"
+        if ! out_json="$(jq -c "${args[@]}" "$filter" <<< "$JSON_DICT")"; then
+          echo "::error::Failed to build output JSON for 'get' action." >&2
+          exit 1
+        fi
+
         escaped_args="$(printf '%q ' "${args[@]}")"
-        echo "args=${escaped_args% }" >> "$GITHUB_OUTPUT"
-        echo "filter='$(echo $filter | sed -e 's/\$/\\$/g')'" >> "$GITHUB_OUTPUT"
+        escaped_filter="$(printf '%s' "$filter" | sed -e 's/\$/\\$/g')"
+        {
+          printf 'out<<__AUR_JSON_OUT__\n%s\n__AUR_JSON_OUT__\n' "$out_json"
+          printf 'args=%s\n' "${escaped_args% }"
+          printf "filter='%s'\n" "$escaped_filter"
+        } >> "$GITHUB_OUTPUT"
         
     
     - name: Build Add/Update Args
@@ -251,7 +262,7 @@ runs:
         
         INPUT_PKGNAMES="$(printf '%s\n' "$INPUT_PKGNAMES" | tr -d ' ')"
         INPUT_KEYS="$(printf '%s\n' "$INPUT_KEYS" | tr -d ' ')"
-        if ! INPUT_VALUES_DECODED="$(jq -r 'fromjson' <<< "$INPUT_VALUES")"; then
+        if ! INPUT_VALUES_DECODED="$(jq -r '.' <<< "$INPUT_VALUES")"; then
           echo "::error::inputs.value could not be decoded from toJson(input)." >&2
           exit 1
         fi
@@ -321,7 +332,7 @@ runs:
           exit 1
         fi
         
-        if jq -c "${args[@]}" "$filter" <<< "$JSON_DICT" | gh variable set "${{ inputs.json-in }}" ${ACCESS_LEVEL} "$LEVEL_NAME"; then
+        if jq -c "${args[@]}" "$filter" <<< "$JSON_DICT" | gh variable set "${{ inputs.var-name }}" ${ACCESS_LEVEL} "$LEVEL_NAME"; then
           echo "out=saved" >> "$GITHUB_OUTPUT"
         fi
         
@@ -384,7 +395,7 @@ runs:
           exit 1
         fi
 
-        if jq -c "${args[@]}" "$filter" <<< "$JSON_DICT" | gh variable set "${{ inputs.json-in }}" ${ACCESS_LEVEL} "$LEVEL_NAME"; then
+        if jq -c "${args[@]}" "$filter" <<< "$JSON_DICT" | gh variable set "${{ inputs.var-name }}" ${ACCESS_LEVEL} "$LEVEL_NAME"; then
           echo "out=saved" >> "$GITHUB_OUTPUT"
         fi
         
@@ -396,9 +407,12 @@ runs:
       id: convert_output
       if: inputs.output-structure == 'list' && inputs.action == 'get'
       shell: bash
+      env:
+        GET_OUT: "${{ steps.build_get_args.outputs.out }}"
       run: |
-        if [ -n "${{ steps.build_get_args.outputs.out }}" ]; then
-          echo "out=$(echo '${{ steps.build_get_args.outputs.out }}' | jq -c 'to_entries | map({name: .key} + .value)')" >> "$GITHUB_OUTPUT"
+        if [ -n "$GET_OUT" ]; then
+          converted="$(jq -c 'to_entries | map({name: .key} + .value)' <<< "$GET_OUT")"
+          echo "out=$converted" >> "$GITHUB_OUTPUT"
         else
           echo "out=[]" >> "$GITHUB_OUTPUT"
         fi
