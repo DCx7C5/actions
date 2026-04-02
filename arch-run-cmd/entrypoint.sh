@@ -182,7 +182,7 @@ else
   if [ "$IS_GITHUB_ACTIONS" != "true" ]; then
     echo "::notice::No command provided, starting interactive shell..."
   fi
-  echo "Starte interaktive Shell..."
-  exec bash -l || { echo "Fehler: Interaktive Shell konnte nicht gestartet werden!" >&2; exit 99; }
+  echo "Starting interactive shell..."
+  exec bash -l || { echo "ERROR: Failed to start interactive shell" >&2; exit 99; }
 fi
 
