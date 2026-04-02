@@ -28,6 +28,8 @@ on:
 jobs:
   test-docker:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       packages: write
       contents: read
@@ -71,9 +73,31 @@ jobs:
           image-version: ${{ inputs.image_version || 'latest' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify pushed image
-        if: success()
+      - name: Job Summary
+        if: always()
+        env:
+          BUILD_IMAGE: ${{ steps.build_image.outputs.image }}
+          FULL_IMAGE: ${{ steps.push_image.outputs.full_image }}
+          BUILD_OUTCOME: ${{ steps.build_image.outcome }}
+          PUSH_OUTCOME: ${{ steps.push_image.outcome }}
         run: |
-          echo "::notice::Build output: ${{ steps.build_image.outputs.image }}"
-          echo "::notice::Push output: ${{ steps.push_image.outputs.full_image }}"
-          echo "✅ Docker build & push pipeline completed successfully"
+          icon_for() { [[ "$1" == "success" ]] && echo "✅" || echo "❌"; }
+
+          {
+            echo "## 🐳 Docker Build & Push Summary"
+            echo ""
+            echo "| Step | Status | Details |"
+            echo "|------|--------|---------|"
+            echo "| **Build** | $(icon_for "$BUILD_OUTCOME") \`${BUILD_OUTCOME}\` | \`${BUILD_IMAGE:-n/a}\` |"
+            echo "| **Push**  | $(icon_for "$PUSH_OUTCOME") \`${PUSH_OUTCOME}\` | \`${FULL_IMAGE:-n/a}\` |"
+            echo ""
+            if [[ "$BUILD_OUTCOME" == "success" && "$PUSH_OUTCOME" == "success" ]]; then
+              echo "> **Result:** ✅ Docker build & push pipeline completed successfully"
+              echo ""
+              echo '```'
+              echo "docker pull ${FULL_IMAGE}"
+              echo '```'
+            else
+              echo "> **Result:** ❌ Pipeline failed — check the logs above for details"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
