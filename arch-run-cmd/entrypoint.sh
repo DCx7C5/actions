@@ -6,49 +6,43 @@ set -euo pipefail
 trap 'echo "ERROR: Script failed on line $LINENO (command: $BASH_COMMAND)" >&2; exit 1' ERR
 
 # ============================================================================
-# Path Translation (Docker container actions)
+# Docker Container Path Setup
 # ============================================================================
-# GitHub Actions mounts host workspace at /github/workspace inside the
-# container. Environment variables from the action still contain HOST paths
-# (e.g. /home/runner/work/repo/repo). Translate them to container paths.
-_to_container_path() {
-  local p="$1"
-  if [[ -n "$p" && -n "${HOST_WORKSPACE:-}" && -n "${GITHUB_WORKSPACE:-}" \
-        && "$p" == "${HOST_WORKSPACE}"* ]]; then
-    echo "${GITHUB_WORKSPACE}${p#$HOST_WORKSPACE}"
-  else
-    echo "$p"
-  fi
-}
+# GitHub Actions mounts host workspace at /github/workspace inside Docker
+# container actions and sets GITHUB_WORKSPACE=/github/workspace automatically.
+# Input env vars may contain host paths that don't exist in the container —
+# use GITHUB_WORKSPACE as the canonical base and auto-discover directories.
 
-# Translate workspace-relative paths
-WORKING_DIR="$(_to_container_path "${WORKING_DIR:-}")"
-if [[ -z "$WORKING_DIR" || "$WORKING_DIR" == "null" || "$WORKING_DIR" == "/bin/bash" ]]; then
-  WORKING_DIR="${GITHUB_WORKSPACE:-/github/workspace}"
+_WS="${GITHUB_WORKSPACE:-/github/workspace}"
+
+# GH_TOKEN fallback to GITHUB_TOKEN (auto-set by GitHub inside containers)
+export GH_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+
+# Working directory: use input if it's a valid container path, else workspace
+if [[ -n "${WORKING_DIR:-}" && -d "${WORKING_DIR:-}" ]]; then
+  : # keep as-is
+else
+  WORKING_DIR="$_WS"
 fi
 
 # Docker action passes command as $1 (single arg via args:)
 COMMAND="${1:-}"
 shift || true
 
-# Translate and resolve GNUPGHOME
-GNUPGHOME="$(_to_container_path "${GNUPGHOME:-}")"
+# Resolve GNUPGHOME: input path is a host path and won't exist in the
+# container. Auto-discover .gnupg* directory under the mounted workspace.
 if [[ -z "${GNUPGHOME:-}" || ! -d "${GNUPGHOME:-}" ]]; then
-  # Auto-discover .gnupg* directory under workspace
-  _ws="${GITHUB_WORKSPACE:-$WORKING_DIR}"
-  found=$(find "$_ws" -maxdepth 1 -name '.gnupg*' -type d 2>/dev/null | head -1)
+  found=$(find "$_WS" -maxdepth 1 -name '.gnupg*' -type d 2>/dev/null | head -1)
   if [[ -n "$found" ]]; then
     export GNUPGHOME="$found"
   else
-    export GNUPGHOME="${_ws}/.gnupg"
+    export GNUPGHOME="${_WS}/.gnupg"
   fi
 fi
 export GNUPGHOME
 
-# Translate CCACHE_DIR
-if [[ -n "${CCACHE_DIR:-}" ]]; then
-  CCACHE_DIR="$(_to_container_path "$CCACHE_DIR")"
-else
+# Resolve CCACHE_DIR
+if [[ -z "${CCACHE_DIR:-}" || ! -d "${CCACHE_DIR:-}" ]]; then
   CCACHE_DIR="${WORKING_DIR}/.ccache"
 fi
 export CCACHE_DIR
