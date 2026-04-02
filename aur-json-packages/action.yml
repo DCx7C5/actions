@@ -250,7 +250,7 @@ runs:
         
         INPUT_PKGNAMES="$(printf '%s\n' "$INPUT_PKGNAMES" | tr -d ' ')"
         INPUT_KEYS="$(printf '%s\n' "$INPUT_KEYS" | tr -d ' ')"
-        INPUT_VALUES="$(printf '%s\n' "$INPUT_VALUES" | tr -d ' ')"
+        INPUT_VALUES="$(printf '%s\n' "$INPUT_VALUES" | sed 's/\\n/ /g' | tr ' ' '\n')"
         
         for pkg in $INPUT_PKGNAMES; do INPUT_PKGNAMES_ARR+=("$pkg"); done
         for key in $INPUT_KEYS; do INPUT_KEYS_ARR+=("$key"); done
@@ -265,7 +265,7 @@ runs:
             [[ -z "${INPUT_KEYS_ARR[i]}" || -z "${INPUT_VALUES_ARR[i]}" ]] && continue
             key="${INPUT_KEYS_ARR[i]}"
             args+=(--arg "key$i" "$key")
-            args+=(--arg "val$i" "'$(jq 'fromjson' <<< "${INPUT_VALUES_ARR[i]}")'")
+            args+=(--arg "val$i" "'$(jq -c 'fromjson' <<< "${INPUT_VALUES_ARR[i]}")'")
             filter+="\$key$i: \$val$i,"
           done
           filter="${filter%,}}}"
