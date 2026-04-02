@@ -131,7 +131,7 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
       with:
-        working_directory: ${{ github.workspace }}
+        working-directory: ${{ github.workspace }}
         ccache-dir: ${{ inputs.ccache-dir }}
         gpg-home: ${{ inputs.gpg-home }}
         user: ${{ inputs.user || env.USER || runner.user }}

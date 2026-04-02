@@ -1,18 +1,17 @@
-name: "Run Docker Command In Arch Linux Docker"
-description: "Minimal, secure Arch Linux container for AUR builds with GPG & ccache support"
+name: "Run Command in Docker Container"
+description: "Run a command inside a pre-built Docker container with optional GPG & ccache support"
 author: "DCx7c5"
 
 inputs:
   command:
     description: "Command/script to execute inside container"
     required: true
-
-  working_directory:
+  working-directory:
     description: "Working directory inside container"
     required: false
     default: ''
   gpg-home:
-    description: "GPG home directory (usually in workspace)"
+    description: "GPG home directory to mount"
     required: false
     default: ''
   ccache-dir:
@@ -20,19 +19,19 @@ inputs:
     required: false
     default: ''
   user:
-    description: "User name to create inside the container (defaults to runner.user)"
+    description: "User name inside the container"
     required: false
     default: ''
   group:
-    description: "Group name to create inside the container (defaults to runner.group)"
+    description: "Group name inside the container"
     required: false
     default: ''
   uid:
-    description: "User ID to use inside the container (defaults to current user ID)"
+    description: "User ID inside the container"
     required: false
     default: ''
   gid:
-    description: "Group ID to use inside the container (defaults to current group ID)"
+    description: "Group ID inside the container"
     required: false
     default: ''
   enable-ccache:
@@ -40,67 +39,120 @@ inputs:
     required: false
     default: "true"
   gh-token:
-    description: "GitHub token for API access (defaults to github.token)"
+    description: "GitHub token for API access"
     required: false
     default: ''
   gpg-key-id:
-    description: "GPG key ID or fingerprint to use for signing (if needed, will be passed via environment variable)"
+    description: "GPG key ID or fingerprint to use for signing"
     required: false
     default: ''
   gpg-keygrips:
-    description: "Keygrips of GPG keys to preset in gpg-agent cache (if needed, will be passed via environment variable as a comma-separated list)"
+    description: "Keygrips of GPG keys to preset in gpg-agent cache"
     required: false
     default: ''
   gpg-passphrase:
-    description: "Passphrase for GPG key (if needed, will be passed via environment variable)"
+    description: "Passphrase for GPG key"
     required: false
     default: ''
   preset-passphrase-cache:
-    description: "Whether to preset GPG passphrase in gpg-agent cache before running the command (default: true)"
+    description: "Whether to preset GPG passphrase in gpg-agent cache"
     required: false
-    default: 'true'
+    default: 'false'
   run-with-sudo:
-    description: "Whether to run the command with sudo inside the container (default: false)"
+    description: "Whether to run the command with sudo inside the container"
     required: false
     default: 'false'
   gpg-key:
-    description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
+    description: "GPG private key to make available inside the container"
     required: false
     default: ''
   image-tag:
-    description: "The Docker image tag to use for running the command (should be built beforehand, e.g., using the arch-build-image action)"
+    description: "Docker image tag to run"
     required: false
     default: 'arch-run-cmd'
   image-version:
-    description: "The version tag of the Docker image to use for running the command"
+    description: "Docker image version tag"
     required: false
     default: 'latest'
 
 
 runs:
-  using: docker
-  image: ${{ format('{0}:{1}', inputs.image-tag, inputs.image-version) }}
-  env:
-    CI: "true"
-    GITHUB_ACTIONS: "true"
-    GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || github.token }}"
-    MAKEFLAGS: '-j ${{ runner.cpu_count }}'
-    CCACHE_DIR: ${{ inputs.ccache-dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}
-    GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME || format('{0}/.gnupg', github.workspace) }}
-    CCACHE_MAXSIZE: "2G"
-    CCACHE_COMPRESS: "1"
-    CCACHE_COMPRESSLEVEL: "6"
-    DISABLE_TELEMETRY: "1"
-    PYTHONDONTWRITEBYTECODE: "1"
-    RUN_WITH_SUDO: ${{ inputs.run-with-sudo || env.RUN_WITH_SUDO || 'false' }}
-    GPG_KEY_ID: ${{ inputs.gpg-key-id || env.GPG_KEY_ID || '' }}
-    GPG_PASSPHRASE: ${{ inputs.gpg-passphrase || '' }}
-    PRESET_CACHE: ${{ inputs.preset-passphrase-cache || env.PRESET_CACHE || 'false' }}
-    WORKING_DIRECTORY: ${{ inputs.working-directory || env.WORKING_DIRECTORY || env.WORK_DIR || github.workspace || '.' }}
-    KEYGRIPS: ${{ inputs.gpg-keygrips || env.KEYGRIPS || '' }}
-    USER: "${{ inputs.user || env.USER || runner.user }}"
-    GROUP: "${{ inputs.group || env.GROUP || runner.group }}"
-    UID: "${{ inputs.uid || env.UID || '1000' }}"
-    GID: "${{ inputs.gid || env.GID || '1000' }}"
-  args:
-    - ${{ inputs.command }}
+  using: composite
+  steps:
+    - id: run_cmd
+      shell: bash
+      env:
+        IMAGE: "${{ inputs.image-tag }}:${{ inputs.image-version }}"
+        CMD: "${{ inputs.command }}"
+        GH_TOKEN: "${{ inputs.gh-token || github.token }}"
+        CCACHE_DIR: "${{ inputs.ccache-dir || format('{0}/.ccache', github.workspace) }}"
+        GNUPGHOME: "${{ inputs.gpg-home || format('{0}/.gnupg', github.workspace) }}"
+        RUN_WITH_SUDO: "${{ inputs.run-with-sudo || 'false' }}"
+        GPG_KEY_ID: "${{ inputs.gpg-key-id }}"
+        GPG_PASSPHRASE: "${{ inputs.gpg-passphrase }}"
+        PRESET_CACHE: "${{ inputs.preset-passphrase-cache || 'false' }}"
+        WORKING_DIR: "${{ inputs.working-directory || github.workspace }}"
+        KEYGRIPS: "${{ inputs.gpg-keygrips }}"
+        CONTAINER_USER: "${{ inputs.user || 'runner' }}"
+        CONTAINER_GROUP: "${{ inputs.group || 'runner' }}"
+        CONTAINER_UID: "${{ inputs.uid || '1001' }}"
+        CONTAINER_GID: "${{ inputs.gid || '127' }}"
+      run: |
+        set -euo pipefail
+
+        DOCKER_VOLS=(-v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}")
+
+        # Mount GNUPGHOME separately if outside workspace
+        if [[ -d "${GNUPGHOME}" && "${GNUPGHOME}" != "${GITHUB_WORKSPACE}"* ]]; then
+          DOCKER_VOLS+=(-v "${GNUPGHOME}:${GNUPGHOME}")
+        fi
+
+        # Mount CCACHE_DIR separately if outside workspace
+        if [[ -d "${CCACHE_DIR}" && "${CCACHE_DIR}" != "${GITHUB_WORKSPACE}"* ]]; then
+          DOCKER_VOLS+=(-v "${CCACHE_DIR}:${CCACHE_DIR}")
+        fi
+
+        docker run --rm \
+          -e CI=true \
+          -e GITHUB_ACTIONS=true \
+          -e "GH_TOKEN=${GH_TOKEN}" \
+          -e "MAKEFLAGS=-j$(nproc)" \
+          -e "CCACHE_DIR=${CCACHE_DIR}" \
+          -e "GNUPGHOME=${GNUPGHOME}" \
+          -e CCACHE_MAXSIZE=2G \
+          -e CCACHE_COMPRESS=1 \
+          -e CCACHE_COMPRESSLEVEL=6 \
+          -e DISABLE_TELEMETRY=1 \
+          -e PYTHONDONTWRITEBYTECODE=1 \
+          -e "RUN_WITH_SUDO=${RUN_WITH_SUDO}" \
+          -e "GPG_KEY_ID=${GPG_KEY_ID}" \
+          -e "GPG_PASSPHRASE=${GPG_PASSPHRASE}" \
+          -e "PRESET_CACHE=${PRESET_CACHE}" \
+          -e "WORKING_DIR=${WORKING_DIR}" \
+          -e "KEYGRIPS=${KEYGRIPS}" \
+          -e "USER=${CONTAINER_USER}" \
+          -e "GROUP=${CONTAINER_GROUP}" \
+          -e "UID=${CONTAINER_UID}" \
+          -e "GID=${CONTAINER_GID}" \
+          "${DOCKER_VOLS[@]}" \
+          -w "${WORKING_DIR}" \
+          "${IMAGE}" \
+          "${CMD}"
+
+    - id: post_cleanup
+      name: Post-run cleanup
+      if: always()
+      shell: bash
+      env:
+        IMAGE: "${{ inputs.image-tag }}:${{ inputs.image-version }}"
+        GNUPGHOME: "${{ inputs.gpg-home || format('{0}/.gnupg', github.workspace) }}"
+        GPG_KEY_ID: "${{ inputs.gpg-key-id }}"
+      run: |
+        if [[ -n "${GPG_KEY_ID}" ]]; then
+          docker run --rm \
+            -e "GNUPGHOME=${GNUPGHOME}" \
+            -e "GPG_KEY_ID=${GPG_KEY_ID}" \
+            -v "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
+            "${IMAGE}" \
+            /post_entrypoint.sh 2>/dev/null || true
+        fi
