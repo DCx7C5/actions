@@ -40,8 +40,8 @@ runs:
       shell: bash
       env:
         REGISTRY: "${{ inputs.registry }}"
-        IMAGE_TAG: "${{ inputs['image-tag'] }}"
-        IMAGE_VERSION: "${{ inputs['image-version'] }}"
+        IMAGE_TAG: "${{ inputs.image-tag }}"
+        IMAGE_VERSION: "${{ inputs.image-version }}"
         OWNER: "${{ github.repository_owner }}"
       run: |
         set -euo pipefail

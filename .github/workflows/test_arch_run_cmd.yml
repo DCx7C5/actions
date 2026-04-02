@@ -1,9 +1,11 @@
 name: "Test Arch Run Command Action"
+
+
 on:
   workflow_dispatch:
     inputs:
       user:
-        description: "User name to create inside the container (defaults to runner.user)"
+        description: "User name to create inside the container"
         required: false
         default: 'runner'
         type: string
@@ -23,7 +25,7 @@ on:
         default: true
         type: boolean
       run_with_sudo:
-        description: "Whether to run the command with sudo inside the container (for testing root permissions)"
+        description: "Whether to run the command with sudo inside the container"
         required: false
         default: true
         type: boolean
@@ -33,25 +35,24 @@ on:
     branches:
       - main
     paths:
-      - 'arch-run-cmd/action.yml'
-      - 'docker-build-image/action.yml'
-      - 'docker-push-image/action.yml'
-      - 'docker-run-image/action.yml'
-      - '.github/workflows/test_arch_run_cmd.yml'
+      - arch-run-cmd/**
+      - .github/workflows/test_arch_run_cmd.yml
 
 
 concurrency:
-  group: 'test-arch-run-cmd'
+  group: 'test-arch-run-cmd-${{ github.ref }}'
   cancel-in-progress: true
+
 
 jobs:
   test-run-cmd:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       packages: write
       contents: write
       actions: write
-      pull-requests: write
     steps:
       - name: GitHub App Token
         id: app_token
@@ -59,12 +60,10 @@ jobs:
         with:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
-          permission-packages: 'write'
-          repositories: |
-            actions
-            
-      - id: checkout
-        name: Checkout repository
+          repositories: actions
+
+      - name: Checkout repository
+        id: checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -90,19 +89,50 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
-          gh_token: ${{ steps.app_token.outputs.token }}
-          image_tag: ${{ inputs.image_tag || 'arch-run-cmd' }}
-          image_version: ${{ inputs.image_version || 'latest' }}
-          enable_ccache: ${{ inputs.enable_ccache }}
-          working_directory: ${{ github.workspace }}
-          gpg_key: ${{ inputs.gpg_key || steps.gpg_import.outputs.gpg_key || '' }}
-          gpg_key_id: ${{ inputs.gpg_key_id || steps.gpg_import.outputs.gpg_key_id || '' }}
-          gpg_keygrips: ${{ inputs.gpg_keygrips || steps.gpg_import.outputs.gpg_keygrips || '' }}
-          gpg_passhphrase: ${{ inputs.passphrase || '' }}
-          gpg_home: ${{ inputs.gpg_home || steps.gpg_import.outputs.gpg_home }}
-          import_key_during_build: 'false'
-          preset_passphrase_cache: 'false'
-          run_with_sudo: 'true'
-          # noinspection GithubFunctionSignatureValidation
-          user: ${{ inputs.user || github.actor || 'runner' }}
+          gh-token: ${{ steps.app_token.outputs.token }}
+          image-tag: ${{ inputs.image_tag || 'arch-run-cmd' }}
+          image-version: ${{ inputs.image_version || 'latest' }}
+          enable-ccache: ${{ inputs.enable_ccache && 'true' || 'false' }}
+          working-directory: ${{ github.workspace }}
+          gpg-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-key-id: ${{ steps.gpg_import.outputs.fingerprint }}
+          gpg-keygrips: ${{ steps.gpg_import.outputs.key_grips }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          gpg-home: ${{ steps.gpg_import.outputs.gpg_home }}
+          import-key-during-build: 'false'
+          preset-passphrase-cache: 'false'
+          run-with-sudo: ${{ inputs.run_with_sudo && 'true' || 'false' }}
+          user: ${{ inputs.user || 'runner' }}
           command: 'ls -la / && whoami && echo "Hello from inside the Arch Linux container!"'
+
+      - name: Job Summary
+        if: always()
+        env:
+          GPG_OUTCOME: ${{ steps.gpg_import.outcome }}
+          GPG_FP: ${{ steps.gpg_import.outputs.fingerprint }}
+          RUN_OUTCOME: ${{ steps.test_arch_run_cmd.outcome }}
+          IMAGE_TAG: ${{ inputs.image_tag || 'arch-run-cmd' }}
+          IMAGE_VERSION: ${{ inputs.image_version || 'latest' }}
+          RUN_USER: ${{ inputs.user || 'runner' }}
+          SUDO: ${{ inputs.run_with_sudo && 'true' || 'false' }}
+          CCACHE: ${{ inputs.enable_ccache && 'true' || 'false' }}
+        run: |
+          s() { [[ "$1" == "success" ]] && printf '\u2714' || printf '\u2718'; }
+
+          {
+            echo "### Arch Run Command Test"
+            echo ""
+            echo "| Step | Status |"
+            echo "|:-----|:------:|"
+            echo "| GPG Import | $(s "$GPG_OUTCOME") \`${GPG_OUTCOME}\` |"
+            echo "| Container Run | $(s "$RUN_OUTCOME") \`${RUN_OUTCOME}\` |"
+            echo ""
+            echo "| Parameter | Value |"
+            echo "|:----------|:------|"
+            echo "| Image | \`${IMAGE_TAG}:${IMAGE_VERSION}\` |"
+            echo "| User | \`${RUN_USER}\` |"
+            echo "| Sudo | \`${SUDO}\` |"
+            echo "| ccache | \`${CCACHE}\` |"
+            [[ -n "$GPG_FP" ]] && echo "| GPG Key | \`${GPG_FP:(-16)}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
