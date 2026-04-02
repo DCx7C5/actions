@@ -16,10 +16,14 @@ on:
     branches:
       - main
     paths:
-      - 'docker-build-image/action.yml'
-      - 'docker-push-image/action.yml'
-      - 'arch-run-cmd/**'
-      - '.github/workflows/test_docker.yml'
+      - docker-build-image/action.yml
+      - docker-push-image/action.yml
+      - docker-run-image/action.yml
+      - arch-run-cmd/action.yml
+      - arch-run-cmd/Dockerfile
+      - arch-run-cmd/entrypoint.sh
+      - arch-run-cmd/post_entrypoint.sh
+      - .github/workflows/test_docker.yml
 
 jobs:
   test-docker:
