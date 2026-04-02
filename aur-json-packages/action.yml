@@ -145,7 +145,7 @@ runs:
           exit 1
         fi
 
-        echo "json_dict="$JSON_DICT"" >> "$GITHUB_OUTPUT"
+        echo "json_dict="${JSON_DICT}"" >> "$GITHUB_OUTPUT"
 
     - name: Build Get Args
       id: build_get_args
@@ -237,7 +237,7 @@ runs:
         LEVEL_NAME: "${{ steps.validate_inputs.outputs.level_name }}"
         INPUT_PKGNAMES: "${{ inputs.pkg-name }}"
         INPUT_KEYS: "${{ inputs.key }}"
-        INPUT_VALUES: '${{ inputs.value }}'
+        INPUT_VALUES: ${{ toJson(inputs.value) }}
         LEN_PKGS: "${{ steps.validate_inputs.outputs.lenpkg }}"
         LEN_KEYS: "${{ steps.validate_inputs.outputs.lenkey }}"
         LEN_VALS: "${{ steps.validate_inputs.outputs.lenval }}"
@@ -264,9 +264,8 @@ runs:
           for ((i=0; i<$LEN_KEYS; i++)); do
             [[ -z "${INPUT_KEYS_ARR[i]}" || -z "${INPUT_VALUES_ARR[i]}" ]] && continue
             key="${INPUT_KEYS_ARR[i]}"
-            value="${INPUT_VALUES_ARR[i]}"
             args+=(--arg "key$i" "$key")
-            args+=(--arg "val$i" "$value")
+            args+=(--arg "val$i" "'$(jq 'fromjson' <<< "${INPUT_VALUES_ARR[i]}")'")
             filter+="\$key$i: \$val$i,"
           done
           filter="${filter%,}}}"
@@ -276,8 +275,7 @@ runs:
           filter="$FILTER + "
           for ((i=0; i<$LEN_VALS; i++)); do
             [[ -z "${INPUT_VALUES_ARR[i]}" ]] && continue
-            value="${INPUT_VALUES_ARR[i]}"
-            args+=(--argjson "val$i" "$value")
+            args+=(--argjson "val$i" "'$(jq 'fromjson' <<< "${INPUT_VALUES_ARR[i]}")'")
             filter+="\$val$i,"
           done
           filter="${filter%,}"
@@ -287,9 +285,8 @@ runs:
           filter="$FILTER + {"
           for ((i=0; i<$LEN_PKGS; i++)); do
             [[ -z "${INPUT_PKGNAMES_ARR[i]}" || -z "${INPUT_VALUES_ARR[i]}" ]] && continue
-            value=${INPUT_VALUES_ARR[i]}
             args+=(--arg "pkg$i" "${INPUT_PKGNAMES_ARR[i]}")
-            args+=(--argjson "val$i" "$value")
+            args+=(--argjson "val$i" "'$(jq 'fromjson' <<< "${INPUT_VALUES_ARR[i]}")'")
             filter+="\$pkg$i: \$val$i,"
           done
           filter="${filter%,}}"
