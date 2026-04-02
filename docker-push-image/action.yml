@@ -5,10 +5,10 @@ author: "DCx7C5"
 
 
 inputs:
-  image_tag:
+  image-tag:
     description: "Name of the Docker image to push (e.g., 'my-image' or 'my-registry/my-image')"
     required: true
-  image_version:
+  image-version:
     description: "Version of the Docker image to push (defaults to 'latest')"
     required: true
     default: 'latest'
@@ -16,16 +16,12 @@ inputs:
     description: "URL of the Docker registry to push to (e.g., 'docker.io' for Docker Hub, 'ghcr.io' for GitHub Container Registry)"
     required: false
     default: 'ghcr.io'
-  gh_token:
+  gh-token:
     description: "GitHub Token for authentication (required if pushing to GitHub Container Registry)"
     required: false
     default: ''
-  working_directory:
-    description: "Working directory for the action (defaults to github.workspace)"
-    required: false
-    default: ''
   user:
-    description: "User name to create inside the container (defaults to runner.user)"
+    description: "Username for registry login (defaults to github.actor)"
     required: false
     default: ''
 
@@ -33,42 +29,44 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Log in to GitHub Container Registry
+    - name: Log in to Container Registry
       uses: docker/login-action@v4
       with:
-        registry: ghcr.io
+        registry: ${{ inputs.registry }}
         username: ${{ inputs.user || github.actor }}
-        password: ${{ inputs.gh_token || env.GH_TOKEN || github.token }}
+        password: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
 
     - id: push_image
       shell: bash
       env:
-        GH_TOKEN: "${{ inputs.gh_token || env.GH_TOKEN || github.token }}"
+        REGISTRY: "${{ inputs.registry }}"
+        IMAGE_TAG: "${{ inputs['image-tag'] }}"
+        IMAGE_VERSION: "${{ inputs['image-version'] }}"
+        OWNER: "${{ github.repository_owner }}"
       run: |
         set -euo pipefail
-        echo "image_name: '${{ inputs.image_tag }}'"
-        echo "image_tag: '${{ inputs.image_version }}'"
-        echo "registry: '${{ inputs.registry }}'"
 
-        if [[ -z "${{ inputs.image_tag }}" || -z "${{ inputs.image_version }}" || -z "${{ inputs.registry }}" ]]; then
-          echo "::error::image_tag, image_version, and registry inputs are required." >&2
+        if [[ -z "$IMAGE_TAG" || -z "$IMAGE_VERSION" || -z "$REGISTRY" ]]; then
+          echo "::error::image-tag, image-version, and registry inputs are required." >&2
           exit 1
         fi
-        
-        registry_url="${{ inputs.registry }}"
-        registry_url="${registry_url%/}"
-        repo="${{ github.repository }}"
-        repo_name="${repo##*/}"
-        repo_owner="${repo%%/*}"
-        full_image="${registry_url,,}/${{ github.repository_owner ||  'x' }}/${repo_name,,}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
-        if [[ "$registry_url" == "*/x/*" ]]; then
-          full_image="${registry_url,,}/${repo_owner,,}/${{ inputs.image_tag }}:${{ inputs.image_version }}"
-        fi
-        docker tag "${{ inputs.image_tag }}:${{ inputs.image_version }}" "${full_image,,}"
-        echo ${{ inputs.gh_token || env.GH_TOKEN || github.token }} | docker login "${registry_url,,}" -u ${{ github.actor }} --password-stdin
-        docker push "${full_image,,}"
+
+        registry="${REGISTRY,,}"
+        registry="${registry%/}"
+        owner="${OWNER,,}"
+
+        # ghcr.io format: ghcr.io/OWNER/IMAGE:VERSION
+        full_image="${registry}/${owner}/${IMAGE_TAG,,}:${IMAGE_VERSION}"
+
+        echo "::notice::Tagging ${IMAGE_TAG}:${IMAGE_VERSION} → ${full_image}"
+        docker tag "${IMAGE_TAG}:${IMAGE_VERSION}" "${full_image}"
+
+        echo "::notice::Pushing ${full_image}..."
+        docker push "${full_image}"
+
+        echo "full_image=${full_image}" >> "$GITHUB_OUTPUT"
 
     - name: Logout
       if: always()
-      run: docker logout ghcr.io
       shell: bash
+      run: docker logout ${{ inputs.registry }}

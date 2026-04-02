@@ -6,15 +6,16 @@ inputs:
   command:
     description: "Command/script to execute inside container"
     required: true
+
   working_directory:
     description: "Working directory inside container"
     required: false
     default: ''
-  gpg_home:
+  gpg-home:
     description: "GPG home directory (usually in workspace)"
     required: false
     default: ''
-  ccache_dir:
+  ccache-dir:
     description: "ccache directory for build caching"
     required: false
     default: ''
@@ -34,43 +35,43 @@ inputs:
     description: "Group ID to use inside the container (defaults to current group ID)"
     required: false
     default: ''
-  enable_ccache:
+  enable-ccache:
     description: "Enable ccache for faster incremental builds"
     required: false
     default: "true"
-  gh_token:
+  gh-token:
     description: "GitHub token for API access (defaults to github.token)"
     required: false
     default: ''
-  gpg_key_id:
+  gpg-key-id:
     description: "GPG key ID or fingerprint to use for signing (if needed, will be passed via environment variable)"
     required: false
     default: ''
-  gpg_keygrips:
+  gpg-keygrips:
     description: "Keygrips of GPG keys to preset in gpg-agent cache (if needed, will be passed via environment variable as a comma-separated list)"
     required: false
     default: ''
-  gpg_passhphrase:
+  gpg-passphrase:
     description: "Passphrase for GPG key (if needed, will be passed via environment variable)"
     required: false
     default: ''
-  preset_passphrase_cache:
+  preset-passphrase-cache:
     description: "Whether to preset GPG passphrase in gpg-agent cache before running the command (default: true)"
     required: false
-    default: "true"
-  run_with_sudo:
+    default: 'true'
+  run-with-sudo:
     description: "Whether to run the command with sudo inside the container (default: false)"
     required: false
-    default: "false"
-  gpg_key:
+    default: 'false'
+  gpg-key:
     description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
     required: false
     default: ''
-  image_tag:
+  image-tag:
     description: "The Docker image tag to use for running the command (should be built beforehand, e.g., using the arch-build-image action)"
     required: false
     default: 'arch-run-cmd'
-  image_version:
+  image-version:
     description: "The version tag of the Docker image to use for running the command"
     required: false
     default: 'latest'
@@ -78,25 +79,25 @@ inputs:
 
 runs:
   using: docker
-  image: ${{ format('{0}:{1}', inputs.image_tag, inputs.image_version) }}
+  image: ${{ format('{0}:{1}', inputs.image-tag, inputs.image-version) }}
   env:
     CI: "true"
     GITHUB_ACTIONS: "true"
-    GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || github.token }}"
+    GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || github.token }}"
     MAKEFLAGS: '-j ${{ runner.cpu_count }}'
-    CCACHE_DIR: ${{ inputs.ccache_dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}
-    GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME || format('{0}/.gnuphome', github.workspace) }}
+    CCACHE_DIR: ${{ inputs.ccache-dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}
+    GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME || format('{0}/.gnupg', github.workspace) }}
     CCACHE_MAXSIZE: "2G"
     CCACHE_COMPRESS: "1"
     CCACHE_COMPRESSLEVEL: "6"
     DISABLE_TELEMETRY: "1"
     PYTHONDONTWRITEBYTECODE: "1"
-    RUN_WITH_SUDO: ${{ inputs.run_with_sudo || env.RUN_WITH_SUDO || 'false' }}
-    GPG_KEY_ID: ${{ inputs.gpg_key_id || env.GPG_KEY_ID || '' }}
-    GPG_PASSPHRASE: ${{ inputs.gpg_passhphrase || '' }}
-    PRESET_CACHE: ${{ inputs.preset_cache || env.PRESET_CACHE || 'false' }}
-    WORKING_DIRECTORY: ${{ inputs.working_directory || env.WORKING_DIRECTORY || env.WORK_DIR || github.workspace || '.' }}
-    KEYGRIPS: ${{ inputs.gpg_keygrips || env.KEYGRIPS || '' }}
+    RUN_WITH_SUDO: ${{ inputs.run-with-sudo || env.RUN_WITH_SUDO || 'false' }}
+    GPG_KEY_ID: ${{ inputs.gpg-key-id || env.GPG_KEY_ID || '' }}
+    GPG_PASSPHRASE: ${{ inputs.gpg-passphrase || '' }}
+    PRESET_CACHE: ${{ inputs.preset-passphrase-cache || env.PRESET_CACHE || 'false' }}
+    WORKING_DIRECTORY: ${{ inputs.working-directory || env.WORKING_DIRECTORY || env.WORK_DIR || github.workspace || '.' }}
+    KEYGRIPS: ${{ inputs.gpg-keygrips || env.KEYGRIPS || '' }}
     USER: "${{ inputs.user || env.USER || runner.user }}"
     GROUP: "${{ inputs.group || env.GROUP || runner.group }}"
     UID: "${{ inputs.uid || env.UID || '1000' }}"

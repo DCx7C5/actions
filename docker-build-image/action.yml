@@ -77,7 +77,7 @@ runs:
     - id: build_image
       shell: bash
       env:
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || github.token }}"
+        GH_TOKEN: "${{ inputs.gh_token || env.GH_TOKEN || github.token }}"
         USER: "${{ inputs.user || env.USER || runner.user }}"
         GROUP: "${{ inputs.group || env.GROUP || runner.group }}"
         UID: "${{ inputs.uid || env.UID || '1000' }}"
@@ -85,7 +85,7 @@ runs:
         GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME || format('{0}/.gnupg', github.workspace) }}"
         IMAGE_WORKING_DIR: "${{ inputs.image_working_directory || env.IMAGE_WORKING_DIR || format('{0}/arch-run-cmd', github.workspace) }}"
         WORKING_DIR: "${{ inputs.runtime_working_directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
-        RUNTIME_WORKING_DIR: "${{ env.WORKING_DIR }}"
+        RUNTIME_WORKING_DIR: "${{ inputs.runtime_working_directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
         DOCKERFILE: "${{ inputs.dockerfile_path || format('{0}/Dockerfile', inputs.image_working_directory || env.IMAGE_WORKING_DIR) }}"
         CCACHE_DIR: "${{ inputs.ccache_dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}"
       working-directory: "${{ inputs.image_working_directory || env.IMAGE_WORKING_DIR }}"
@@ -106,7 +106,7 @@ runs:
         
         if [[ -n "${{ inputs.build_args }}" ]]; then
           while IFS= read -r arg; do
-            if [[ -n "$arg" && "$arg" =~ ^[A-Z]*\=[a-zA-Z0-9\s]*$ ]]; then
+            if [[ -n "$arg" && "$arg" =~ ^[A-Za-z_][A-Za-z0-9_]*=.+$ ]]; then
               DOCKER_BUILD_ARGS+=(--build-arg "$arg")
             fi
           done <<< "${{ inputs.build_args }}"
