@@ -117,8 +117,9 @@ runs:
           exit 1
         fi
         
-        if echo "${{ inputs.value }}" | jq -e 2>/dev/null; then
+        if echo '${{ inputs.value }}' | jq -e 2>/dev/null; then
           echo "json_value=true" >> "$GITHUB_OUTPUT"
+          
         else
           echo "json_value=false" >> "$GITHUB_OUTPUT"
         fi
