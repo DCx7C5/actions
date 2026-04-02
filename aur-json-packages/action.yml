@@ -101,11 +101,11 @@ runs:
           echo "::error::'json_file' input is required and must point to a valid file or variable name." >&2
           exit 1
         fi
-        
+        echo "DEBUG 1"
         count=0
-        [ -n "${{ inputs.env }}" ] && ((count++))
-        [ -n "${{ inputs.repo }}" ] && ((count++))
-        [ -n "${{ inputs.org }}" ] && ((count++))
+        [ -n "${{ inputs.env }}" ] && ((count+=1))
+        [ -n "${{ inputs.repo }}" ] && ((count+=1))
+        [ -n "${{ inputs.org }}" ] && ((count+=1))
         echo "DEBUG 2"
         if (( count > 1 )); then
           echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
