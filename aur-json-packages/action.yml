@@ -154,9 +154,10 @@ runs:
         fi
         
         if [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "true" ]]; then
-          INPUT_VALUE="$(jq '@json' <<< '${{ inputs.value }}')"
           echo "DEBUG: IS JSON"
+          INPUT_VALUE="$(jq '@json' <<< '${{ inputs.value }}')"
         elif [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "false" ]]; then
+          echo "DEBUG: NOT JSON"
           INPUT_VALUE="${{ inputs.value }}"
         fi
         
