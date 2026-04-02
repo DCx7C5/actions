@@ -140,12 +140,12 @@ runs:
         
         JSON_DICT="$(gh variable get "$JSON_VAR_NAME" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value')"
         
-        if ! $(echo "$JSON_DICT" | jq -e '.' >/dev/null); then
+        if ! echo "$JSON_DICT" | jq -e '.' >/dev/null; then
           echo "::error::inputs.json-in does not contain valid JSON data or is empty." >&2
           exit 1
         fi
 
-        echo "json_dict="${JSON_DICT}"" >> "$GITHUB_OUTPUT"
+        echo "json_dict=$JSON_DICT" >> "$GITHUB_OUTPUT"
 
     - name: Build Get Args
       id: build_get_args
@@ -222,7 +222,8 @@ runs:
         fi
         
         echo "out=$(jq -c "${args[@]}" "$filter" <<< "$JSON_DICT")" >> "$GITHUB_OUTPUT"
-        echo "args=${args[*]}" >> "$GITHUB_OUTPUT"
+        escaped_args="$(printf '%q ' "${args[@]}")"
+        echo "args=${escaped_args% }" >> "$GITHUB_OUTPUT"
         echo "filter='$(echo $filter | sed -e 's/\$/\\$/g')'" >> "$GITHUB_OUTPUT"
         
     
@@ -237,7 +238,7 @@ runs:
         LEVEL_NAME: "${{ steps.validate_inputs.outputs.level_name }}"
         INPUT_PKGNAMES: "${{ inputs.pkg-name }}"
         INPUT_KEYS: "${{ inputs.key }}"
-        INPUT_VALUES: ${{ toJson(inputs.value) }}
+        INPUT_VALUES: "${{ toJson(inputs.value) }}"
         LEN_PKGS: "${{ steps.validate_inputs.outputs.lenpkg }}"
         LEN_KEYS: "${{ steps.validate_inputs.outputs.lenkey }}"
         LEN_VALS: "${{ steps.validate_inputs.outputs.lenval }}"
@@ -250,11 +251,17 @@ runs:
         
         INPUT_PKGNAMES="$(printf '%s\n' "$INPUT_PKGNAMES" | tr -d ' ')"
         INPUT_KEYS="$(printf '%s\n' "$INPUT_KEYS" | tr -d ' ')"
-        INPUT_VALUES="$(printf '%s\n' "$INPUT_VALUES" | sed 's/\\n$//; s/\\n/ /g' | tr ' ' '\n')"
+        if ! INPUT_VALUES_DECODED="$(jq -r 'fromjson' <<< "$INPUT_VALUES")"; then
+          echo "::error::inputs.value could not be decoded from toJson(input)." >&2
+          exit 1
+        fi
         
         for pkg in $INPUT_PKGNAMES; do INPUT_PKGNAMES_ARR+=("$pkg"); done
         for key in $INPUT_KEYS; do INPUT_KEYS_ARR+=("$key"); done
-        for val in $INPUT_VALUES; do INPUT_VALUES_ARR+=("$val"); done
+        while IFS= read -r val; do
+          [[ -z "$val" ]] && continue
+          INPUT_VALUES_ARR+=("$val")
+        done <<< "$INPUT_VALUES_DECODED"
 
         # add_package_with_one_pkgname_and_multiple_keys_and_multiple_values
         if [[ -n "$INPUT_PKGNAMES" && -n "$INPUT_KEYS" && -n "$INPUT_VALUES" ]]; then
@@ -265,7 +272,13 @@ runs:
             [[ -z "${INPUT_KEYS_ARR[i]}" || -z "${INPUT_VALUES_ARR[i]}" ]] && continue
             key="${INPUT_KEYS_ARR[i]}"
             args+=(--arg "key$i" "$key")
-            args+=(--arg "val$i" "'$(jq -c 'fromjson' <<< "${INPUT_VALUES_ARR[i]}")'")
+            value="${INPUT_VALUES_ARR[i]}"
+            if jq -e '.' >/dev/null 2>&1 <<< "$value"; then
+              compact_json="$(jq -c '.' <<< "$value")"
+              args+=(--argjson "val$i" "$compact_json")
+            else
+              args+=(--arg "val$i" "$value")
+            fi
             filter+="\$key$i: \$val$i,"
           done
           filter="${filter%,}}}"
@@ -275,7 +288,13 @@ runs:
           filter="$FILTER + "
           for ((i=0; i<$LEN_VALS; i++)); do
             [[ -z "${INPUT_VALUES_ARR[i]}" ]] && continue
-            args+=(--argjson "val$i" "'$(jq 'fromjson' <<< "${INPUT_VALUES_ARR[i]}")'")
+            value="${INPUT_VALUES_ARR[i]}"
+            if jq -e '.' >/dev/null 2>&1 <<< "$value"; then
+              compact_json="$(jq -c '.' <<< "$value")"
+              args+=(--argjson "val$i" "$compact_json")
+            else
+              args+=(--arg "val$i" "$value")
+            fi
             filter+="\$val$i,"
           done
           filter="${filter%,}"
@@ -286,7 +305,13 @@ runs:
           for ((i=0; i<$LEN_PKGS; i++)); do
             [[ -z "${INPUT_PKGNAMES_ARR[i]}" || -z "${INPUT_VALUES_ARR[i]}" ]] && continue
             args+=(--arg "pkg$i" "${INPUT_PKGNAMES_ARR[i]}")
-            args+=(--argjson "val$i" "'$(jq 'fromjson' <<< "${INPUT_VALUES_ARR[i]}")'")
+            value="${INPUT_VALUES_ARR[i]}"
+            if jq -e '.' >/dev/null 2>&1 <<< "$value"; then
+              compact_json="$(jq -c '.' <<< "$value")"
+              args+=(--argjson "val$i" "$compact_json")
+            else
+              args+=(--arg "val$i" "$value")
+            fi
             filter+="\$pkg$i: \$val$i,"
           done
           filter="${filter%,}}"
@@ -300,7 +325,8 @@ runs:
           echo "out=saved" >> "$GITHUB_OUTPUT"
         fi
         
-        echo "args=${args[*]}" >> "$GITHUB_OUTPUT"
+        escaped_args="$(printf '%q ' "${args[@]}")"
+        echo "args=${escaped_args% }" >> "$GITHUB_OUTPUT"
         echo "filter='$(echo $filter | sed -e 's/\$/\\$/g')'" >> "$GITHUB_OUTPUT"
 
 
@@ -362,7 +388,8 @@ runs:
           echo "out=saved" >> "$GITHUB_OUTPUT"
         fi
         
-        echo "args=${args[*]}" >> "$GITHUB_OUTPUT"
+        escaped_args="$(printf '%q ' "${args[@]}")"
+        echo "args=${escaped_args% }" >> "$GITHUB_OUTPUT"
         echo "filter='$(echo $filter | sed -e 's/\$/\\$/g')'" >> "$GITHUB_OUTPUT"
 
     - name: Convert output format
