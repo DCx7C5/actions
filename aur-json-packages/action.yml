@@ -89,9 +89,9 @@ runs:
         fi
         
         count=0
-        [ -n  ] && ((count+=1))
-        [ -n  ] && ((count+=1))
-        [ -n  ] && ((count+=1))
+        [ -n "${{ inputs.env }}" ] && ((count+=1))
+        [ -n "${{ inputs.repo }}" ] && ((count+=1))
+        [ -n "${{ inputs.org }}" ] && ((count+=1))
         
         if (( count > 1 )); then
           echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
