@@ -12,7 +12,9 @@ readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
 readarray -t INPUT_PKGNAMES < <(printf '%s\n' "$INPUT_PKGNAMES")
 if [[ -n "$4" ]]; then
   INPUT_VALUES=()
-  for x in $4; do INPUT_VALUES+=("$x"); done
+  while IFS= read -r line; do
+    INPUT_VALUES+=("$line")
+  done < <(printf '%s\n' "$4")
 fi
 
 
