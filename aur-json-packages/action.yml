@@ -148,7 +148,7 @@ runs:
       run: |
         INPUT_JSON=$(gh variable get "$INPUT_JSON" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value')
 
-        if [[ -z "$INPUT_JSON"  || ! $(echo "$INPUT_JSON" | jq empty 2>/dev/null) ]]; then
+        if [[ -z "$INPUT_JSON"  || ! $(echo "$INPUT_JSON" | jq -c '.' 2>/dev/null) ]]; then
           echo "::error::inputs.json-in does not contain valid JSON data or is empty." >&2
           exit 1
         fi
