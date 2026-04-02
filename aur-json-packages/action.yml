@@ -155,6 +155,7 @@ runs:
         
         if [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "true" ]]; then
           INPUT_VALUE="$(jq '@json' <<< '${{ inputs.value }}')"
+          echo "DEBUG: IS JSON"
         elif [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "false" ]]; then
           INPUT_VALUE="${{ inputs.value }}"
         fi
