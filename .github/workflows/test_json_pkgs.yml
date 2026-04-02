@@ -7,7 +7,6 @@ on:
       - main
     paths:
       - ./aur-json-packages/action.yml
-      - ./aur-json-packages/libpackages.sh
       - .github/workflows/test_json_pkgs.yml
 
 
