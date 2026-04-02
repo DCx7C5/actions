@@ -10,7 +10,7 @@ INPUT_KEYS="$3"
 
 readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
 readarray -t INPUT_PKGNAMES < <(printf '%s\n' "$INPUT_PKGNAMES")
-
+echo "DEBUG BEGINNING: $4"
 if [[ -n "$4" ]]; then
   INPUT_VALUES=()
   for x in $4; do INPUT_VALUES+=("$x"); done
