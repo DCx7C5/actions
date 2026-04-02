@@ -7,17 +7,20 @@ FILTER=".packages"
 INPUT_ACTION="$1"
 INPUT_PKGNAMES="$2"
 INPUT_KEYS="$3"
+INPUT_VALUES="$4"
 IS_JSON_VALUE="$5"
 
-if [[ "$INPUT_ACTION" =~ ^(add|update) && "$IS_JSON_VALUE" == "true" ]]; then
-  INPUT_VALUES="$(echo "${4}" | jq -c '@json')"
-else
-  INPUT_VALUES="$4"
-fi
+
 
 readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
 readarray -t INPUT_PKGNAMES < <(printf '%s\n' "$INPUT_PKGNAMES")
-readarray -t INPUT_VALUES < <(printf '%s\n' "$INPUT_VALUES")
+
+if [[ "$IS_JSON_VALUE" == "true" ]]; then
+  readarray -t INPUT_VALUES < <(printf '%s\n' "$INPUT_VALUES" | jq -c 'fromjson')
+else
+  # shellcheck disable=SC2128
+  readarray -t INPUT_VALUES < <(printf '%s\n' "$INPUT_VALUES")
+fi
 
 if [[ "$INPUT_ACTION" =~ ^(add|update|remove|delete)$ ]]; then
   ARGS+=(set)
