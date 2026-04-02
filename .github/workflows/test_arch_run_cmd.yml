@@ -5,19 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       user:
-        description: "User name to create inside the container"
+        description: "User name inside the container"
         required: false
         default: 'runner'
-        type: string
-      image_tag:
-        description: "The name of the Docker image to build and run"
-        required: false
-        default: 'arch-run-cmd'
-        type: string
-      image_version:
-        description: "The version tag of the Docker image to build and run"
-        required: false
-        default: 'latest'
         type: string
       enable_ccache:
         description: "Enable ccache in the Arch Run Command Action"
@@ -63,11 +53,38 @@ jobs:
           repositories: actions
 
       - name: Checkout repository
-        id: checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ steps.app_token.outputs.token }}
+
+      - name: Build Docker image
+        id: build_image
+        uses: ./docker-build-image
+        with:
+          image_working_directory: ${{ github.workspace }}/arch-run-cmd
+          runtime_working_directory: ${{ github.workspace }}
+          gpg_home: ${{ format('{0}/.gnupg', github.workspace) }}
+          ccache_dir: ${{ format('{0}/.ccache', github.workspace) }}
+          user: runner
+          group: runner
+          uid: '1001'
+          gid: '127'
+          gh_token: ${{ steps.app_token.outputs.token }}
+          image_tag: 'arch-run-cmd'
+          image_version: 'latest'
+          dockerfile_path: Dockerfile
+
+      - name: Push Docker image
+        id: push_image
+        if: steps.build_image.outcome == 'success'
+        uses: ./docker-push-image
+        with:
+          registry: 'ghcr.io'
+          user: ${{ github.actor }}
+          image-tag: 'arch-run-cmd'
+          image-version: 'latest'
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Import GPG key
         id: gpg_import
@@ -76,9 +93,9 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
           method: 'inline'
+          gpg_home: ${{ format('{0}/.gnupg', github.workspace) }}
           gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
-          delete_after_import: 'true'
           configure_git: 'true'
           setup_home: 'true'
           preset_pass: 'false'
@@ -86,33 +103,26 @@ jobs:
       - name: Test Arch Run Command Action
         id: test_arch_run_cmd
         uses: ./arch-run-cmd
-        env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
           gh-token: ${{ steps.app_token.outputs.token }}
-          image-tag: ${{ inputs.image_tag || 'arch-run-cmd' }}
-          image-version: ${{ inputs.image_version || 'latest' }}
           enable-ccache: ${{ inputs.enable_ccache && 'true' || 'false' }}
           working-directory: ${{ github.workspace }}
-          gpg-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-key-id: ${{ steps.gpg_import.outputs.fingerprint }}
           gpg-keygrips: ${{ steps.gpg_import.outputs.key_grips }}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
           gpg-home: ${{ steps.gpg_import.outputs.gpg_home }}
-          import-key-during-build: 'false'
           preset-passphrase-cache: 'false'
           run-with-sudo: ${{ inputs.run_with_sudo && 'true' || 'false' }}
-          user: ${{ inputs.user || 'runner' }}
-          command: 'ls -la / && whoami && echo "Hello from inside the Arch Linux container!"'
+          command: 'ls -la / && whoami && gpg --list-keys && echo "Hello from inside the Arch Linux container!"'
 
       - name: Job Summary
         if: always()
         env:
+          BUILD_OUTCOME: ${{ steps.build_image.outcome }}
+          PUSH_OUTCOME: ${{ steps.push_image.outcome }}
           GPG_OUTCOME: ${{ steps.gpg_import.outcome }}
           GPG_FP: ${{ steps.gpg_import.outputs.fingerprint }}
           RUN_OUTCOME: ${{ steps.test_arch_run_cmd.outcome }}
-          IMAGE_TAG: ${{ inputs.image_tag || 'arch-run-cmd' }}
-          IMAGE_VERSION: ${{ inputs.image_version || 'latest' }}
           RUN_USER: ${{ inputs.user || 'runner' }}
           SUDO: ${{ inputs.run_with_sudo && 'true' || 'false' }}
           CCACHE: ${{ inputs.enable_ccache && 'true' || 'false' }}
@@ -124,12 +134,13 @@ jobs:
             echo ""
             echo "| Step | Status |"
             echo "|:-----|:------:|"
+            echo "| Build Image | $(s "$BUILD_OUTCOME") \`${BUILD_OUTCOME}\` |"
+            echo "| Push Image | $(s "$PUSH_OUTCOME") \`${PUSH_OUTCOME}\` |"
             echo "| GPG Import | $(s "$GPG_OUTCOME") \`${GPG_OUTCOME}\` |"
             echo "| Container Run | $(s "$RUN_OUTCOME") \`${RUN_OUTCOME}\` |"
             echo ""
             echo "| Parameter | Value |"
             echo "|:----------|:------|"
-            echo "| Image | \`${IMAGE_TAG}:${IMAGE_VERSION}\` |"
             echo "| User | \`${RUN_USER}\` |"
             echo "| Sudo | \`${SUDO}\` |"
             echo "| ccache | \`${CCACHE}\` |"

@@ -5,18 +5,53 @@ set -euo pipefail
 # Error handling with context
 trap 'echo "ERROR: Script failed on line $LINENO (command: $BASH_COMMAND)" >&2; exit 1' ERR
 
-# Fallback auf Standard, wenn leer, null oder ein Systempfad
+# ============================================================================
+# Path Translation (Docker container actions)
+# ============================================================================
+# GitHub Actions mounts host workspace at /github/workspace inside the
+# container. Environment variables from the action still contain HOST paths
+# (e.g. /home/runner/work/repo/repo). Translate them to container paths.
+_to_container_path() {
+  local p="$1"
+  if [[ -n "$p" && -n "${HOST_WORKSPACE:-}" && -n "${GITHUB_WORKSPACE:-}" \
+        && "$p" == "${HOST_WORKSPACE}"* ]]; then
+    echo "${GITHUB_WORKSPACE}${p#$HOST_WORKSPACE}"
+  else
+    echo "$p"
+  fi
+}
+
+# Translate workspace-relative paths
+WORKING_DIR="$(_to_container_path "${WORKING_DIR:-}")"
 if [[ -z "$WORKING_DIR" || "$WORKING_DIR" == "null" || "$WORKING_DIR" == "/bin/bash" ]]; then
-  WORKING_DIR="/home/runner/work"
+  WORKING_DIR="${GITHUB_WORKSPACE:-/github/workspace}"
 fi
+
 # Docker action passes command as $1 (single arg via args:)
 COMMAND="${1:-}"
 shift || true
 
-# Resolve GNUPGHOME from env or default
+# Translate and resolve GNUPGHOME
+GNUPGHOME="$(_to_container_path "${GNUPGHOME:-}")"
 if [[ -z "${GNUPGHOME:-}" || ! -d "${GNUPGHOME:-}" ]]; then
-  export GNUPGHOME="$WORKING_DIR/.gnupg"
+  # Auto-discover .gnupg* directory under workspace
+  _ws="${GITHUB_WORKSPACE:-$WORKING_DIR}"
+  found=$(find "$_ws" -maxdepth 1 -name '.gnupg*' -type d 2>/dev/null | head -1)
+  if [[ -n "$found" ]]; then
+    export GNUPGHOME="$found"
+  else
+    export GNUPGHOME="${_ws}/.gnupg"
+  fi
 fi
+export GNUPGHOME
+
+# Translate CCACHE_DIR
+if [[ -n "${CCACHE_DIR:-}" ]]; then
+  CCACHE_DIR="$(_to_container_path "$CCACHE_DIR")"
+else
+  CCACHE_DIR="${WORKING_DIR}/.ccache"
+fi
+export CCACHE_DIR
 
 # Preset GPG passphrase in agent cache if configured
 if [[ -d "$GNUPGHOME" && -n "${GPG_KEY_ID:-}" && -n "${GPG_PASSPHRASE:-}" && "${PRESET_CACHE:-false}" == "true" ]]; then
@@ -63,7 +98,6 @@ IS_GITHUB_ACTIONS="${GITHUB_ACTIONS:-false}"
 IS_CI="${CI:-false}"
 
 # Makepkg-specific optimization
-export CCACHE_DIR="${WORKING_DIR}/.ccache"
 export CCACHE_MAXSIZE="2G"
 
 # In GitHub Actions, be less verbose (save logs, faster)
@@ -146,13 +180,9 @@ ENV_VARS=(
 
 if [[ -n "$COMMAND" ]]; then
   if [ "$_RUN_WITH_SUDO" = "true" ]; then
-    # shellcheck disable=SC2048
-    # shellcheck disable=SC2086
-    exec sudo -u runner env "${ENV_VARS[@]}" bash -c $*
+    exec sudo -u runner env "${ENV_VARS[@]}" bash -c "$COMMAND"
   else
-    # shellcheck disable=SC2048
-    # shellcheck disable=SC2086
-    exec bash -c $*
+    exec bash -c "$COMMAND"
   fi
 else
   if [ "$IS_GITHUB_ACTIONS" != "true" ]; then
