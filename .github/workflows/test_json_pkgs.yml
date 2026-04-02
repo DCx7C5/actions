@@ -38,7 +38,7 @@ jobs:
           action: 'get'
           org: 'DystopianOS'
           gh-token: ${{ steps.app_token.outputs.token }}
-          json-in: 'JSON_PACKAGES'
+          var-name: 'JSON_PACKAGES'
 
       - name: get_all_packages_with_keys
         id: get_all_keys
@@ -47,7 +47,7 @@ jobs:
           action: 'get'
           org: 'DystopianOS'
           gh-token: ${{ steps.app_token.outputs.token }}
-          json-in: 'JSON_PACKAGES'
+          var-name: 'JSON_PACKAGES'
           key: |
             submodule
             custom
@@ -60,7 +60,7 @@ jobs:
           action: 'get'
           org: 'DystopianOS'
           gh-token: ${{ steps.app_token.outputs.token }}
-          json-in: 'JSON_PACKAGES'
+          var-name: 'JSON_PACKAGES'
           pkg-name: |
             nvidia
             toolchain
@@ -72,7 +72,7 @@ jobs:
           action: 'get'
           org: 'DystopianOS'
           gh-token: ${{ steps.app_token.outputs.token }}
-          json-in: 'JSON_PACKAGES'
+          var-name: 'JSON_PACKAGES'
           pkg-name: |
             nvidia
             toolchain
@@ -88,7 +88,7 @@ jobs:
           action: 'add'
           org: 'DystopianOS'
           gh-token: ${{ steps.app_token.outputs.token }}
-          json-in: 'JSON_PACKAGES'
+          var-name: 'JSON_PACKAGES'
           pkg-name: |
             zzzzz-test0
             zzzzz-test1
@@ -103,7 +103,7 @@ jobs:
           action: 'add'
           org: 'DystopianOS'
           gh-token: ${{ steps.app_token.outputs.token }}
-          json-in: 'JSON_PACKAGES'
+          var-name: 'JSON_PACKAGES'
           pkg-name: |
             zzzzz-test0
           key: |
@@ -120,7 +120,7 @@ jobs:
           action: 'add'
           org: 'DystopianOS'
           gh-token: ${{ steps.app_token.outputs.token }}
-          json-in: 'JSON_PACKAGES'
+          var-name: 'JSON_PACKAGES'
           value: |
             {"zzzzz-test0":{"name":"test0","value":false}}
             {"zzzzz-test1":{"name":"test1","value":true}}
