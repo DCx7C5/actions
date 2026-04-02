@@ -14,13 +14,8 @@ IS_JSON_VALUE="$5"
 
 readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
 readarray -t INPUT_PKGNAMES < <(printf '%s\n' "$INPUT_PKGNAMES")
+readarray -t INPUT_VALUES < <(printf '%s\n' "$INPUT_VALUES")
 
-if [[ "$IS_JSON_VALUE" == "true" ]]; then
-  readarray -t INPUT_VALUES < <(printf '%s\n' "$INPUT_VALUES" | jq -c 'fromjson')
-else
-  # shellcheck disable=SC2128
-  readarray -t INPUT_VALUES < <(printf '%s\n' "$INPUT_VALUES")
-fi
 
 if [[ "$INPUT_ACTION" =~ ^(add|update|remove|delete)$ ]]; then
   ARGS+=(set)
@@ -101,7 +96,7 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
   local filter="$FILTER + {"
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
     [[ -z "${INPUT_PKGNAMES[i]}" || -z "${INPUT_VALUES[i]}" ]] && continue
-    value="${INPUT_VALUES[i]}"
+    [[ "$IS_JSON_VALUE" == "true" ]] && value="$(jq -c 'fromjson' <<< "${INPUT_VALUES[i]}")" || value="${INPUT_VALUES[i]}"
     args+=(--arg "pkg$i" "${INPUT_PKGNAMES[i]}")
     args+=(--argjson "val$i" "$value")
     filter+="\$pkg$i: \$val$i,"
