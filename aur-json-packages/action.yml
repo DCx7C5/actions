@@ -8,22 +8,22 @@ branding:
 
 
 inputs:
-  json_in:
+  json-in:
     required: false
-    description: "Path to the packages.json file to manage. Can also be GitHub Actions Variable string (default: .ci/packages.json)."
-    default: ${{ 'JSON_PACKAGES' || format('{0}/.ci/packages.json', github.workspace) }}
-  pkg_name:
+    description: "Name of variable that stores JSON package dictionary (default: JSON_PACKAGES)."
+    default: 'JSON_PACKAGES'
+  pkg-name:
     required: false
-    default: ''
     description: "New-line separated list of package names to manage. For 'get' action, retrieves details for the specified packages; for 'add', 'update', and 'remove' actions, specifies the package(s) to modify."
+    default: ''
   key:
     required: false
-    default: ''
     description: "New-line separated list of keys to add/update/remove for the specified package(s). Used for add/update/remove actions."
+    default: ''
   value:
     required: false
-    default: ''
     description: "New-line separated list of values corresponding to the keys for add/update actions. For remove action, this input is ignored. If the value is a valid JSON string, it will be parsed as JSON; otherwise, it will be treated as a plain string."
+    default: ''
   env:
     required: false
     description: "Set deployment environment variable"
@@ -42,8 +42,8 @@ inputs:
     default: ''
   output-structure:
     required: false
-    default: 'dict'
     description: "Output structure for retrieved package information (only for 'get' action, can be either 'dict' or 'list', defaults to 'dict')."
+    default: 'dict'
   action:
     required: false
     default: 'get'
@@ -54,18 +54,18 @@ inputs:
       - update: Update an existing package entry. Requires pkg_name, key, and value inputs.
       - remove: Remove a package entry. Requires  pkg_name input.
       - count: Count the number of packages in the dictionary.
-      
+
 
 outputs:
   out:
     description: "Output channel for the action. "
-    value: ${{ steps.run_action.outputs.out || '' }}
+    value: ${{ steps.convert_output.outputs.out || steps.run_action.outputs.out }}
   debug-args:
     description: "Debug output containing the generated jq filter and arguments for troubleshooting (only if 'step_summary' input is set to 'true')."
-    value: ${{ steps.run_action.outputs.args || '' }}
+    value: ${{ steps.run_action.outputs.args }}
   debug-filter:
     description: "Debug output containing the generated jq filter for troubleshooting (only if 'step_summary' input is set to 'true')."
-    value: ${{ steps.run_action.outputs.filter || '' }}
+    value: ${{ steps.run_action.outputs.filter }}
 
 
 runs:
@@ -74,47 +74,47 @@ runs:
     - id: validate_inputs
       shell: bash
       env:
-        JSON_PATH: "${{ inputs.json_in }}"
+        JSON_PATH: "${{ inputs.json-in }}"
         GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
         ACTION: "${{ inputs.action }}"
       run: |
         set -euo pipefail
-
-        valid_actions=("get" "add" "update" "remove" "count")
         
-        # Check if JSON_PATH is a file or inline string
+        valid_actions=("get" "add" "update" "remove" "count" "delete")
+                
+        if [[ ! " ${valid_actions[*]} " =~ " ${ACTION} " ]]; then
+          echo "::error::Invalid action '${ACTION}'. Valid actions are: ${valid_actions[*]}" >&2
+          exit 1
+        fi
+        
         if [[ -n "$JSON_PATH" && -f "$JSON_PATH" && $(cat "$JSON_PATH") == *$'\n'* ]]; then
           { 
+            echo "is_file=true"
             echo "json_input<<EOF"
             cat "$JSON_PATH"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
-          echo "is_file=true" >> "$GITHUB_OUTPUT"
         elif [[ -n "$JSON_PATH" && -f "$JSON_PATH" && $(cat "$JSON_PATH") != *$'\n'* ]]; then
           echo "json_input=$(cat "$JSON_PATH")" >> "$GITHUB_OUTPUT"
           echo "is_file=true" >> "$GITHUB_OUTPUT"
-        elif [[ -n "$JSON_PATH" ]]; then
+        elif [ -n "$JSON_PATH" ]; then
           echo "json_input=$JSON_PATH" >> "$GITHUB_OUTPUT"
         else
           echo "::error::'json_file' input is required and must point to a valid file or variable name." >&2
           exit 1
         fi
         
-        if [[ ! " ${valid_actions[*]} " =~ " ${ACTION} " ]]; then
-          echo "::error::Invalid action '${ACTION}'. Valid actions are: ${valid_actions[*]}" >&2
-          exit 1
         count=0
-        [[ -n "${{ inputs.env }}" ]] && ((count++))
-        [[ -n "${{ inputs.repo }}" ]] && ((count++))
-        [[ -n "${{ inputs.org }}" ]] && ((count++))
+        [ -n "${{ inputs.env }}" ] && ((count++))
+        [ -n "${{ inputs.repo }}" ] && ((count++))
+        [ -n "${{ inputs.org }}" ] && ((count++))
+        
         if (( count > 1 )); then
           echo "::error::Not more than one of 'env', 'repo' or 'org' can be set to a non-empty value" >&2
           exit 1
         fi
-        elif [[ -n "${{ inputs.key }}" && -n "${{ inputs.value }}" && ! "$ACTION" =~ ^(add|update|get)$ ]]; then
-          echo "::error::'key' and 'value' inputs are only valid for 'add' and 'update' actions." >&2
-          exit 1
-        elif [[ -n "${{ inputs.key }}" && -n "${{ inputs.value }}" && ! "$ACTION" =~ ^(add|update|get)$ ]]; then
+        
+        if [[ -n "${{ inputs.key }}" && -n "${{ inputs.value }}" && ! "$ACTION" =~ ^(add|update|get)$ ]]; then
           echo "::error::'key' and 'value' inputs are only valid for 'add' and 'update' actions." >&2
           exit 1
         fi
@@ -125,10 +125,10 @@ runs:
           echo "json_value=false" >> "$GITHUB_OUTPUT"
         fi
         
-        if [[ -n "${{ inputs.org }}" ]]; then
+        if [ -n "${{ inputs.org }}" ]; then
           echo "access_level=--org" >> "$GITHUB_OUTPUT"
           echo "level_name=${{ inputs.org }}" >> "$GITHUB_OUTPUT"
-        elif [[ -n "${{ inputs.env }}" ]]; then
+        elif [ -n "${{ inputs.env }}" ]; then
           echo "access_level=--env" >> "$GITHUB_OUTPUT"
           echo "level_name=${{ inputs.env }}" >> "$GITHUB_OUTPUT"
         else
@@ -148,40 +148,48 @@ runs:
         LEVEL_NAME: "${{ steps.validate_inputs.outputs.level_name }}"
       working-directory: "${{ github.action_path }}"
       run: |
-        chmod +x libpackages.sh
-
         INPUT_JSON=$(gh variable get "$INPUT_JSON" ${ACCESS_LEVEL} "$LEVEL_NAME" --json value --jq '.value')
 
-        if [[ -z "$INPUT_JSON" ]] || ! echo "$INPUT_JSON" | jq empty 2>/dev/null; then
-          echo "::error::inputs.json_in does not contain valid JSON data or is empty." >&2
+        if [[ -z "$INPUT_JSON"  || ! $(echo "$INPUT_JSON" | jq empty 2>/dev/null) ]]; then
+          echo "::error::inputs.json-in does not contain valid JSON data or is empty." >&2
           exit 1
         fi
         
-        [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUE="$(echo '${{ inputs.value }}' | tr -d ' ' | jq -c '@json')"
+        if [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "true" ]]; then
+          INPUT_VALUE="$(echo '${{ inputs.value }}' | tr -d ' ' | jq -c '@json')"
+        elif [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "false" ]]; then
+          INPUT_VALUE="${{ inputs.value }}"
+        fi
         
-        [[ "$INPUT_ACTION" =~ ^(add|update)$ && -n '${{ inputs.value }}' && "$IS_JSON_VALUE" == "false" ]] && INPUT_VALUE="${{ inputs.value }}"
-        
+        chmod +x libpackages.sh
         readarray -t ALL_ARGS < <(
-          ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg_name }}" "${{ inputs.key }}" "$INPUT_VALUE" "$IS_JSON_VALUE"
+          ./libpackages.sh "$INPUT_ACTION" "${{ inputs.pkg-name }}" "${{ inputs.key }}" "$INPUT_VALUE" "$IS_JSON_VALUE"
         )
         
         FILTER="${ALL_ARGS[-1]}"
         unset 'ALL_ARGS[-1]'
         ARGS=("${ALL_ARGS[@]}")
 
-        if [[ "$INPUT_ACTION" == "get" ]]; then
-          echo "Running 'get' action..."
+        if [ "$INPUT_ACTION" = "get" ]; then
           echo "out=$(jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
-
         elif [[ "$INPUT_ACTION" =~ ^(update|add|remove|delete)$ && "$IS_FILE" == "false" ]]; then
-          echo "Running 'add/update' action..."
-          if jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON" | gh variable set $INPUT_ACTION ${ACCESS_LEVEL} "$LEVEL_NAME"; then
+          if jq -c "${ARGS[@]}" "$FILTER" <<< "$INPUT_JSON" | gh variable set "${{ inputs.json-in }}" ${ACCESS_LEVEL} "$LEVEL_NAME"; then
             echo "out=saved" >> "$GITHUB_OUTPUT"
           fi
-        elif [[ "$INPUT_ACTION" == "count" ]]; then
-          echo "Running 'count' action..."
+        elif [ "$INPUT_ACTION" = "count" ]; then
           echo "out=$(jq -c '.packages | length' <<< "$INPUT_JSON")" >> "$GITHUB_OUTPUT"
         fi
         
         echo "args=${ARGS[*]}" >> "$GITHUB_OUTPUT"
         echo "filter='$(echo $FILTER | sed -e 's/\$/\\$/g')'" >> "$GITHUB_OUTPUT"
+
+    - name: Convert output format
+      id: convert_output
+      if: inputs.output-structure == 'list' && inputs.action == 'get'
+      shell: bash
+      run: |
+        if [ -n "${{ steps.run_action.outputs.out }}" ]; then
+          echo "out=$(echo '${{ steps.run_action.outputs.out }}' | jq -c 'to_entries | map({name: .key} + .value)')" >> "$GITHUB_OUTPUT"
+        else
+          echo "out=[]" >> "$GITHUB_OUTPUT"
+        fi

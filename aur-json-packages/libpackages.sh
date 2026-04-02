@@ -4,24 +4,21 @@
 ARGS=()
 FILTER=".packages"
 
-
-comma_separated() {
-  printf '%s\n' "$1" | tr "\n" "," | sed -e 's/,$//'
-}
-
 INPUT_ACTION="$1"
 INPUT_PKGNAMES="$2"
 INPUT_KEYS="$3"
-INPUT_VALUES="$4"
 IS_JSON_VALUE="$5"
 
-if [[ "$INPUT_ACTION" =~ ^(add|update)$ ]]; then
-  [[ "$IS_JSON_VALUE" == "true" ]] && INPUT_VALUES="$(echo "${4}" | jq -c '@json')"
+if [[ "$INPUT_ACTION" =~ ^(add|update) && "$IS_JSON_VALUE" == "true" ]]; then
+  INPUT_VALUES="$(echo "${4}" | jq -c '@json')"
+else
+  INPUT_VALUES="$4"
 fi
 
 readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
 readarray -t INPUT_PKGNAMES < <(printf '%s\n' "$INPUT_PKGNAMES")
 readarray -t INPUT_VALUES < <(printf '%s\n' "$INPUT_VALUES")
+
 if [[ "$INPUT_ACTION" =~ ^(add|update|remove|delete)$ ]]; then
   ARGS+=(set)
 fi
@@ -100,8 +97,7 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
   local args=()
   local filter="$FILTER + {"
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
-    [[ -z "${INPUT_PKGNAMES[i]}" ]] && continue
-    [[ -z "${INPUT_VALUES[i]}" ]] && continue
+    [[ -z "${INPUT_PKGNAMES[i]}" || -z "${INPUT_VALUES[i]}" ]] && continue
     value="${INPUT_VALUES[i]}"
     args+=(--arg "pkg$i" "${INPUT_PKGNAMES[i]}")
     args+=(--argjson "val$i" "$value")
@@ -119,8 +115,7 @@ add_package_with_one_pkgname_and_multiple_keys_and_multiple_values() {
   args+=(--arg "pkg" "$pkgname")
   filter+="\$pkg: {"
   for ((i=0; i<${#INPUT_KEYS[@]}; i++)); do
-    [[ -z "${INPUT_KEYS[i]}" ]] && continue
-    [[ -z "${INPUT_VALUES[i]}" ]] && continue
+    [[ -z "${INPUT_KEYS[i]}" || -z "${INPUT_VALUES[i]}" ]] && continue
     key="${INPUT_KEYS[i]}"
     value="${INPUT_VALUES[i]}"
     args+=(--arg "key$i" "$key")
@@ -145,7 +140,6 @@ add_package_with_no_pkgname_and_multiple_values_and_no_keys() {
   printf '%s\n' "${args[@]}"
   printf '%s\n' "$filter"
 }
-
 
 remove_packages_with_multiple_pkgnames() {
   local args=()
@@ -177,7 +171,6 @@ remove_from_one_package_multiple_keys() {
 }
 
 action_get() {
-  # pkgnames and keys
   if [[ -z "$1" && -z "$2" ]]; then
     get_all_packages
   elif [[ -z "$1" && -n "$2" ]]; then
@@ -217,15 +210,9 @@ action_remove() {
 }
 
 case "$INPUT_ACTION" in
-  get)
-    action_get "$INPUT_PKGNAMES" "$INPUT_KEYS"
-    ;;
-  update|add)
-    action_update "$INPUT_PKGNAMES" "$INPUT_KEYS" "$INPUT_VALUES"
-    ;;
-  remove|delete)
-    action_remove "$INPUT_PKGNAMES" "$INPUT_KEYS"
-    ;;
+  get) action_get "$INPUT_PKGNAMES" "$INPUT_KEYS";;
+  update|add) action_update "$INPUT_PKGNAMES" "$INPUT_KEYS" "$INPUT_VALUES";;
+  remove|delete) action_remove "$INPUT_PKGNAMES" "$INPUT_KEYS";;
   *)
     echo "Invalid action: $INPUT_ACTION. Supported actions are: get, add, update, remove, delete." >&2
     exit 1
