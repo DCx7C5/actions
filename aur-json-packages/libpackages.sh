@@ -97,7 +97,7 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
     [[ -z "${INPUT_PKGNAMES[i]}" || -z "${INPUT_VALUES[i]}" ]] && continue
     args+=(--arg "pkg$i" "${INPUT_PKGNAMES[i]}")
-    args+=(--argjson "val$i" "'$(jq -c 'fromjson' <<< "${INPUT_VALUES[i]}")'")
+    args+=(--argjson "val$i" "'$(echo "${INPUT_VALUES[i]}" | tr -d '\\')'")
     filter+="\$pkg$i: \$val$i,"
   done
   filter="${filter%,}}"
