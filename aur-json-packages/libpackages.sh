@@ -7,14 +7,14 @@ FILTER=".packages"
 INPUT_ACTION="$1"
 INPUT_PKGNAMES="$2"
 INPUT_KEYS="$3"
-INPUT_VALUES="$4"
-IS_JSON_VALUE="$5"
-
-
 
 readarray -t INPUT_KEYS < <(printf '%s\n' "$INPUT_KEYS")
 readarray -t INPUT_PKGNAMES < <(printf '%s\n' "$INPUT_PKGNAMES")
-readarray -t INPUT_VALUES < <(printf '%s\n' "$INPUT_VALUES")
+
+if [[ -n "$4" ]]; then
+  INPUT_VALUES=()
+  for x in $4; do INPUT_VALUES+=("$x"); done
+fi
 
 
 if [[ "$INPUT_ACTION" =~ ^(add|update|remove|delete)$ ]]; then
@@ -96,7 +96,6 @@ add_package_with_multiple_pkgnames_and_multiple_values_and_no_keys() {
   local filter="$FILTER + {"
   for ((i=0; i<${#INPUT_PKGNAMES[@]}; i++)); do
     [[ -z "${INPUT_PKGNAMES[i]}" || -z "${INPUT_VALUES[i]}" ]] && continue
-    echo "${INPUT_VALUES[i]}"
     value="${INPUT_VALUES[i]}"
     args+=(--arg "pkg$i" "${INPUT_PKGNAMES[i]}")
     args+=(--argjson "val$i" "$value")
