@@ -35,7 +35,7 @@ inputs:
   repo:
     required: false
     description: "Set repository variable (defaults to current repository)"
-    default: ''
+    default: ${{ github.repository }}
   gh-token:
     required: false
     description: "GitHub Token with permissions to manage secrets (usually GITHUB_TOKEN)"
@@ -110,16 +110,19 @@ runs:
         fi
         
         if [ -n "${{ inputs.org }}" ]; then
-          echo "access_level=--org" >> "$GITHUB_OUTPUT"
-          echo "level_name=${{ inputs.org }}" >> "$GITHUB_OUTPUT"
+          ACCESS_LEVEL='--org'
+          LEVEL_NAME="${{ inputs.org }}"
         elif [ -n "${{ inputs.env }}" ]; then
-          echo "access_level=--env" >> "$GITHUB_OUTPUT"
-          echo "level_name=${{ inputs.env }}" >> "$GITHUB_OUTPUT"
+          ACCESS_LEVEL='--env'
+          LEVEL_NAME="${{ inputs.env }}"
         else
-          echo "access_level=--repo" >> "$GITHUB_OUTPUT"
-          echo "level_name=${{ inputs.repo }}" >> "$GITHUB_OUTPUT"
+          ACCESS_LEVEL='--repo'
+          LEVEL_NAME="${{ inputs.repo }}"
         fi
         
+        echo "access_level=$ACCESS_LEVEL" >> "$GITHUB_OUTPUT"
+        echo "level_name=$LEVEL_NAME" >> "$GITHUB_OUTPUT"
+
         if [[ -n "$INPUT_PKGNAMES" ]]; then
           echo "lenpkg=$(printf '%s\n' "$INPUT_PKGNAMES" | wc -l)" >> "$GITHUB_OUTPUT"
         fi
