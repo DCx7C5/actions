@@ -1,0 +1,75 @@
+name: "Test Docker Build/Push Action"
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "The name of the Docker image to build and push"
+        required: false
+        default: 'arch-build'
+        type: string
+      image_version:
+        description: "The version tag of the Docker image to build and push"
+        required: false
+        default: 'latest'
+        type: string
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker-build-image/action.yml'
+      - 'docker-push-image/action.yml'
+      - 'arch-run-cmd/**'
+      - '.github/workflows/test_docker.yml'
+
+jobs:
+  test-docker:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+      actions: write
+    steps:
+      - name: GitHub App Token
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
+          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        id: build_image
+        uses: ./docker-build-image
+        with:
+          image_working_directory: ${{ github.workspace }}/arch-run-cmd
+          runtime_working_directory: ${{ github.workspace }}
+          gpg_home: ${{ format('{0}/.gnupg', github.workspace) }}
+          ccache_dir: ${{ format('{0}/.ccache', github.workspace) }}
+          user: runner
+          group: runner
+          uid: '1001'
+          gid: '127'
+          gh_token: ${{ steps.app_token.outputs.token }}
+          image_tag: ${{ inputs.image_tag || 'arch-build' }}
+          image_version: ${{ inputs.image_version || 'latest' }}
+          dockerfile_path: Dockerfile
+
+      - name: Push Docker image to GitHub Container Registry
+        id: push_image
+        if: success()
+        uses: ./docker-push-image
+        with:
+          registry: 'ghcr.io'
+          user: ${{ github.actor }}
+          image-tag: ${{ inputs.image_tag || 'arch-build' }}
+          image-version: ${{ inputs.image_version || 'latest' }}
+          gh-token: ${{ steps.app_token.outputs.token }}
+
+      - name: Verify pushed image
+        if: success()
+        run: |
+          echo "::notice::Build output: ${{ steps.build_image.outputs.image }}"
+          echo "::notice::Push output: ${{ steps.push_image.outputs.full_image }}"
+          echo "✅ Docker build & push pipeline completed successfully"

@@ -9,29 +9,25 @@ trap 'echo "ERROR: Script failed on line $LINENO (command: $BASH_COMMAND)" >&2; 
 if [[ -z "$WORKING_DIR" || "$WORKING_DIR" == "null" || "$WORKING_DIR" == "/bin/bash" ]]; then
   WORKING_DIR="/home/runner/work"
 fi
-GNUPGHOME="${2:-$WORKING_DIR/.gnupg}"
+# Docker action passes command as $1 (single arg via args:)
+COMMAND="${1:-}"
+shift || true
 
-if [[ -d "$WORKING_DIR" && "$GNUPGHOME" == ".gnupg" ]]; then
-  export GNUPGHOME="$WORKING_DIR/.gnupg"
-elif [[ -d "$WORKING_DIR" && -d "$GNUPGHOME" ]]; then
-  export GNUPGHOME="$GNUPGHOME"
-else
+# Resolve GNUPGHOME from env or default
+if [[ -z "${GNUPGHOME:-}" || ! -d "${GNUPGHOME:-}" ]]; then
   export GNUPGHOME="$WORKING_DIR/.gnupg"
 fi
-if [[ -d "$GNUPGHOME" && -n "$GPG_KEY_ID" && -n "$GPG_PASSPHRASE" && "$PRESET_CACHE" == "true" ]]; then
+
+# Preset GPG passphrase in agent cache if configured
+if [[ -d "$GNUPGHOME" && -n "${GPG_KEY_ID:-}" && -n "${GPG_PASSPHRASE:-}" && "${PRESET_CACHE:-false}" == "true" ]]; then
   KEYGRIPS=$(gpg --batch --with-colons --list-secret-keys "$GPG_KEY_ID" 2>/dev/null | awk -F: '/^grp:/ {print $10}')
   while read -r GRIP; do
+    [[ -z "$GRIP" ]] && continue
     printf '%s' "$GPG_PASSPHRASE" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$GRIP" 2>/dev/null || true
   done <<< "$KEYGRIPS"
   echo "::notice::Preset GPG passphrase in gpg-agent cache"
 fi
 
-if [[ $# -ge 2 ]]; then
-  shift 2
-else
-  shift $#
-fi
-COMMAND="$*"
 
 
 if [[ ! -d "$WORKING_DIR" ]]; then
