@@ -22,16 +22,16 @@ Central overview and status for all local GitHub Actions in this repository.
 
 Additional actions (without dedicated test workflow):
 
-| Action | Description |
-|:-------|:------------|
+| Action                                     | Description                  |
+|:-------------------------------------------|:-----------------------------|
 | [`gh-create-release`](./gh-create-release) | Create/verify GitHub release |
-| [`gh-upload-assets`](./gh-upload-assets) | Upload release assets |
-| [`gpg-export-key`](./gpg-export-key) | Export GPG key |
-| [`gpg-create-subkey`](./gpg-create-subkey) | Generate GPG subkey |
-| [`gpg-sign-detached`](./gpg-sign-detached) | Detached-sign a file |
-| [`gpg-decrypt`](./gpg-decrypt) | Decrypt a file |
-| [`tg-notify`](./tg-notify) | Telegram notification |
-| [`tar-create`](./tar-create) | Create tar archive |
+| [`gh-upload-assets`](./gh-upload-assets)   | Upload release assets        |
+| [`gpg-export-key`](./gpg-export-key)       | Export GPG key               |
+| [`gpg-create-subkey`](./gpg-create-subkey) | Generate GPG subkey          |
+| [`gpg-sign-detached`](./gpg-sign-detached) | Detached-sign a file         |
+| [`gpg-decrypt`](./gpg-decrypt)             | Decrypt a file               |
+| [`tg-notify`](./tg-notify)                 | Telegram notification        |
+| [`tar-create`](./tar-create)               | Create tar archive           |
 
 ---
 
