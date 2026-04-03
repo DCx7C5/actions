@@ -175,7 +175,7 @@ runs:
         } >> "$GITHUB_OUTPUT"
 
     - name: Set Owner Trust (if private key imported)
-      if: (inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true') && steps.validate.outputs.is_publickey == 'true'
+      if: inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true'
       uses: DCx7C5/actions/gpg-set-ownertrust@v1
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
