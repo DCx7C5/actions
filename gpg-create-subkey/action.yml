@@ -2,6 +2,10 @@ name: "Create GPG Signing Subkey"
 description: "Create GPG Signing Key from GitHub Actions"
 author: "DCx7C5"
 
+branding:
+  icon: "lock"
+  color: "blue"
+
 inputs:
   time:
     description: "How long is key valid"
@@ -9,9 +13,10 @@ inputs:
   pass:
     description: "Passphrase for encrypted GPG key"
     required: true
-  new_pass_name:
+  new-pass-name:
     description: "Name of the secrets variable the new pass gets saved to"
     required: true
+
 
 runs:
   using: composite
@@ -41,7 +46,7 @@ runs:
         NEW_PASS=$(tr -dc 'A-Za-z0-9!@.#$,\-\+%^&*' < /dev/urandom | head -c 32; echo)
         FPR=$(gpg --list-keys | head -2 | tail -1 | tr -d ' ')
         
-        echo "$NEW_PASS" | gh secret set "${{ inputs.new_pass_name }}" --body-stdin
+        echo "$NEW_PASS" | gh secret set "${{ inputs.new-pass-name }}" --body-stdin
         
         printf "${{ inputs.pass }}\n$NEW_PASS\n$NEW_PASS\n" | \
         gpg --batch \

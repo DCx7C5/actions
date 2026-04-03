@@ -7,7 +7,7 @@ branding:
   color: "blue"
 
 inputs:
-  gpg-key:
+  key:
     required: false
     default: ''
     description: "Path to GPG key file"
@@ -55,8 +55,8 @@ runs:
           echo "::add-mask::${{ inputs.pass }}"
         fi
         
-        if [ -z '${{ inputs.gpg-key }}' ]; then
-          echo "::error::gpg-key input is required" >&2
+        if [ -z '${{ inputs.key }}' ]; then
+          echo "::error::key input is required" >&2
           exit 1
         fi
 
@@ -65,7 +65,7 @@ runs:
       if: inputs.gpg-type == 'auto'
       shell: bash
       env:
-        GPG_KEY: '${{ inputs.gpg-key }}'
+        GPG_KEY: '${{ inputs.key }}'
       run: |
         # Auto-detect key type based on file content
         set -euo pipefail
@@ -88,7 +88,7 @@ runs:
       if: (inputs.gpg-type == 'auto' && steps.keytype.outputs.key_type == 'secret') || inputs.gpg-type == 'private'
       uses: DCx7C5/actions/gpg-import/gpg-import-protected@v1
       with:
-        gpg-key: '${{ inputs.gpg-key }}'
+        key: '${{ inputs.key }}'
         pass: ${{ inputs.pass }}
         type: 'file'
         gpg-home: "${{ inputs.gpg-home }}"
@@ -98,7 +98,7 @@ runs:
       if: (inputs.gpg-type == 'auto' && steps.keytype.outputs.key_type == 'public') || inputs.gpg-type == 'public'
       uses: DCx7C5/actions/gpg-import/gpg-import-no-protection@v1
       with:
-        gpg-key: '${{ inputs.gpg-key }}'
+        key: '${{ inputs.key }}'
         gpg-home: "${{ inputs.gpg-home }}"
 
     - name: Delete key file after import (if requested)
@@ -107,7 +107,7 @@ runs:
       run: |
         # Securely delete the key file after import if it's a private key and deletion is requested
         set -euo pipefail
-        key_file='${{ inputs.gpg-key }}'
+        key_file='${{ inputs.key }}'
         if [ -f "$key_file" ]; then
           shred -vfz -n 3 "$key_file" || rm -f "$key_file"
           echo "::notice::GPG key file securely deleted: $key_file"

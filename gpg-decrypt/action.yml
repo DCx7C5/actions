@@ -7,7 +7,7 @@ branding:
   color: "green"
 
 inputs:
-  gpg_key:
+  key:
     required: true
     description: "GPG private key (inline for secret or file path) - will be masked in logs"
   pass:
@@ -37,7 +37,7 @@ runs:
       run: |
         if [ -n '${{ inputs.pass }}' ]; then
           echo "::add-mask::${{ inputs.pass }}"
-          echo "::add-mask::${{ inputs.gpg_key }}"
+          echo "::add-mask::${{ inputs.key }}"
         fi
 
     - name: Validate and detect encryption
@@ -45,7 +45,7 @@ runs:
       run: |
         set -euo pipefail
         
-        FILE_PATH="${{ inputs.gpg_key }}"
+        FILE_PATH="${{ inputs.key }}"
         
         if [ ! -f "$FILE_PATH" ]; then
           echo "::error::File not found: $FILE_PATH" >&2
@@ -58,7 +58,7 @@ runs:
       id: detect
       shell: bash
       env:
-        FILE_PATH: ${{ inputs.gpg_key }}
+        FILE_PATH: ${{ inputs.key }}
         PASS: '${{ inputs.pass }}'
         FORMAT: '${{ inputs.format }}'
       run: |

@@ -8,7 +8,7 @@ branding:
 
 
 inputs:
-  gpg-key:
+  key:
     required: false
     default: ''
     description: "GPG key (inline) - will be masked in logs"
@@ -52,11 +52,11 @@ runs:
       shell: bash
       run: |
         # Mask the GPG key and passphrase if provided
-        if [[ -n '${{ inputs.pass }}' && -n "${{ inputs.gpg-key }}" ]]; then
-          echo "::add-mask::${{ inputs.gpg-key }}"
+        if [[ -n '${{ inputs.pass }}' && -n "${{ inputs.key }}" ]]; then
+          echo "::add-mask::${{ inputs.key }}"
           echo "::add-mask::${{ inputs.pass }}"
-        elif [[ -z "${{ inputs.gpg-key }}" ]]; then
-          echo "::error:: inputs.gpg-key is missing!"  >&2
+        elif [[ -z "${{ inputs.key }}" ]]; then
+          echo "::error:: inputs.key is missing!"  >&2
           exit 1
         fi
 
@@ -65,7 +65,7 @@ runs:
       if: inputs.type == 'auto'
       shell: bash
       env:
-        GPG_KEY: "${{ inputs.gpg-key }}"
+        GPG_KEY: "${{ inputs.key }}"
       run: |
         # Auto-detect key type based on the first line of the key content
         set -euo pipefail
@@ -84,7 +84,7 @@ runs:
       if: (inputs.type == 'auto' && steps.keytype.outputs.key_type == 'secret') || inputs.type == 'secret' || inputs.type == 'private'
       uses: DCx7C5/actions/gpg-import/gpg-import-protected@v1
       with:
-        gpg-key: "${{ inputs.gpg-key }}"
+        key: "${{ inputs.key }}"
         pass: "${{ inputs.pass }}"
         type: 'inline'
         gpg-home: "${{ inputs.gpg-home }}"
@@ -94,5 +94,5 @@ runs:
       if: (inputs.type == 'auto' && steps.keytype.outputs.key_type == 'public') || inputs.type == 'public'
       uses: DCx7C5/actions/gpg-import/gpg-import-no-protection@v1
       with:
-        gpg-key: "${{ inputs.gpg-key }}"
+        key: "${{ inputs.key }}"
         gpg-home: "${{ inputs.gpg-home }}"

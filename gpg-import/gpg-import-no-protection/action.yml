@@ -8,7 +8,7 @@ branding:
 
 
 inputs:
-  gpg-key:
+  key:
     required: true
     description: "GPG key path or inline variable"
   gpg-home:
@@ -18,9 +18,9 @@ inputs:
 
 
 outputs:
-  gpg-key:
-    description: "The original gpg_key input value (for downstream steps)"
-    value: ${{ inputs.gpg-key }}
+  key:
+    description: "The original key input value (for downstream steps)"
+    value: ${{ inputs.key }}
   fingerprint:
     description: "Fingerprint of the imported GPG key"
     value: ${{ steps.import.outputs.fingerprint }}
@@ -45,7 +45,7 @@ runs:
       shell: bash
       env:
         GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
-        GPG_KEY: "${{ inputs.gpg-key }}"
+        GPG_KEY: "${{ inputs.key }}"
       run: |
         # Validate or set GNUPGHOME - either from input or environment or default
         set -euo pipefail

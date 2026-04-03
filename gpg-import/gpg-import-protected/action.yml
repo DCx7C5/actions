@@ -4,7 +4,7 @@ author: "DCx7C5"
 
 
 inputs:
-  gpg-key:
+  key:
     required: true
     description: "GPG key path or inline variable"
   pass:
@@ -45,9 +45,9 @@ runs:
       if: inputs.type == 'auto'
       shell: bash
       env:
-        GPG_KEY: "${{ inputs.gpg-key }}"
+        GPG_KEY: "${{ inputs.key }}"
       run: |
-        # Validate the gpg-key input and determine if it's a file path or inline content
+        # Validate the key input and determine if it's a file path or inline content
         set -euo pipefail
         if [[ -n "$GPG_KEY" && -f "$GPG_KEY" ]]; then
           echo "type=file" >> "$GITHUB_OUTPUT"
@@ -60,7 +60,7 @@ runs:
       shell: bash
       env:
         GNUPGHOME: "${{ inputs.gpg-home || env.GNUPGHOME }}"
-        GPG_KEY_PATH: "${{ inputs.gpg-key }}"
+        GPG_KEY_PATH: "${{ inputs.key }}"
       run: |
         # Validate GPG key file and import with passphrase
         set -euo pipefail
@@ -103,7 +103,7 @@ runs:
       shell: bash
       env:
         GNUPGHOME: "${{ inputs.gpg-home || env.GNUPGHOME }}"
-        GPG_KEY_PATH: "${{ inputs.gpg-key }}"
+        GPG_KEY_PATH: "${{ inputs.key }}"
       run: |
         # Validate GPG key content and import with passphrase
         set -euo pipefail

@@ -16,7 +16,7 @@ inputs:
     required: false
     default: ''
     description: "Passphrase for encrypted GPG key (will be masked in logs)"
-  export_sub:
+  export-sub:
     required: false
     default: 'true'
     description: "Exports only Subkey true/false"
@@ -28,11 +28,11 @@ inputs:
     required: false
     default: 'false'
     description: "Exports GPG key in decrypted form (no passphrase protection)"
-  with_ssl_protection:
+  with-ssl-protection:
     required: false
     default: 'false'
     description: "Exports GPG private key with SSL passphrase protection instead of GPG passphrase"
-  export_dir:
+  export-dir:
     required: false
     default: "${{ github.workspace }}/"
     description: "Directory path to exported GPG key"
@@ -69,7 +69,7 @@ runs:
         echo "Found $KEY_COUNT GPG key(s)"
 
     - name: Export GPG key securely (encrypted)
-      if: inputs.with_ssl_protection != 'true'
+      if: inputs.with-ssl-protection != 'true'
       shell: bash
       run: |
         set -euo pipefail
@@ -87,7 +87,7 @@ runs:
 
         # Export public key if requested
         if [ "${{ inputs.public }}" = "true" ]; then
-          export_file="${{ inputs.export_dir }}/public.asc"
+          export_file="${{ inputs.export-dir }}/public.asc"
 
           if ! gpg --armor --export "$FPR" > "$export_file" 2>/dev/null; then
             echo "::error::Failed to export public key" >&2
@@ -105,7 +105,7 @@ runs:
             exit 1
           fi
 
-          export_file="${{ inputs.export_dir }}/private.asc"
+          export_file="${{ inputs.export-dir }}/private.asc"
 
           # Use temporary FD for passphrase to avoid shell history
           if ! exec 3<<< "${{ inputs.pass }}" && \
@@ -125,7 +125,60 @@ runs:
         fi
 
     - name: Export GPG key securely (encrypted)
-      if: inputs.with_ssl_protection == 'true'
+      if: inputs.with-ssl-protection == 'true'
       shell: bash
       run: |
         set -euo pipefail
+
+        # Get key fingerprint with validation
+        FPR=$(gpg --with-colons --with-subkey-fingerprints --list-keys | \
+          grep -E "^fpr:.*:" | head -1 | cut -d: -f10)
+
+        if [ -z "$FPR" ] || [ ${#FPR} -lt 40 ]; then
+          echo "::error::Invalid or missing GPG fingerprint" >&2
+          exit 1
+        fi
+
+        echo "Using GPG key: ${FPR:0:16}..."
+
+        # Export public key if requested
+        if [ "${{ inputs.public }}" = "true" ]; then
+          export_file="${{ inputs.export-dir }}/public.asc"
+
+          if ! gpg --armor --export "$FPR" > "$export_file" 2>/dev/null; then
+            echo "::error::Failed to export public key" >&2
+            rm -f "$export_file"
+            exit 1
+          fi
+
+          echo "::notice::Public key exported to: $export_file"
+        fi
+
+        # Export private key if requested (with SSL passphrase protection)
+        if [ "${{ inputs.private }}" = "true" ]; then
+          export_file="${{ inputs.export-dir }}/private.asc"
+
+          # Use temporary FD for SSL passphrase to avoid shell history
+          if ! exec 3<<< "${{ inputs.pass }}" && \
+             gpg --armor --batch --pinentry-mode loopback \
+                 --passphrase-fd 3 --export-secret-key "$FPR" > "$export_file" 2>/dev/null; then
+            echo "::error::Failed to export private key" >&2
+            rm -f "$export_file"
+            exec 3>&-
+            exit 1
+          fi
+
+          exec 3>&-
+
+          # Secure the exported key file
+          chmod 600 "$export_file"
+          echo "::notice::Private key exported to: $export_file (perms: 600)"
+        fi
+
+    - name: Cleanup
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # Remove any existing exports in the directory
+        rm -f "${{ inputs.export-dir }}/public.asc" "${{ inputs.export-dir }}/private.asc"

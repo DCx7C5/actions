@@ -92,13 +92,13 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
-          method: 'inline'
-          gpg_home: ${{ format('{0}/.gnupg', github.workspace) }}
-          gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
-          configure_git: 'true'
-          setup_home: 'true'
-          preset_pass: 'false'
+          import-method: 'inline'
+          gpg-home: ${{ format('{0}/.gnupg', github.workspace) }}
+          key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-pass: ${{ secrets.GPG_PASSPHRASE }}
+          configure-git: 'true'
+          initialize-home: 'true'
+          preset-passphrase-cache: 'false'
 
       - name: Test Arch Run Command Action
         id: test_arch_run_cmd

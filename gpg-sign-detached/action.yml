@@ -8,23 +8,23 @@ inputs:
     required: false
     description: "List of files to sign"
     default: "*.tar.gz"
-  sig_ext:
+  sig-ext:
     required: false
     description: "File extension to use for detached signatures (default: sig)"
     default: "sig"
-  workspace_dir:
+  workspace-dir:
     required: false
     description: "Workspace directory (default: ${{ github.workspace }})"
     default: ${{ github.workspace }}
-  gpg_keyid:
+  gpg-keyid:
     required: false
     description: "GPG key ID to use for signing (if not provided, gpg will use the default key)"
     default: ""
-  gpg_passphrase:
+  gpg-passphrase:
     required: false
     description: "Passphrase for the GPG key (if the key is passphrase-protected and pass_precached is false)"
     default: ""
-  gpg_pass_precached:
+  gpg-pass-precached:
     required: false
     description: "Whether the GPG passphrase is already cached in the GPG agent (true/false)"
     default: "false"
@@ -42,13 +42,13 @@ runs:
     - name: Create file signatures
       id: sign_files
       shell: bash
-      working-directory: ${{ inputs.workspace_dir }}
+      working-directory: ${{ inputs.workspace-dir }}
       env:
         FILES_PATTERN: ${{ inputs.files }}
-        SIG_EXT: ${{ inputs.sig_ext }}
-        KEY_ID: ${{ inputs.gpg_keyid }}
-        PASSPHRASE: ${{ inputs.gpg_passphrase }}
-        PASS_PRECACHED: ${{ inputs.gpg_pass_precached }}
+        SIG_EXT: ${{ inputs.sig-ext }}
+        KEY_ID: ${{ inputs.gpg-keyid }}
+        PASSPHRASE: ${{ inputs.gpg-passphrase }}
+        PASS_PRECACHED: ${{ inputs.gpg-pass-precached }}
       run: |
         # Create detached signatures for files matching the specified pattern
         set -euo pipefail

@@ -111,7 +111,7 @@ runs:
       id: gpg_setup
       uses: DCx7C5/actions/gpg-setup-home@v1
       with:
-        gpg_home: ${{ inputs.gpg-home }}
+        gpg-home: ${{ inputs.gpg-home }}
 
     - name: Validate GPG Key input
       id: validate
@@ -119,7 +119,7 @@ runs:
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
-        gpg-key: ${{ inputs.key }}
+        key: ${{ inputs.key }}
 
     - name: Decrypt SSL-encrypted key (if applicable)
       id: decrypt_ssl
@@ -141,7 +141,7 @@ runs:
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
-        gpg-key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
+        key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.gpg-pass }}
         type: 'auto'
 
@@ -151,7 +151,7 @@ runs:
       uses: DCx7C5/actions/gpg-import/gpg-import-file@v1
       with:
         gpg-type: 'auto'
-        gpg-key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
+        key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.gpg-pass }}
         delete-after-import: ${{ inputs.delete-after-import }}
         gpg-home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
@@ -203,7 +203,6 @@ runs:
         key-id: ${{ steps.dispatch.outputs.fingerprint }}
         gpg-name: ${{ inputs.gpg-name }}
         gpg-mail: ${{ inputs.gpg-mail }}
-        gh-token: ${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}
 
     - name: Preset passphrase with gpg-agent
       if: inputs.preset-passphrase-cache == 'true' && (steps.validate.outputs.is_secretkey == 'true' || steps.validate.outputs.is_ssl_enc_key == 'true')
@@ -211,4 +210,4 @@ runs:
       with:
         pass: ${{ inputs.gpg-pass }}
         forget: 'false'
-        gpg_home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
+        gpg-home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}

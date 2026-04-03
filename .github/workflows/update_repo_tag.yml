@@ -46,8 +46,6 @@ jobs:
       - name: Import GPG key
         id: gpg_import
         uses: ./gpg-import
-        env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
           import-method: 'inline'
           key: ${{ secrets.GPG_PRIVATE_KEY }}
@@ -56,6 +54,7 @@ jobs:
           configure-git: 'true'
           initialize-home: 'true'
           preset-passphrase-cache: 'true'
+          gh-token: ${{ steps.app_token.outputs.token }}
 
       - name: Delete old tag & release (if exists)
         id: tag_delete
@@ -94,7 +93,7 @@ jobs:
         if: steps.gpg_import.outputs.gpg_home != ''
         uses: ./gpg-cleanup
         with:
-          gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
+          gpg-home: ${{ steps.gpg_import.outputs.gpg_home }}
 
       - name: Notify on success
         if: success()

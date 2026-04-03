@@ -47,13 +47,13 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
-          method: 'inline'
-          gpg_home: ${{ format('{0}/.gnupg', github.workspace) }}
-          gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
-          configure_git: 'true'
-          setup_home: 'true'
-          preset_pass: 'true'
+          key: ${{ secrets.GPG_PRIVATE_KEY }}
+          import-method: 'inline'
+          gpg-home: ${{ format('{0}/.gnupg', github.workspace) }}
+          gpg-pass: ${{ secrets.GPG_PASSPHRASE }}
+          configure-git: 'true'
+          initialize-home: 'true'
+          preset-passphrase-cache: 'true'
 
       - name: Verify import
         id: verify
@@ -154,13 +154,13 @@ jobs:
         id: gpg_import
         uses: ./gpg-import
         with:
-          method: 'keyserver'
-          gpg_home: ${{ format('{0}/.gnupg', github.workspace) }}
-          gpg_key: '14A71FEDA1F764F7075FFA40FF64D67D0F00DD12'
-          keyserver_url: 'hkps://keyserver.ubuntu.com'
-          configure_git: 'false'
-          setup_home: 'true'
-          preset_pass: 'false'
+          import-method: 'keyserver'
+          gpg-home: ${{ format('{0}/.gnupg', github.workspace) }}
+          key: '14A71FEDA1F764F7075FFA40FF64D67D0F00DD12'
+          keyserver-url: 'hkps://keyserver.ubuntu.com'
+          configure-git: 'false'
+          initialize-home: 'true'
+          preset-passphrase-cache: 'false'
 
       - name: Verify keyserver import
         id: verify
