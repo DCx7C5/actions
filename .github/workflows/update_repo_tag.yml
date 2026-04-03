@@ -49,13 +49,13 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
-          method: 'inline'
-          gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
-          delete_after_import: 'true'
-          configure_git: 'true'
-          setup_home: 'true'
-          preset_pass: 'true'
+          import-method: 'inline'
+          key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-pass: ${{ secrets.GPG_PASSPHRASE }}
+          delete-after-import: 'true'
+          configure-git: 'true'
+          initialize-home: 'true'
+          preset-passphrase-cache: 'true'
 
       - name: Delete old tag & release (if exists)
         id: tag_delete
