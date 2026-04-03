@@ -24,7 +24,7 @@ inputs:
     required: false
     description: "Passphrase for the GPG key (if the key is passphrase-protected and pass_precached is false)"
     default: ""
-  gpg-pass-precached:
+  preset-passphrase-cache:
     required: false
     description: "Whether the GPG passphrase is already cached in the GPG agent (true/false)"
     default: "false"
@@ -48,7 +48,7 @@ runs:
         SIG_EXT: ${{ inputs.sig-ext }}
         KEY_ID: ${{ inputs.gpg-keyid }}
         PASSPHRASE: ${{ inputs.gpg-passphrase }}
-        PASS_PRECACHED: ${{ inputs.gpg-pass-precached }}
+        PASS_PRECACHED: ${{ inputs.preset-passphrase-cache }}
       run: |
         # Create detached signatures for files matching the specified pattern
         set -euo pipefail
