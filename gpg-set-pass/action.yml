@@ -1,19 +1,23 @@
 name: "Set new GPG passphrase"
-description: "Set a new passphrase for a GPG key (using gpg)"
+description: "Set a new passphrase for a GPG key using gpg-agent loopback pinentry"
 author: "DCx7C5"
+
+branding:
+  icon: "lock"
+  color: "blue"
 
 
 inputs:
   key-id:
     required: true
-    description: "GPG key ID to set the new passphrase for"
+    description: "GPG key ID or fingerprint to change the passphrase for"
   new-passphrase:
     required: false
-    description: "New passphrase to set for the GPG key"
+    description: "New passphrase to set for the GPG key (empty string removes passphrase)"
     default: ''
   old-passphrase:
     required: false
-    description: "Current passphrase for the GPG key (if needed)"
+    description: "Current passphrase for the GPG key (leave empty if key has no passphrase)"
     default: ''
   gpg-home:
     required: false
@@ -21,22 +25,111 @@ inputs:
     default: ''
 
 
+outputs:
+  success:
+    description: "Whether the passphrase was changed successfully (true/false)"
+    value: ${{ steps.set_pass.outputs.success }}
+  fingerprint:
+    description: "Full fingerprint of the updated key"
+    value: ${{ steps.set_pass.outputs.fingerprint }}
+
+
 runs:
   using: composite
   steps:
+    - name: Mask sensitive inputs
+      shell: bash
+      run: |
+        if [[ -n '${{ inputs.old-passphrase }}' ]]; then
+          echo '::add-mask::${{ inputs.old-passphrase }}'
+        fi
+        if [[ -n '${{ inputs.new-passphrase }}' ]]; then
+          echo '::add-mask::${{ inputs.new-passphrase }}'
+        fi
+
     - name: Set new GPG passphrase
       id: set_pass
       shell: bash
       env:
         GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
+        GPG_KEY_ID: ${{ inputs.key-id }}
       run: |
         set -euo pipefail
-        
-        gpg --batch --yes --no-tty --change-passphrase --pinentry-mode loopback --command-fd 0 <<'EOF'
+
+        # Validate key-id input
+        if [[ -z "$GPG_KEY_ID" ]]; then
+          echo "::error title=Missing key-id::GPG key ID is required"
+          exit 1
+        fi
+
+        # Verify secret key exists in keyring
+        if ! gpg --list-secret-keys "$GPG_KEY_ID" &>/dev/null; then
+          echo "::error title=Key not found::Secret key '$GPG_KEY_ID' not found in keyring"
+          exit 1
+        fi
+
+        # Get the fingerprint and keygrip(s) for the key
+        FINGERPRINT=$(gpg --with-colons --list-secret-keys "$GPG_KEY_ID" \
+          | awk -F: '/^fpr:/ {print $10; exit}')
+        KEYGRIPS=$(gpg --with-colons --with-keygrip --list-secret-keys "$GPG_KEY_ID" \
+          | awk -F: '/^grp:/ {print $10}')
+
+        if [[ -z "$FINGERPRINT" ]]; then
+          echo "::error title=Fingerprint error::Could not determine fingerprint for key '$GPG_KEY_ID'"
+          exit 1
+        fi
+
+        if [[ -z "$KEYGRIPS" ]]; then
+          echo "::error title=Keygrip error::Could not determine keygrip(s) for key '$GPG_KEY_ID'"
+          exit 1
+        fi
+
+        NUM_GRIPS=$(echo "$KEYGRIPS" | grep -c .)
+
+        echo "::debug::Changing passphrase for key $FINGERPRINT ($NUM_GRIPS keygrip(s))"
+
+        # Pre-cache old passphrase in gpg-agent for all keygrips
+        # so gpg can decrypt each key component without prompting
+        if [[ -n '${{ inputs.old-passphrase }}' ]]; then
+          while IFS= read -r GRIP; do
+            [[ -z "$GRIP" ]] && continue
+            cat <<'__OLD_PASS__' | /usr/lib/gnupg/gpg-preset-passphrase --preset "$GRIP" || true
         ${{ inputs.old-passphrase }}
+        __OLD_PASS__
+          done <<< "$KEYGRIPS"
+          echo "::debug::Old passphrase pre-cached in gpg-agent"
+        fi
+
+        # Change passphrase via fd 3 (no cmdline or env exposure)
+        # Old passphrase is already cached in gpg-agent.
+        # gpg prompts for new + confirm per key component in loopback mode,
+        # so we feed the new passphrase 2x per keygrip.
+        exec 3< <(
+          for ((i = 0; i < NUM_GRIPS; i++)); do
+            cat <<'__NEW_PASS__'
         ${{ inputs.new-passphrase }}
+        __NEW_PASS__
+            cat <<'__NEW_PASS__'
         ${{ inputs.new-passphrase }}
-        ${{ inputs.new-passphrase }}
-        EOF
-        
-        echo "::notice::Passphrase for GPG key ID '${{ inputs.key-id }}' has been updated successfully."
+        __NEW_PASS__
+          done
+        )
+
+        if ! gpg --batch --yes --no-tty --pinentry-mode loopback \
+          --passphrase-fd 3 \
+          --passwd "$GPG_KEY_ID"; then
+          exec 3<&-
+          echo "::error title=Passphrase change failed::Failed to change passphrase for key '$GPG_KEY_ID'"
+          echo "success=false" >> "$GITHUB_OUTPUT"
+          exit 1
+        fi
+
+        exec 3<&-
+
+        {
+          echo "success=true"
+          echo "fingerprint=$FINGERPRINT"
+        } >> "$GITHUB_OUTPUT"
+
+        echo "::notice::Passphrase for GPG key '$GPG_KEY_ID' (fingerprint: $FINGERPRINT) has been updated successfully."
+
