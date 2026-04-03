@@ -44,8 +44,6 @@ jobs:
       - name: Import GPG key (inline, protected)
         id: gpg_import
         uses: ./gpg-import
-        env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
           key: ${{ secrets.GPG_PRIVATE_KEY }}
           import-method: 'inline'
@@ -54,6 +52,7 @@ jobs:
           configure-git: 'true'
           initialize-home: 'true'
           preset-passphrase-cache: 'true'
+          gh-token: ${{ steps.app_token.outputs.token }}
 
       - name: Verify import
         id: verify
