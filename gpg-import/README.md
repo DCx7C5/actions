@@ -1,5 +1,7 @@
 # gpg-import
 
+[![Test GPG Import](https://github.com/DCx7C5/actions/actions/workflows/test_gpg_import.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/test_gpg_import.yml)
+
 > Composite GitHub Action for importing GPG keys from inline secrets, file paths, or keyservers.
 
 Auto-detects input type, imports the key, and exposes key metadata as action outputs.
@@ -33,23 +35,23 @@ Auto-detects input type, imports the key, and exposes key metadata as action out
 
 ## Inputs
 
-| Input                    | Required | Default                   | Description                                                                            |
-|--------------------------|:--------:|---------------------------|----------------------------------------------------------------------------------------|
-| `key`                    |  **yes** | –                         | Inline key content, file path, or key fingerprint/id                                   |
-| `gpg-pass`               |    no    | `''`                      | Passphrase for the GPG private key (also used as SSL-pass fallback)                    |
-| `ssl-pass`               |    no    | `''`                      | Passphrase for OpenSSL decryption (if different from `gpg-pass`)                       |
-| `keyserver-url`          |    no    | `hkps://keys.openpgp.org` | Keyserver URL for fingerprint-based imports                                            |
-| `delete-after-import`    |    no    | `true`                    | Securely shred the key file after a file-based import                                  |
-| `import-method`          |    no    | `auto`                    | Import method hint (`auto`, `secret`, `file`, `keyserver`)                             |
-| `gpg-home`               |    no    | `''`                      | Explicit GPG home directory (falls back to `GNUPGHOME` env)                            |
-| `gpg-type`               |    no    | `auto`                    | Key type hint (`auto`, `private`, `public`)                                            |
-| `configure-git`          |    no    | `true`                    | Configure Git to sign commits/tags with the imported key                               |
-| `initialize-home`        |    no    | `true`                    | Create and use a temporary GPG home directory for isolation                             |
-| `preset-passphrase-cache`|    no    | `true`                    | Preset passphrase in `gpg-agent` for non-interactive operations                        |
-| `owner-trust-level`      |    no    | `6`                       | Owner trust level for imported private keys (`1`–`5`, or `6` = ultimate)               |
-| `gpg-name`               |    no    | `''`                      | Name for Git GPG signing config                                                        |
-| `gpg-mail`               |    no    | `''`                      | Email for Git GPG signing config                                                       |
-| `gh-token`               |    no    | `''`                      | GitHub token for authenticated Git operations (falls back to `GH_TOKEN`/`GITHUB_TOKEN`)|
+| Input                     | Required | Default                   | Description                                                                             |
+|---------------------------|:--------:|---------------------------|-----------------------------------------------------------------------------------------|
+| `key`                     | **yes**  | –                         | Inline key content, file path, or key fingerprint/id                                    |
+| `gpg-pass`                |    no    | `''`                      | Passphrase for the GPG private key (also used as SSL-pass fallback)                     |
+| `ssl-pass`                |    no    | `''`                      | Passphrase for OpenSSL decryption (if different from `gpg-pass`)                        |
+| `keyserver-url`           |    no    | `hkps://keys.openpgp.org` | Keyserver URL for fingerprint-based imports                                             |
+| `delete-after-import`     |    no    | `true`                    | Securely shred the key file after a file-based import                                   |
+| `import-method`           |    no    | `auto`                    | Import method hint (`auto`, `secret`, `file`, `keyserver`)                              |
+| `gpg-home`                |    no    | `''`                      | Explicit GPG home directory (falls back to `GNUPGHOME` env)                             |
+| `gpg-type`                |    no    | `auto`                    | Key type hint (`auto`, `private`, `public`)                                             |
+| `configure-git`           |    no    | `true`                    | Configure Git to sign commits/tags with the imported key                                |
+| `initialize-home`         |    no    | `true`                    | Create and use a temporary GPG home directory for isolation                             |
+| `preset-passphrase-cache` |    no    | `true`                    | Preset passphrase in `gpg-agent` for non-interactive operations                         |
+| `owner-trust-level`       |    no    | `6`                       | Owner trust level for imported private keys (`1`–`5`, or `6` = ultimate)                |
+| `gpg-name`                |    no    | `''`                      | Name for Git GPG signing config                                                         |
+| `gpg-mail`                |    no    | `''`                      | Email for Git GPG signing config                                                        |
+| `gh-token`                |    no    | `''`                      | GitHub token for authenticated Git operations (falls back to `GH_TOKEN`/`GITHUB_TOKEN`) |
 
 ## Outputs
 
@@ -135,13 +137,13 @@ Auto-detects input type, imports the key, and exposes key metadata as action out
 
 ## Troubleshooting
 
-| Error message                                        | Cause / Fix                                                                 |
-|------------------------------------------------------|-----------------------------------------------------------------------------|
-| `gpg-key input is required`                          | `key` is empty or not provided                                              |
-| `Unable to classify gpg_key input`                   | Value is not a file path, armored PGP block, or valid fingerprint/key-id    |
-| `Failed to import public key from keyserver`         | Keyserver unreachable, unknown key, or network policy blocking the request  |
-| GPG import errors for private key                    | Wrong `gpg-pass`, malformed key data, or incompatible GPG version           |
-| `Invalid fingerprint. Must be at least 16 characters`| Fingerprint/key-id too short – provide at least 16 hex characters           |
+| Error message                                         | Cause / Fix                                                                |
+|-------------------------------------------------------|----------------------------------------------------------------------------|
+| `gpg-key input is required`                           | `key` is empty or not provided                                             |
+| `Unable to classify gpg_key input`                    | Value is not a file path, armored PGP block, or valid fingerprint/key-id   |
+| `Failed to import public key from keyserver`          | Keyserver unreachable, unknown key, or network policy blocking the request |
+| GPG import errors for private key                     | Wrong `gpg-pass`, malformed key data, or incompatible GPG version          |
+| `Invalid fingerprint. Must be at least 16 characters` | Fingerprint/key-id too short – provide at least 16 hex characters          |
 
 ## Notes
 

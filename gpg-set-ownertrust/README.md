@@ -1,21 +1,22 @@
 # gpg-set-ownertrust
 
-Composite GitHub Action to set ownertrust level for an imported GPG key.
+[![Test GPG Import](https://github.com/DCx7C5/actions/actions/workflows/test_gpg_import.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/test_gpg_import.yml)
+
+> Composite GitHub Action to set ownertrust level for an imported GPG key.
 
 ## What this action does
 
 - Validates required trust inputs.
 - Resolves `GNUPGHOME` from input or environment.
-- Runs non-interactive `gpg --edit-key` trust commands.
-- Sets trust level for the given key fingerprint.
+- Sets trust level via `gpg --import-ownertrust`.
 
 ## Inputs
 
 | Input         | Required | Default | Description                                                                             |
 |---------------|----------|---------|-----------------------------------------------------------------------------------------|
-| `fingerprint` | yes      | -       | Fingerprint of the GPG key to update trust for.                                         |
-| `trust_level` | no       | `5`     | Trust level value passed to GPG (`5` = ultimate/owner trust in this flow).              |
-| `gpg_home`    | no       | `''`    | Path to `GNUPGHOME`; falls back to `env.GNUPGHOME` or `${{ github.workspace }}/.gnupg`. |
+| `fingerprint` | **yes**  | –       | Fingerprint of the GPG key to update trust for.                                         |
+| `trust-level` | no       | `6`     | Trust level value (`1`–`5`, or `6` = ultimate).                                         |
+| `gpg-home`    | no       | `''`    | Path to `GNUPGHOME`; falls back to `env.GNUPGHOME` or `${{ github.workspace }}/.gnupg`. |
 
 ## Outputs
 
@@ -27,24 +28,15 @@ This action does not define outputs.
 - `gpg`
 - Key with matching `fingerprint` already present in keyring
 
-## Operation flow
-
-1. Validate `fingerprint` and `trust_level` are non-empty.
-2. Resolve `GNUPGHOME` from `gpg_home` / environment fallback.
-3. Pipe trust commands to `gpg --edit-key <fingerprint>` in batch mode.
-4. Fail on GPG error; otherwise emit success notice.
-
-## Examples
-
-## Example: set owner trust for imported key
+## Example
 
 ```yaml
 - name: Set ownertrust
   uses: ./gpg-set-ownertrust
   with:
     fingerprint: ABCDEF1234567890ABCDEF1234567890ABCDEF12
-    trust_level: '5'
-    gpg_home: ${{ github.workspace }}/.gnupg
+    trust-level: '6'
+    gpg-home: ${{ github.workspace }}/.gnupg
 ```
 
 ## Common failures
@@ -63,4 +55,3 @@ This action does not define outputs.
     GNUPGHOME: ${{ github.workspace }}/.gnupg
   run: gpg --export-ownertrust | grep -F "ABCDEF1234567890ABCDEF1234567890ABCDEF12" | cat
 ```
-

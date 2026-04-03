@@ -1,52 +1,48 @@
-# json-packages
+# aur-json-packages
 
-Composite GitHub Action to read and mutate a `packages.json` document with `jq`.
+[![Test JSON Packages](https://github.com/DCx7C5/actions/actions/workflows/test_json_pkgs.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/test_json_pkgs.yml)
+
+> Composite GitHub Action to manage a JSON packages dictionary stored as a GitHub Variable.
 
 ## What this action does
 
-- Supports `get`, `add`, `update`, and `remove` actions.
-- Lists packages, fetches values for a package, filters packages by key/value.
-- Adds or updates package keys.
-- Removes full package entries or a specific key within a package.
+- Supports `get`, `add`, `update`, `remove`, and `count` actions.
+- Retrieves, filters, adds, updates, or removes package entries from a JSON dictionary.
+- Stores the dictionary as a GitHub organization/repository/environment variable.
+- Supports multi-line inputs for batch operations on multiple packages/keys/values.
 
 ## Inputs
 
-| Input          | Required | Default                                     | Description                                               |
-|----------------|----------|---------------------------------------------|-----------------------------------------------------------|
-| `path`         | no       | `${{ github.workspace }}/.ci/packages.json` | Path to target JSON file.                                 |
-| `action`       | no       | `get`                                       | Operation: `get`, `add`, `update`, `remove`.              |
-| `package_name` | no       | `''`                                        | Package name to query or mutate.                          |
-| `key`          | no       | `''`                                        | Property key used by add/update/remove/filter operations. |
-| `value`        | no       | `''`                                        | Property value used by add/update or filter operations.   |
+| Input              | Required | Default         | Description                                                                        |
+|--------------------|----------|-----------------|------------------------------------------------------------------------------------|
+| `action`           | no       | `get`           | Operation: `get`, `add`, `update`, `remove`, `count`.                              |
+| `var-name`         | no       | `JSON_PACKAGES` | Name of the GitHub Variable storing the JSON dictionary.                           |
+| `pkg-name`         | no       | `''`            | Newline-separated list of package names to query or mutate.                        |
+| `key`              | no       | `''`            | Newline-separated list of keys for add/update/remove/filter operations.            |
+| `value`            | no       | `''`            | Newline-separated list of values for add/update operations (JSON or plain string). |
+| `env`              | no       | `''`            | Target deployment environment for the variable.                                    |
+| `org`              | no       | `''`            | Organization to store the variable in.                                             |
+| `repo`             | no       | `''`            | Repository to store the variable in (defaults to current repository).              |
+| `gh-token`         | no       | `''`            | GitHub Token with permissions to manage variables.                                 |
+| `output-structure` | no       | `dict`          | Output format for `get` action: `dict` (default) or `list`.                        |
 
 ## Outputs
 
-| Output     | Description                                               |
-|------------|-----------------------------------------------------------|
-| `packages` | Newline-separated package names for matching `get` paths. |
-| `upstream` | `upstream` value of selected package (if any).            |
-| `custom`   | `custom` value of selected package (if any).              |
-| `refactor` | `refactor` value of selected package (if any).            |
-| `success`  | `true` when add/update/remove step reports success.       |
+| Output         | Description                                                   |
+|----------------|---------------------------------------------------------------|
+| `out`          | Action result — JSON data for `get`, `saved` for mutations.   |
+| `debug-args`   | Debug: generated jq arguments.                                |
+| `debug-filter` | Debug: generated jq filter expression.                        |
 
 ## Dependencies
 
 - `bash`
 - `jq`
-
-## Operation flow
-
-1. Validates `action` and selected input combinations.
-2. Executes one branch depending on `action` and optional selectors:
-   - `get` + no `package_name`: list all package names.
-   - any `package_name`: emit `upstream`, `custom`, `refactor` values.
-   - `add` / `update`: write key/value into package object.
-   - `remove`: remove package or specific key.
-   - `get` + `key` (+ optional `value`): filter packages by property.
+- `gh` CLI (for reading/writing GitHub Variables)
 
 ## Examples
 
-## Example: list all package names
+### List all packages
 
 ```yaml
 - name: Read packages
@@ -54,53 +50,51 @@ Composite GitHub Action to read and mutate a `packages.json` document with `jq`.
   uses: ./aur-json-packages
   with:
     action: get
-    path: ${{ github.workspace }}/.ci/packages.json
+    org: MyOrg
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
+    var-name: JSON_PACKAGES
 
-- name: Print package list
-  run: echo "${{ steps.pkgs.outputs.packages }}"
+- name: Print result
+  run: echo '${{ steps.pkgs.outputs.out }}'
 ```
 
-## Example: add package key
+### Add a package with keys
 
 ```yaml
-- name: Add package upstream
+- name: Add package entry
   uses: ./aur-json-packages
   with:
     action: add
-    package_name: my-package
-    key: upstream
-    value: https://example.org/repo.git
+    org: MyOrg
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
+    var-name: JSON_PACKAGES
+    pkg-name: my-package
+    key: |
+      submodule
+      custom
+    value: |
+      false
+      true
 ```
 
-## Example: remove key from package
+### Remove packages
 
 ```yaml
-- name: Remove package key
+- name: Remove packages
   uses: ./aur-json-packages
   with:
     action: remove
-    package_name: my-package
-    key: custom
+    org: MyOrg
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
+    var-name: JSON_PACKAGES
+    pkg-name: |
+      package-a
+      package-b
 ```
 
 ## Common failures
 
-- JSON file does not exist at `path`.
-- `jq` not installed on runner.
-- Invalid input combinations (`key` without `value`, unsupported `action`).
-
-## Known caveats
-
-- Validation step references `JSON_PATH` without defining it in that step environment.
-- Validation condition expressions currently contain shell syntax issues and may not enforce combinations as intended.
-- Output `custom` references `steps.custom_output.outputs.custom`, but no `custom_output` step exists; value is produced by `get_pkg_value`.
-- Output `refactor` references `steps.refactored_output.outputs.refactor`, but no `refactored_output` step exists; value is produced by `get_pkg_value`.
-
-## Quick verification
-
-```yaml
-- name: Verify packages.json is valid JSON
-  shell: bash
-  run: jq -e '.' "${{ github.workspace }}/.ci/packages.json" > /dev/null
-```
-
+- `gh` CLI not authenticated or token missing required permissions.
+- Variable does not exist or contains invalid JSON.
+- Invalid input combinations (`key`+`value` with unsupported `action`).
+- Only one of `env`, `repo`, or `org` may be set at a time.

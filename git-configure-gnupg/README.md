@@ -1,6 +1,8 @@
 # git-configure-gnupg
 
-Composite GitHub Action to discover a signing key in `GNUPGHOME` and configure `git`/`gh` for GPG-signed commits and tags.
+[![Test GPG Import](https://github.com/DCx7C5/actions/actions/workflows/test_gpg_import.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/test_gpg_import.yml)
+
+> Composite GitHub Action to discover a signing key in `GNUPGHOME` and configure `git`/`gh` for GPG-signed commits and tags.
 
 ## What this action does
 
@@ -14,9 +16,11 @@ Composite GitHub Action to discover a signing key in `GNUPGHOME` and configure `
 
 | Input      | Required | Default | Description                                                                  |
 |------------|----------|---------|------------------------------------------------------------------------------|
-| `key_id`   | no       | `''`    | Key ID or fingerprint to use. If empty, first secret key in keyring is used. |
-| `gpg_home` | no       | `''`    | Path to `GNUPGHOME`. Falls back to existing `GNUPGHOME` environment.         |
-| `token`    | no       | `''`    | GitHub token for optional `gh` client config usage.                          |
+| `key-id`   | no       | `''`    | Key ID or fingerprint to use. If empty, first secret key in keyring is used. |
+| `gpg-home` | no       | `''`    | Path to `GNUPGHOME`. Falls back to existing `GNUPGHOME` environment.         |
+| `gpg-name` | no       | `''`    | Name for Git commit author (auto-detected from key UID if empty).            |
+| `gpg-mail` | no       | `''`    | Email for Git commit author (auto-detected from key UID if empty).           |
+| `gh-token` | no       | `''`    | GitHub token for optional `gh` client config usage.                          |
 
 ## Outputs
 
@@ -45,32 +49,32 @@ Composite GitHub Action to discover a signing key in `GNUPGHOME` and configure `
 
 ## Examples
 
-## Example: configure with default secret key
+### Configure with default secret key
 
 ```yaml
 - name: Configure git signing
   id: gpgcfg
   uses: ./git-configure-gnupg
   with:
-    gpg_home: ${{ github.workspace }}/.gnupg
+    gpg-home: ${{ github.workspace }}/.gnupg
 ```
 
-## Example: configure with explicit key
+### Configure with explicit key
 
 ```yaml
 - name: Configure git signing with selected key
   id: gpgcfg
   uses: ./git-configure-gnupg
   with:
-    key_id: ${{ vars.GPG_KEY_ID }}
-    gpg_home: ${{ github.workspace }}/.gnupg
-    token: ${{ secrets.GITHUB_TOKEN }}
+    key-id: ${{ vars.GPG_KEY_ID }}
+    gpg-home: ${{ github.workspace }}/.gnupg
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Common failures
 
-- No secret key is available in `GNUPGHOME` when an explicit `key_id` is requested.
-- Provided `key_id` cannot be found in the keyring.
+- No secret key is available in `GNUPGHOME` when an explicit `key-id` is requested.
+- Provided `key-id` cannot be found in the keyring.
 - `GNUPGHOME` points to wrong location or has missing permissions.
 - `gpg` or `git` is not available on the runner.
 
@@ -84,4 +88,3 @@ Composite GitHub Action to discover a signing key in `GNUPGHOME` and configure `
     git config --global --get commit.gpgsign
     gpg --with-colons --list-secret-keys | cat
 ```
-

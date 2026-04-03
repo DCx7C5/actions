@@ -1,6 +1,8 @@
 # gpg-setup-home
 
-Composite GitHub Action to create and harden a GnuPG home directory for CI usage.
+[![Test GPG Import](https://github.com/DCx7C5/actions/actions/workflows/test_gpg_import.yml/badge.svg)](https://github.com/DCx7C5/actions/actions/workflows/test_gpg_import.yml)
+
+> Composite GitHub Action to create and harden a GnuPG home directory for CI usage.
 
 ## What this action does
 
@@ -15,17 +17,17 @@ Composite GitHub Action to create and harden a GnuPG home directory for CI usage
 
 | Input      | Required | Default | Description                                                             |
 |------------|----------|---------|-------------------------------------------------------------------------|
-| `gpg_home` | no       | `''`    | Path to GPG home directory. If empty, a temporary directory is created. |
+| `gpg-home` | no       | `''`    | Path to GPG home directory. If empty, a temporary directory is created. |
 
 ## Outputs
 
-| Output | Description |
-|---|---|
+| Output     | Description                                                   |
+|------------|---------------------------------------------------------------|
 | `gpg_home` | Effective GPG home directory path created/used by the action. |
 
 ## Environment variables
 
-- Reads `GNUPGHOME` (if set in environment and `gpg_home` is empty).
+- Reads `GNUPGHOME` (if set in environment and `gpg-home` is empty).
 - Writes `GNUPGHOME` to `$GITHUB_ENV` for subsequent steps.
 
 ## Notes

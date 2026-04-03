@@ -10,6 +10,7 @@ Composite GitHub Action to send a Telegram notification for a newly published si
 
 ## Inputs
 
+
 | Input          | Required | Default                    | Description                                   |
 |----------------|----------|----------------------------|-----------------------------------------------|
 | `token`        | yes      | -                          | Telegram bot token.                           |
