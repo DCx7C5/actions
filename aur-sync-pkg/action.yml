@@ -53,7 +53,7 @@ runs:
     - name: Add package
       id: add
       if: inputs.sync_type == 'add' && (inputs.is_custom == 'false' || !inputs.is_custom)
-      uses: ./aur-sync-pkg/add-pkg
+      uses: DCx7C5/actions/aur-sync-pkg/add-pkg@v1
       with:
         pkg_name: ${{ inputs.pkg_name }}
         remote_name: ${{ inputs.remote_name }}
@@ -63,7 +63,7 @@ runs:
     - name: Add Custom package
       id: add_custom
       if: inputs.sync_type == 'add' && (inputs.is_custom == 'true' || inputs.is_custom)
-      uses: ./aur-sync-pkg/add-custom-pkg
+      uses: DCx7C5/actions/aur-sync-pkg/add-custom-pkg@v1
       with:
         pkg_name: ${{ inputs.pkg_name }}
         remote_pkg_name: ${{ inputs.remote_pkg_name }}
@@ -74,7 +74,7 @@ runs:
     - name: Update package
       id: update
       if: inputs.sync_type == 'update' && (inputs.is_custom == 'false' || !inputs.is_custom)
-      uses: ./aur-sync-pkg/update-pkg
+      uses: DCx7C5/actions/aur-sync-pkg/update-pkg@v1
       with:
         pkg_name: ${{ inputs.pkg_name }}
         remote_name: ${{ inputs.remote_name }}
@@ -84,7 +84,7 @@ runs:
     - name: Update Custom package
       id: update_custom
       if: inputs.sync_type == 'update' && (inputs.is_custom == 'true' || inputs.is_custom)
-      uses: ./aur-sync-pkg/update-custom-pkg
+      uses: DCx7C5/actions/aur-sync-pkg/update-custom-pkg@v1
       with:
         pkg_name: ${{ inputs.pkg_name }}
         remote_pkg_name: ${{ inputs.remote_pkg_name }}

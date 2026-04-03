@@ -137,7 +137,7 @@ runs:
 
     - name: Upload assets (if provided)
       if: inputs.assets != ''
-      uses: ./gh-upload-assets
+      uses: DCx7C5/actions/gh-upload-assets@v1
       with:
         release_tag: ${{ inputs.release_tag }}
         assets: ${{ inputs.assets }}

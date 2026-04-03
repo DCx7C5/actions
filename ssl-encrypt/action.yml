@@ -14,6 +14,14 @@ inputs:
     required: false
     default: ''
     description: "Optional salt value for encryption"
+  symmetric:
+    required: false
+    default: 'true'
+    description: "Whether to use symmetric encryption (true/false, default: true). If false, the passphrase will be used as a key for asymmetric encryption (not recommended for general use)."
+  asymmetric:
+    required: false
+    default: ${{ inputs.symmetric == 'true' && 'false' || 'true' }}
+    description: "Whether to use asymmetric encryption (true/false, default: false). If true, the passphrase will be treated as a public key for encryption (not recommended for general use)."
   input_type:
     required: false
     default: 'auto'
@@ -61,6 +69,13 @@ runs:
           echo "::error::'input' cannot be empty." >&2
           exit 1
         fi
+        if [[ "${{ inputs.in }}" == *$'\n'* || $(printf '%s' "${{ inputs.in }}" | wc -l ) -gt 1 ]]; then
+          echo "::warning::Input contains newline characters, which may cause issues with inline processing. Consider using 'input_type: file' for multi-line content." 
+          echo "multiline=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "multiline=false" >> "$GITHUB_OUTPUT"
+        fi
+        
         
         if [[ "${{ inputs.input_type }}" != "auto" && "${{ inputs.input_type }}" != "file" && "${{ inputs.input_type }}" != "inline" ]]; then
           echo "::error::Invalid 'input_type' input: '${{ inputs.input_type }}'. Must be 'auto', 'file', or 'inline'." >&2

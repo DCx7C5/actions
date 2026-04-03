@@ -68,7 +68,7 @@ runs:
     - name: Build unsigned repository database
       id: aur_build_repo
       if: inputs.gpg_sign != 'true'
-      uses: ./arch-run-cmd
+      uses: DCx7C5/actions/arch-run-cmd@v1
       working-directory: "${{ inputs.working_directory }}"
       with:
         run_with_sudo: 'false'
@@ -95,7 +95,7 @@ runs:
     - name: Build signed repository database
       if: inputs.gpg_sign == 'true' && inputs.gpg_key_id != ''
       id: aur_build_repo_signed
-      uses: ./arch-run-cmd
+      uses: DCx7C5/actions/arch-run-cmd@v1
       working-directory: "${{ inputs.working_directory }}"
       with:
         run_with_sudo: 'false'

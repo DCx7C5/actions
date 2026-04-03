@@ -45,7 +45,7 @@ runs:
 
     - name: Delete package from package.json
       id: del_json
-      uses: ./json-packages
+      uses: DCx7C5/actions/json-packages@v1
       with:
         path: '${{ inputs.packages_json_path }}'
         action: 'remove'
@@ -54,7 +54,7 @@ runs:
     - name: Stage changes
       id: stage
       if: inputs.stage_changes == 'true'
-      uses: ./git-stage-changes
+      uses: DCx7C5/actions/git-stage-changes@v1
       with:
         paths: |
           ${{ inputs.pkg_name }}

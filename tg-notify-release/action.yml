@@ -43,7 +43,7 @@ runs:
   using: composite
   steps:
     - id: notify_release
-      uses: ./tg-notify
+      uses: DCx7C5/actions/tg-notify@v1
       with:
         to: '${{ inputs.to }}'
         token: '${{ inputs.token }}'

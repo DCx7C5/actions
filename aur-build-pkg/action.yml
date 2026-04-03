@@ -33,7 +33,7 @@ runs:
   using: composite
   steps:
     - id: build_pkg
-      uses: ./arch-run-cmd
+      uses: DCx7C5/actions/arch-run-cmd@v1
       with:
         gpg_passhphrase: ${{ inputs.gpg_passhphrase }}
         run_with_sudo: 'true'

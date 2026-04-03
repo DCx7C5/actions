@@ -28,7 +28,7 @@ runs:
   using: composite
   steps:
     - id: validate_pkg
-      uses: ./arch-run-cmd
+      uses: DCx7C5/actions/arch-run-cmd@v1
       working-directory: ${{ inputs.working_directory || github.workspace || '.' }}
       with:
         run_with_sudo: 'false'
