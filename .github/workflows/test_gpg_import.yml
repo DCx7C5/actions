@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+
     paths:
       - gpg-import/**
       - gpg-setup-home/action.yml
@@ -13,6 +14,7 @@ on:
       - git-configure-gnupg/action.yml
       - gpg-set-ownertrust/action.yml
       - .github/workflows/test_gpg_import.yml
+
 
 
 concurrency:
@@ -153,7 +155,6 @@ jobs:
             echo "| Public keys | \`${KEYS_PUB:-0}\` |"
             echo "| Secret keys | \`${KEYS_SEC:-0}\` |"
             echo "| Total keys | \`${KEYS_TOT:-0}\` |"
-            echo "| Key grips | \`${KEY_GRIPS:-n/a}\` |"
             echo ""
             echo "**Checks performed:**"
             echo "- ✔ Fingerprint returned"
