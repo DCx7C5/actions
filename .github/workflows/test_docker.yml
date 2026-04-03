@@ -108,8 +108,8 @@ jobs:
           docker rmi "$LOCAL_IMAGE" 2>/dev/null || true
           echo "::notice::Local images cleaned up"
 
-      - name: Cleanup — delete remote package version
-        if: always()
+      - name: Cleanup — delete remote package
+        if: always() && steps.push_image.outcome == 'success'
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
           IMAGE_TAG: ${{ inputs.image-tag || 'test-build' }}
@@ -119,36 +119,46 @@ jobs:
           set -euo pipefail
 
           pkg_name="${IMAGE_TAG,,}"
+          deleted=false
 
-          # Find the version ID for our tag
-          version_id=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            "/orgs/${OWNER}/packages/container/${pkg_name}/versions" \
-            --jq ".[] | select(.metadata.container.tags[] == \"${IMAGE_VERSION}\") | .id" \
-          2>/dev/null || true)
+          # Try org endpoint first, then user
+          for scope in orgs users; do
+            base="/${scope}/${OWNER}/packages/container/${pkg_name}"
 
-          if [[ -z "$version_id" ]]; then
-            # Try user endpoint instead of org
+            # 1) Try to find and delete the specific version
             version_id=$(gh api \
               -H "Accept: application/vnd.github+json" \
-              "/users/${OWNER}/packages/container/${pkg_name}/versions" \
+              "${base}/versions" \
               --jq ".[] | select(.metadata.container.tags[] == \"${IMAGE_VERSION}\") | .id" \
             2>/dev/null || true)
-          fi
 
-          if [[ -n "$version_id" ]]; then
-            echo "::notice::Deleting package version $version_id (${pkg_name}:${IMAGE_VERSION})..."
-            gh api --method DELETE \
+            if [[ -n "$version_id" ]]; then
+              echo "::notice::Deleting version $version_id via ${scope} endpoint..."
+              gh api --method DELETE \
+                -H "Accept: application/vnd.github+json" \
+                "${base}/versions/${version_id}" 2>/dev/null && deleted=true || true
+            fi
+
+            # 2) Check remaining versions — if none left, delete whole package
+            remaining=$(gh api \
               -H "Accept: application/vnd.github+json" \
-              "/orgs/${OWNER}/packages/container/${pkg_name}/versions/${version_id}" \
-            2>/dev/null || \
-            gh api --method DELETE \
-              -H "Accept: application/vnd.github+json" \
-              "/users/${OWNER}/packages/container/${pkg_name}/versions/${version_id}" \
-            2>/dev/null || true
-            echo "::notice::Remote package version deleted"
+              "${base}/versions" --jq 'length' \
+            2>/dev/null || echo "0")
+
+            if [[ "$remaining" == "0" ]]; then
+              echo "::notice::No versions left, deleting package ${pkg_name} via ${scope}..."
+              gh api --method DELETE \
+                -H "Accept: application/vnd.github+json" \
+                "${base}" 2>/dev/null && deleted=true || true
+            fi
+
+            [[ "$deleted" == "true" ]] && break
+          done
+
+          if [[ "$deleted" == "true" ]]; then
+            echo "::notice::Remote package cleaned up successfully"
           else
-            echo "::warning::Could not find package version to delete"
+            echo "::warning::Could not delete remote package — may need manual cleanup or different token permissions"
           fi
 
       - name: Job Summary
