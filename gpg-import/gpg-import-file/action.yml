@@ -89,10 +89,10 @@ runs:
       if: (inputs.gpg-type == 'auto' && steps.keytype.outputs.key_type == 'secret') || inputs.gpg-type == 'private'
       uses: DCx7C5/actions/gpg-import/gpg-import-protected@v1
       with:
-        key: '${{ inputs.key }}'
+        key: ${{ inputs.key }}
         pass: ${{ inputs.pass }}
         type: 'file'
-        gpg-home: "${{ inputs.gpg-home }}"
+        gpg-home: ${{ inputs.gpg-home }}
 
     - name: Import Unprotected Key
       id: import_unprotected
