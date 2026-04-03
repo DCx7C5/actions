@@ -8,7 +8,7 @@ branding:
 
 
 inputs:
-  gpg_key:
+  gpg-key:
     required: true
     default: ''
     description: "GPG key (inline or file path or key fingerprint/identifier) to validate for import"
@@ -57,7 +57,7 @@ runs:
         # Validate the gpg_key input and classify its type for downstream processing
         set -euo pipefail
 
-        input_key="${{ inputs.gpg_key }}"
+        input_key="${{ inputs.gpg-key }}"
 
         is_file=false
         is_secret=false

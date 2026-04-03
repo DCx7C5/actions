@@ -8,19 +8,19 @@ branding:
 
 
 inputs:
-  gpg_key:
+  gpg-key:
     required: true
     description: "GPG key path or inline variable"
-  gpg_home:
+  gpg-home:
     required: false
     default: ''
     description: "Custom GPG home directory (optional, defaults to $GITHUB_WORKSPACE/.gnupg)"
 
 
 outputs:
-  gpg_key:
+  gpg-key:
     description: "The original gpg_key input value (for downstream steps)"
-    value: ${{ inputs.gpg_key }}
+    value: ${{ inputs.gpg-key }}
   fingerprint:
     description: "Fingerprint of the imported GPG key"
     value: ${{ steps.import.outputs.fingerprint }}
@@ -44,16 +44,12 @@ runs:
     - id: import
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
-        GPG_KEY: "${{ inputs.gpg_key }}"
+        GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
+        GPG_KEY: "${{ inputs.gpg-key }}"
       run: |
         # Validate or set GNUPGHOME - either from input or environment or default
         set -euo pipefail
-        
-        if [[ -n "${{ inputs.gpg_key }}" ]]; then
-          echo "::add-mask::${{ inputs.gpg_key }}"
-        fi
-        
+
         if [[ -n "$GPG_KEY" && -f "$GPG_KEY" ]]; then
           gpg --batch --import "$GPG_KEY"
         elif [[ -n "$GPG_KEY" && ! -f "$GPG_KEY" ]]; then

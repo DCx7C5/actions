@@ -119,7 +119,7 @@ runs:
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
-        gpg_key: ${{ inputs.key }}
+        gpg-key: ${{ inputs.key }}
 
     - name: Decrypt SSL-encrypted key (if applicable)
       id: decrypt_ssl
@@ -141,7 +141,7 @@ runs:
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
-        gpg_key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
+        gpg-key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.gpg-pass }}
         type: 'auto'
 
@@ -150,20 +150,20 @@ runs:
       if: steps.validate.outputs.is_file == 'true'
       uses: DCx7C5/actions/gpg-import/gpg-import-file@v1
       with:
-        gpg_type: 'auto'
-        gpg_key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
+        gpg-type: 'auto'
+        gpg-key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.gpg-pass }}
-        delete_after_import: ${{ inputs.delete-after-import }}
-        gpg_home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
+        delete-after-import: ${{ inputs.delete-after-import }}
+        gpg-home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
 
     - name: Import from keyserver
       id: keyserver_import
       if: steps.validate.outputs.is_fingerprint == 'true'
       uses: DCx7C5/actions/gpg-import/gpg-import-keyserver@v1
       with:
-        key_id: ${{ steps.validate.outputs.gpg_key }}
-        keyserver_url: ${{ inputs.keyserver-url }}
-        gpg_home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
+        key-id: ${{ steps.validate.outputs.gpg_key }}
+        keyserver-url: ${{ inputs.keyserver-url }}
+        gpg-home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
 
     - name: Aggregate outputs
       id: dispatch
@@ -206,7 +206,7 @@ runs:
         gh-token: ${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}
 
     - name: Preset passphrase with gpg-agent
-      if: inputs.preset_pass == 'true' && (steps.validate.outputs.is_secretkey == 'true' || steps.validate.outputs.is_ssl_enc_key == 'true')
+      if: inputs.preset-passphrase-cache == 'true' && (steps.validate.outputs.is_secretkey == 'true' || steps.validate.outputs.is_ssl_enc_key == 'true')
       uses: DCx7C5/actions/gpg-preset-pass@v1
       with:
         pass: ${{ inputs.gpg-pass }}

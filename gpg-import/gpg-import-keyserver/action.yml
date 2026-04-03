@@ -8,23 +8,23 @@ branding:
 
 
 inputs:
-  key_id:
+  key-id:
     required: true
     description: "GPG key Id or fingerprint (at least 16 characters)"
-  keyserver_url:
+  keyserver-url:
     required: false
     default: 'hkps://keys.openpgp.org'
     description: "Keyserver URL (e.g., hkps://keys.openpgp.org, hkps://keyserver.ubuntu.com)"
-  gpg_home:
+  gpg-home:
     required: false
     default: ''
     description: "Path to GPG Home Directory (optional, can also be set via GNUPGHOME env variable)"
 
 
 outputs:
-  key_id:
+  key-id:
     description: "The imported key ID"
-    value: ${{ inputs.key_id }}
+    value: ${{ inputs.key-id }}
   fingerprint:
     description: "The imported fingerprint"
     value: ${{ steps.import.outputs.fingerprint }}
@@ -42,14 +42,14 @@ runs:
     - name: Validate inputs and environment
       shell: bash
       env:
-        GPG_HOME: "${{ inputs.gpg_home }}"
+        GPG_HOME: "${{ inputs.gpg-home }}"
       run: |
         # Validate inputs and environment
         set -euo pipefail
         
         # Validate or set GNUPGHOME - either from input or environment or default
         if [[ -n "$GPG_HOME" ]]; then
-          # Input gpg_home was provided - create if not exists
+          # Input gpg-home was provided - create if not exists
           mkdir -p "$GPG_HOME"
           export GNUPGHOME="$GPG_HOME"
         elif [[ -z "${GNUPGHOME:-}" ]]; then
@@ -60,7 +60,7 @@ runs:
         
         echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
         
-        FINGERPRINT='${{ inputs.key_id }}'
+        FINGERPRINT='${{ inputs.key-id }}'
         if [[ -z "$FINGERPRINT" || ${#FINGERPRINT} -lt 16 ]]; then
           echo "::error::Invalid fingerprint. Must be at least 16 characters" >&2
           exit 1
@@ -70,9 +70,9 @@ runs:
       id: import
       shell: bash
       env:
-        FINGERPRINT: '${{ inputs.key_id }}'
-        KEYSERVER_URL: '${{ inputs.keyserver_url }}'
-        GNUPGHOME: '${{ inputs.gpg_home || env.GNUPGHOME }}'
+        FINGERPRINT: '${{ inputs.key-id }}'
+        KEYSERVER_URL: '${{ inputs.keyserver-url }}'
+        GNUPGHOME: '${{ inputs.gpg-home || env.GNUPGHOME }}'
       run: |
         # Import GPG key from keyserver
         set -euo pipefail

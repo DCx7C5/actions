@@ -1,112 +1,151 @@
 # gpg-import
 
-Composite GitHub Action to import GPG keys from:
-- inline secret/value (armored key block)
-- file path (armored or binary)
-- keyserver (key id / fingerprint)
+> Composite GitHub Action for importing GPG keys from inline secrets, file paths, or keyservers.
 
-It auto-detects the input type, imports the key, and exposes key stats as outputs.
+Auto-detects input type, imports the key, and exposes key metadata as action outputs.
 
-## What this action does
+---
 
-1. Optionally creates an isolated `GNUPGHOME`.
-2. Validates and classifies `gpg_key`.
-3. Optionally decrypts OpenSSL-encrypted payloads (`Salted__`, armored OpenSSL payloads).
-4. Imports the key via inline/file/keyserver sub-action.
-5. Aggregates outputs (`fingerprint`, key counts, `key_grips`).
-6. Optionally configures Git for GPG signing.
-7. Optionally presets passphrase in `gpg-agent`.
+## Features
+
+- **Auto-detection** – Classifies `key` as inline content, file path, or fingerprint/key-id automatically.
+- **OpenSSL decryption** – Transparently decrypts `Salted__` / base64-encoded OpenSSL payloads before import.
+- **Isolated GPG home** – Optionally creates a temporary `GNUPGHOME` for secure, isolated imports.
+- **Git integration** – Configures Git to sign commits and tags with the imported key.
+- **Passphrase caching** – Presets the passphrase in `gpg-agent` so subsequent operations don't prompt.
+
+## How it works
+
+1. Masks sensitive inputs (`key`, `gpg-pass`, `ssl-pass`).
+2. Optionally creates an isolated `GNUPGHOME` (`initialize-home`).
+3. Validates and classifies the `key` input via `gpg-validate-import`.
+4. Optionally decrypts OpenSSL-encrypted payloads via `ssl-decrypt`.
+5. Dispatches to the appropriate sub-action:
+   - **inline** → `gpg-import-inline`
+   - **file** → `gpg-import-file`
+   - **keyserver** → `gpg-import-keyserver`
+6. Aggregates outputs (`fingerprint`, key counts, `key_grips`).
+7. Optionally sets owner trust for private keys (`owner-trust-level`).
+8. Optionally configures Git for GPG signing (`configure-git`).
+9. Optionally presets passphrase in `gpg-agent` (`preset-passphrase-cache`).
+
+---
 
 ## Inputs
 
-| Input                 | Required | Default                   | Description                                                         |
-|-----------------------|----------|---------------------------|---------------------------------------------------------------------|
-| `gpg_key`             | yes      | -                         | Inline key content, file path, or key id/fingerprint                |
-| `gpg_pass`            | no       | `''`                      | Passphrase for GPG key (also used as SSL pass fallback)             |
-| `ssl_pass`            | no       | `''`                      | Passphrase for OpenSSL decryption                                   |
-| `keyserver_url`       | no       | `hkps://keys.openpgp.org` | Keyserver URL                                                       |
-| `delete_after_import` | no       | `true`                    | Securely delete key file after file import                          |
-| `method`              | no       | `auto`                    | Declared import method hint (`secret`, `file`, `keyserver`, `auto`) |
-| `gpg_home`            | no       | `''`                      | Explicit GPG home directory                                         |
-| `gpg_type`            | no       | `auto`                    | Key type hint (`auto`, `private`, `public`)                         |
-| `configure_git`       | no       | `true`                    | Configure Git to sign commits/tags with imported key                |
-| `setup_home`          | no       | `true`                    | Create and use temporary GPG home                                   |
-| `preset_pass`         | no       | `true`                    | Preset passphrase with `gpg-agent`                                  |
-| `github_token`        | no       | `''`                      | Token for git/GitHub auth when configuring Git                      |
+| Input                    | Required | Default                   | Description                                                                            |
+|--------------------------|:--------:|---------------------------|----------------------------------------------------------------------------------------|
+| `key`                    |  **yes** | –                         | Inline key content, file path, or key fingerprint/id                                   |
+| `gpg-pass`               |    no    | `''`                      | Passphrase for the GPG private key (also used as SSL-pass fallback)                    |
+| `ssl-pass`               |    no    | `''`                      | Passphrase for OpenSSL decryption (if different from `gpg-pass`)                       |
+| `keyserver-url`          |    no    | `hkps://keys.openpgp.org` | Keyserver URL for fingerprint-based imports                                            |
+| `delete-after-import`    |    no    | `true`                    | Securely shred the key file after a file-based import                                  |
+| `import-method`          |    no    | `auto`                    | Import method hint (`auto`, `secret`, `file`, `keyserver`)                             |
+| `gpg-home`               |    no    | `''`                      | Explicit GPG home directory (falls back to `GNUPGHOME` env)                            |
+| `gpg-type`               |    no    | `auto`                    | Key type hint (`auto`, `private`, `public`)                                            |
+| `configure-git`          |    no    | `true`                    | Configure Git to sign commits/tags with the imported key                               |
+| `initialize-home`        |    no    | `true`                    | Create and use a temporary GPG home directory for isolation                             |
+| `preset-passphrase-cache`|    no    | `true`                    | Preset passphrase in `gpg-agent` for non-interactive operations                        |
+| `owner-trust-level`      |    no    | `6`                       | Owner trust level for imported private keys (`1`–`5`, or `6` = ultimate)               |
+| `gpg-name`               |    no    | `''`                      | Name for Git GPG signing config                                                        |
+| `gpg-mail`               |    no    | `''`                      | Email for Git GPG signing config                                                       |
+| `gh-token`               |    no    | `''`                      | GitHub token for authenticated Git operations (falls back to `GH_TOKEN`/`GITHUB_TOKEN`)|
 
 ## Outputs
 
-| Output        | Description                                       |
-|---------------|---------------------------------------------------|
-| `fingerprint` | Fingerprint of imported key (or keyserver key id) |
-| `keys_total`  | Total keys available                              |
-| `keys_public` | Number of public keys                             |
-| `keys_secret` | Number of secret keys                             |
-| `gpg_home`    | Effective GPG home directory                      |
-| `key_grips`   | Keygrips (if available)                           |
+| Output        | Description                                    |
+|---------------|------------------------------------------------|
+| `fingerprint` | Fingerprint of the imported key                |
+| `keys_total`  | Total number of keys after import              |
+| `keys_public` | Number of public keys                          |
+| `keys_secret` | Number of secret keys                          |
+| `gpg_home`    | Effective `GNUPGHOME` used during import       |
+| `key_grips`   | Keygrips of imported secret keys (multi-line)  |
 
 ## Environment variables
 
-- `GNUPGHOME`: used when provided; otherwise can be set by `setup_home`.
-- `GH_TOKEN`: set internally from `inputs.github_token` (or inherited from environment) for Git/GitHub-related setup.
+| Variable    | Description                                                                 |
+|-------------|-----------------------------------------------------------------------------|
+| `GNUPGHOME` | Used when set; otherwise created by `initialize-home`                       |
+| `GH_TOKEN`  | Inherited from environment or set via `gh-token` for Git/GitHub operations  |
 
-## Notes
+---
 
-- Input routing is primarily auto-detected from `gpg_key` content/path shape.
-- `method` exists as a hint/compat input, but import dispatch is currently classification-driven.
-- Keyserver import is public-key oriented.
+## Usage examples
 
-## Example: inline private key from secret
+### Import a private key from a secret
 
 ```yaml
-- name: Import private key
+- name: Import GPG private key
+  id: gpg
   uses: DCx7C5/actions/gpg-import@v1
   with:
-    gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
-    gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
-    setup_home: 'true'
-    configure_git: 'true'
+    key: ${{ secrets.GPG_PRIVATE_KEY }}
+    gpg-pass: ${{ secrets.GPG_PASSPHRASE }}
+    initialize-home: 'true'
+    configure-git: 'true'
 ```
 
-## Example: import from key file
+### Import from a key file
 
 ```yaml
 - name: Import key from file
   uses: DCx7C5/actions/gpg-import@v1
   with:
-    gpg_key: ./keys/release-private.asc
-    gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
-    delete_after_import: 'true'
+    key: ./keys/release-private.asc
+    gpg-pass: ${{ secrets.GPG_PASSPHRASE }}
+    delete-after-import: 'true'
 ```
 
-## Example: import public key from keyserver
+### Import a public key from a keyserver
 
 ```yaml
-- name: Import maintainer pubkey from keyserver
+- name: Import maintainer public key
   uses: DCx7C5/actions/gpg-import@v1
   with:
-    gpg_key: AABBCCDDEEFF00112233445566778899AABBCCDD
-    keyserver_url: hkps://keys.openpgp.org
-    configure_git: 'false'
+    key: AABBCCDDEEFF00112233445566778899AABBCCDD
+    keyserver-url: hkps://keys.openpgp.org
+    configure-git: 'false'
 ```
 
-## Common failures
-
-- `gpg_key input is required`: missing or empty `gpg_key`.
-- `Unable to classify gpg_key input`: value is not file path, armored key block, or valid key id/fingerprint.
-- `Failed to import public key from keyserver`: keyserver unreachable, unknown key, or network policy issue.
-- GPG import errors for private key: wrong `gpg_pass` or malformed key data.
-
-## Quick verification
-
-After import, verify action outputs in a later step:
+### Verify outputs in a later step
 
 ```yaml
 - name: Show key stats
   run: |
-    echo "FP=${{ steps.gpg_import.outputs.fingerprint }}"
-    echo "PUB=${{ steps.gpg_import.outputs.keys_public }}"
-    echo "SEC=${{ steps.gpg_import.outputs.keys_secret }}"
-    echo "TOT=${{ steps.gpg_import.outputs.keys_total }}"
+    echo "Fingerprint : ${{ steps.gpg.outputs.fingerprint }}"
+    echo "Public keys : ${{ steps.gpg.outputs.keys_public }}"
+    echo "Secret keys : ${{ steps.gpg.outputs.keys_secret }}"
+    echo "Total keys  : ${{ steps.gpg.outputs.keys_total }}"
+    echo "GPG Home    : ${{ steps.gpg.outputs.gpg_home }}"
 ```
 
+---
+
+## Sub-actions
+
+| Sub-action                  | Purpose                                              |
+|-----------------------------|------------------------------------------------------|
+| `gpg-validate-import`       | Validate and classify `key` input                    |
+| `gpg-import-inline`         | Import from inline PGP key block                     |
+| `gpg-import-file`           | Import from a local file (armored or binary)         |
+| `gpg-import-keyserver`      | Fetch and import a public key from a keyserver       |
+| `gpg-import-protected`      | Import a passphrase-protected private key            |
+| `gpg-import-no-protection`  | Import a key without passphrase protection           |
+
+## Troubleshooting
+
+| Error message                                        | Cause / Fix                                                                 |
+|------------------------------------------------------|-----------------------------------------------------------------------------|
+| `gpg-key input is required`                          | `key` is empty or not provided                                              |
+| `Unable to classify gpg_key input`                   | Value is not a file path, armored PGP block, or valid fingerprint/key-id    |
+| `Failed to import public key from keyserver`         | Keyserver unreachable, unknown key, or network policy blocking the request  |
+| GPG import errors for private key                    | Wrong `gpg-pass`, malformed key data, or incompatible GPG version           |
+| `Invalid fingerprint. Must be at least 16 characters`| Fingerprint/key-id too short – provide at least 16 hex characters           |
+
+## Notes
+
+- Import routing is **classification-driven**: `import-method` is a hint and can usually be left at `auto`.
+- Keyserver imports are **public-key only** – private keys cannot be fetched from keyservers.
+- `delete-after-import` uses `shred` (falls back to `rm`) for secure file deletion.
+- Output names use underscores (e.g., `keys_total`) for compatibility with GitHub Actions expression syntax.
