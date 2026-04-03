@@ -26,6 +26,12 @@ inputs:
     default: ''
 
 
+outputs:
+  full_image:
+    description: "Full image reference that was pushed (e.g., ghcr.io/owner/image:version)"
+    value: ${{ steps.push_image.outputs.full_image }}
+
+
 runs:
   using: composite
   steps:
