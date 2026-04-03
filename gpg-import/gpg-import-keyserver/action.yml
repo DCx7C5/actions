@@ -76,7 +76,7 @@ runs:
         set -euo pipefail
         
         # Source helper library
-        source "${{ github.action_path }}/gpg-helpers.sh"
+        source "${{ github.action_path }}/../gpg-helpers.sh"
         
         echo "::notice::Importing public key from keyserver: $KEYSERVER_URL"
         echo "::notice::Fingerprint: $FINGERPRINT"
