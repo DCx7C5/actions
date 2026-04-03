@@ -60,6 +60,7 @@ jobs:
         env:
           GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
           FP: ${{ steps.gpg_import.outputs.fingerprint }}
+          GPG_PASS: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           set -euo pipefail
 
@@ -84,8 +85,8 @@ jobs:
             exit 1
           fi
 
-          # 4) test signing works
-          if ! echo "gpg-test" | gpg --batch --pinentry-mode loopback --local-user "$FP" --armor --detach-sign >/dev/null 2>&1; then
+          # 4) test signing works (pass passphrase explicitly via fd)
+          if ! printf '%s' "$GPG_PASS" | gpg --batch --pinentry-mode loopback --passphrase-fd 0 --local-user "$FP" --armor --detach-sign <<< "gpg-test" >/dev/null 2>&1; then
             echo "::error::Test signing with key $FP failed"
             exit 1
           fi
@@ -155,7 +156,7 @@ jobs:
         with:
           method: 'keyserver'
           gpg_home: ${{ format('{0}/.gnupg', github.workspace) }}
-          gpg_key: ${{ secrets.GPG_FINGERPRINT }}
+          gpg_key: '14A71FEDA1F764F7075FFA40FF64D67D0F00DD12'
           keyserver_url: 'hkps://keys.openpgp.org'
           configure_git: 'false'
           setup_home: 'true'
