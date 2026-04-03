@@ -11,11 +11,11 @@ inputs:
   fingerprint:
     required: true
     description: "Fingerprint of the GPG key to set trust level for"
-  trust_level:
+  trust-level:
     required: false
-    default: "5"
-    description: "Set trust level of GPG Key (default: owner)"
-  gpg_home:
+    default: '6'
+    description: "Set trust level of GPG Key (default: ultimate=6)"
+  gpg-home:
     required: false
     default: ''
     description: "Path to GNUPGHOME directory (where keys are stored)"
@@ -34,7 +34,7 @@ runs:
           echo "::error::fingerprint input is required" >&2
           exit 1
         fi
-        if [ -z '${{ inputs.trust_level }}' ]; then
+        if [ -z '${{ inputs.trust-level }}' ]; then
           echo "::error::trust_level input is required" >&2
           exit 1
         fi
@@ -43,12 +43,11 @@ runs:
       id: set_trust
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+        GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
       run: |
         # Validate or set GNUPGHOME - either from input or environment or default
-        set -euo pipefail
         export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
-        if ! echo "${{ inputs.fingerprint }}:${{ inputs.trust_level }}:" | gpg --no-tty --batch --import-ownertrust; then
+        if ! echo "${{ inputs.fingerprint }}:${{ inputs.trust-level }}:" | gpg --no-tty --batch --import-ownertrust; then
           echo "::error::Failed setting trust level of key: ${{ inputs.fingerprint }}" >&2
           exit 1
         fi
