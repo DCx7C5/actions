@@ -38,6 +38,9 @@ runs:
         # Pre-cache GPG passphrase in gpg-agent
         set -euo pipefail
         
+        # Mask passphrase in logs
+        echo "::add-mask::$GPG_PRESET_PASS"
+        
         if [[ -n "${{ inputs.grip }}" ]]; then
           echo "::add-mask::${{ inputs.grip }}"  # Mask the keygrip if provided
         fi
@@ -73,7 +76,7 @@ runs:
         failures=0
         while IFS= read -r KEYGRIP; do
           [[ -z "$KEYGRIP" ]] && continue
-          if ! "$GPG_PRESET_BIN" --homedir "$GNUPGHOME" --preset --passphrase "$GPG_PRESET_PASS" "$KEYGRIP"; then
+          if ! printf '%s' "${{ inputs.pass }}" | "$GPG_PRESET_BIN" --homedir "$GNUPGHOME" --preset "$KEYGRIP"; then
             echo "::error::Failed to preset passphrase for keygrip $KEYGRIP (check gpg-agent allow-preset-passphrase and homedir)"
             failures=$((failures + 1))
           fi
