@@ -38,9 +38,6 @@ runs:
         # Pre-cache GPG passphrase in gpg-agent
         set -euo pipefail
         
-        # Mask passphrase in logs
-        echo "::add-mask::${{ inputs.pass }}"
-        
         if [[ -n "${{ inputs.grip }}" ]]; then
           echo "::add-mask::${{ inputs.grip }}"  # Mask the keygrip if provided
         fi
