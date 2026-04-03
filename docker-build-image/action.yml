@@ -95,9 +95,6 @@ runs:
         [[ "$(pwd)" != "$IMAGE_WORKING_DIR" ]] && cd "$IMAGE_WORKING_DIR"
         
         DOCKER_BUILD_ARGS=()
-        [[ -n $RUNTIME_WORKING_DIR ]] && DOCKER_BUILD_ARGS+=(--build-arg "WORKING_DIR=$RUNTIME_WORKING_DIR")
-        [[ -n $GNUPGHOME ]] && DOCKER_BUILD_ARGS+=(--build-arg "GNUPGHOME=$GNUPGHOME")
-        [[ -n $CCACHE_DIR ]] && DOCKER_BUILD_ARGS+=(--build-arg "CCACHE_DIR=$CCACHE_DIR")
         [[ -n "${{ inputs.user }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "USER=${{ inputs.user }}")
         [[ -n "${{ inputs.group }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "GROUP=${{ inputs.group }}")
         [[ -n "${{ inputs.uid }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "UID=${{ inputs.uid }}")

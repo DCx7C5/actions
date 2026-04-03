@@ -5,6 +5,15 @@ set -euo pipefail
 # Error handling with context
 trap 'echo "ERROR: Script failed on line $LINENO (command: $BASH_COMMAND)" >&2; exit 1' ERR
 
+IS_GITHUB_ACTIONS="${GITHUB_ACTIONS:-false}"
+IS_CI="${CI:-false}"
+
+# Logging helpers — adapt to GitHub Actions vs standalone
+_notice() { [[ "$IS_GITHUB_ACTIONS" == "true" ]] && echo "::notice::$*" || echo "==> $*"; }
+_warn()   { [[ "$IS_GITHUB_ACTIONS" == "true" ]] && echo "::warning::$*" || echo "WARNING: $*" >&2; }
+_group()  { [[ "$IS_GITHUB_ACTIONS" == "true" ]] && echo "::group::$*" || echo "--- $* ---"; }
+_endgrp() { [[ "$IS_GITHUB_ACTIONS" == "true" ]] && echo "::endgroup::" || true; }
+
 # ============================================================================
 # Docker Container Path Setup
 # ============================================================================
@@ -17,12 +26,8 @@ _WS="${GITHUB_WORKSPACE:-/github/workspace}"
 
 # Fallback if workspace directory doesn't exist (standalone docker run)
 if [[ ! -d "$_WS" ]]; then
-  if [[ -n "${WORKING_DIR:-}" && -d "${WORKING_DIR:-}" ]]; then
-    _WS="$WORKING_DIR"
-  else
-    _WS="/home/${USER:-runner}/work"
-    [[ ! -d "$_WS" ]] && _WS="$(pwd)"
-  fi
+  _WS="/home/${USER:-runner}/work"
+  [[ ! -d "$_WS" ]] && _WS="$(pwd)"
 fi
 
 # GH_TOKEN fallback to GITHUB_TOKEN (auto-set by GitHub inside containers)
@@ -64,7 +69,7 @@ if [[ -d "$GNUPGHOME" && -n "${GPG_KEY_ID:-}" && -n "${GPG_PASSPHRASE:-}" && "${
     [[ -z "$GRIP" ]] && continue
     printf '%s' "$GPG_PASSPHRASE" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$GRIP" 2>/dev/null || true
   done <<< "$KEYGRIPS"
-  echo "::notice::Preset GPG passphrase in gpg-agent cache"
+  _notice "Preset GPG passphrase in gpg-agent cache"
 fi
 
 
@@ -98,9 +103,6 @@ export MAKEFLAGS="${MAKEFLAGS:--j$(nproc)}"
 export PACKAGER="${PACKAGER:-Unknown Packager <packager@example.com>}"
 export GPGSIGN_KEY="${GPGSIGN_KEY:-}"
 
-IS_GITHUB_ACTIONS="${GITHUB_ACTIONS:-false}"
-IS_CI="${CI:-false}"
-
 # Makepkg-specific optimization
 export CCACHE_MAXSIZE="2G"
 
@@ -125,7 +127,7 @@ fi
 
 # Only show setup messages if not in automated CI
 if [ "$IS_GITHUB_ACTIONS" != "true" ]; then
-  echo "::notice::==> Initializing GPG environment at: $GNUPGHOME"
+  _notice "Initializing GPG environment at: $GNUPGHOME"
 fi
 
 # Initialize GPG if needed (idempotent)
@@ -135,7 +137,7 @@ fi
 
 # Check if keys are available (warn if empty)
 if [[ -z "$(gpg --list-keys 2>/dev/null)" && "$IS_CI" = "true" ]]; then
-  echo "::warning::No GPG keys found in $GNUPGHOME - signing may fail"
+  _warn "No GPG keys found in $GNUPGHOME - signing may fail"
 fi
 
 
@@ -145,27 +147,23 @@ fi
 # ============================================================================
 if [ -f /etc/makepkg.conf ]; then
   if [ "$IS_GITHUB_ACTIONS" != "true" ]; then
-    echo "::notice::==> makepkg.conf detected"
+    _notice "makepkg.conf detected"
   fi
 
   # Verify PACKAGER is set (required for AUR) - warn quietly in CI
   if ! grep -q "^PACKAGER=" /etc/makepkg.conf; then
-    if [ "$IS_CI" = "true" ]; then
-      echo "::warning::PACKAGER not set in /etc/makepkg.conf - set via env var PACKAGER"
-    else
-      echo "::warning::PACKAGER not set in /etc/makepkg.conf - set via env var PACKAGER"
-    fi
+    _warn "PACKAGER not set in /etc/makepkg.conf - set via env var PACKAGER"
   fi
 fi
 
 # Show environment only if not in GitHub Actions
 if [ "$IS_GITHUB_ACTIONS" != "true" ]; then
-  echo "::group::==> Environment ready:"
+  _group "Environment ready"
   echo "    User: $USER"
   echo "    Work directory: $(pwd)"
   echo "    GPG home: $GNUPGHOME"
   echo "    Make flags: $MAKEFLAGS"
-  echo "::endgroup::"
+  _endgrp
 fi
 
 # ============================================================================
@@ -190,7 +188,7 @@ if [[ -n "$COMMAND" ]]; then
   fi
 else
   if [ "$IS_GITHUB_ACTIONS" != "true" ]; then
-    echo "::notice::No command provided, starting interactive shell..."
+    _notice "No command provided, starting interactive shell..."
   fi
   echo "Starting interactive shell..."
   exec bash -l || { echo "ERROR: Failed to start interactive shell" >&2; exit 99; }
