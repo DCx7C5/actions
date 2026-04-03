@@ -85,7 +85,7 @@ runs:
     - name: Import Protected Key
       id: import_protected
       if: (inputs.gpg_type == 'auto' && steps.keytype.outputs.key_type == 'secret') || inputs.gpg_type == 'private'
-      uses: ./gpg-import/gpg-import-protected
+      uses: DCx7C5/actions/gpg-import/gpg-import-protected@v1
       with:
         gpg_key: '${{ inputs.gpg_key }}'
         pass: ${{ inputs.pass }}
@@ -95,7 +95,7 @@ runs:
     - name: Import Unprotected Key
       id: import_unprotected
       if: (inputs.gpg_type == 'auto' && steps.keytype.outputs.key_type == 'public') || inputs.gpg_type == 'public'
-      uses: ./gpg-import/gpg-import-no-protection
+      uses: DCx7C5/actions/gpg-import/gpg-import-no-protection@v1
       with:
         gpg_key: '${{ inputs.gpg_key }}'
         gpg_home: "${{ inputs.gpg_home }}"

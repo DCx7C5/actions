@@ -60,7 +60,7 @@ It auto-detects the input type, imports the key, and exposes key stats as output
 
 ```yaml
 - name: Import private key
-  uses: ./gpg-import
+  uses: DCx7C5/actions/gpg-import@v1
   with:
     gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
     gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
@@ -72,7 +72,7 @@ It auto-detects the input type, imports the key, and exposes key stats as output
 
 ```yaml
 - name: Import key from file
-  uses: ./gpg-import
+  uses: DCx7C5/actions/gpg-import@v1
   with:
     gpg_key: ./keys/release-private.asc
     gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
@@ -83,7 +83,7 @@ It auto-detects the input type, imports the key, and exposes key stats as output
 
 ```yaml
 - name: Import maintainer pubkey from keyserver
-  uses: ./gpg-import
+  uses: DCx7C5/actions/gpg-import@v1
   with:
     gpg_key: AABBCCDDEEFF00112233445566778899AABBCCDD
     keyserver_url: hkps://keys.openpgp.org

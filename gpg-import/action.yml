@@ -96,13 +96,13 @@ runs:
     - name: Setup GPG Environment
       if: inputs.setup_home == 'true'
       id: gpg_setup
-      uses: ./gpg-setup-home
+      uses: DCx7C5/actions/gpg-setup-home@v1
       with:
         gpg_home: ${{ inputs.gpg_home }}
 
     - name: Validate GPG Key input
       id: validate
-      uses: ./gpg-import/gpg-validate-import
+      uses: DCx7C5/actions/gpg-import/gpg-validate-import@v1
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
@@ -111,7 +111,7 @@ runs:
     - name: Decrypt SSL-encrypted key (if applicable)
       id: decrypt_ssl
       if: steps.validate.outputs.is_ssl_enc_and_armored_key == 'true' || steps.validate.outputs.is_ssl_enc_binary_key == 'true'
-      uses: ./ssl-decrypt
+      uses: DCx7C5/actions/ssl-decrypt@v1
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
@@ -124,7 +124,7 @@ runs:
     - name: Import from secret/variable/inline value
       id: inline_import
       if: steps.validate.outputs.is_secret == 'true'
-      uses: ./gpg-import/gpg-import-inline
+      uses: DCx7C5/actions/gpg-import/gpg-import-inline@v1
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
@@ -135,7 +135,7 @@ runs:
     - name: Import from file
       id: file_import
       if: steps.validate.outputs.is_file == 'true'
-      uses: ./gpg-import/gpg-import-file
+      uses: DCx7C5/actions/gpg-import/gpg-import-file@v1
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
@@ -146,7 +146,7 @@ runs:
     - name: Import from keyserver
       id: keyserver_import
       if: steps.validate.outputs.is_fingerprint == 'true'
-      uses: ./gpg-import/gpg-import-keyserver
+      uses: DCx7C5/actions/gpg-import/gpg-import-keyserver@v1
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
@@ -176,7 +176,7 @@ runs:
 
     - name: Set Owner Trust (if private key imported)
       if: (inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true') && steps.validate.outputs.is_publickey == 'true'
-      uses: ./gpg-set-ownertrust
+      uses: DCx7C5/actions/gpg-set-ownertrust@v1
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
@@ -185,14 +185,14 @@ runs:
     - name: Configure Git client to sign with GPG
       id: git_config
       if: inputs.configure_git == 'true'
-      uses: ./git-configure-gnupg
+      uses: DCx7C5/actions/git-configure-gnupg@v1
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
         GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
 
     - name: Preset passphrase with gpg-agent
       if: inputs.preset_pass == 'true' && (steps.validate.outputs.is_secretkey == 'true' || steps.validate.outputs.is_ssl_enc_key == 'true')
-      uses: ./gpg-preset-pass
+      uses: DCx7C5/actions/gpg-preset-pass@v1
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
