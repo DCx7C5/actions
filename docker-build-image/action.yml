@@ -13,8 +13,8 @@ inputs:
     default: ''
   dockerfile-path:
     description: "Path to the Dockerfile to use for building the image"
-    required: true
-    default: '.'
+    required: false
+    default: ''
   image-working-directory:
     description: "Working directory inside container"
     required: false
@@ -83,12 +83,12 @@ runs:
         UID: "${{ inputs.uid || env.UID || '1000' }}"
         GID: "${{ inputs.gid || env.GID || '1000' }}"
         GNUPGHOME: "${{ inputs.gpg-home || env.GNUPGHOME || format('{0}/.gnupg', github.workspace) }}"
-        IMAGE_WORKING_DIR: "${{ inputs.image-working-directory || env.IMAGE_WORKING_DIR || format('{0}/arch-run-cmd', github.workspace) }}"
+        IMAGE_WORKING_DIR: "${{ inputs.image-working-directory || env.IMAGE_WORKING_DIR || format('{0}/../arch-run-cmd', github.action_path) }}"
         WORKING_DIR: "${{ inputs.runtime-working-directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
         RUNTIME_WORKING_DIR: "${{ inputs.runtime-working-directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
-        DOCKERFILE: "${{ inputs.dockerfile-path || format('{0}/Dockerfile', inputs.image-working-directory || env.IMAGE_WORKING_DIR) }}"
+        DOCKERFILE: "${{ inputs.dockerfile-path || format('{0}/Dockerfile', inputs.image-working-directory || env.IMAGE_WORKING_DIR || format('{0}/../arch-run-cmd', github.action_path)) }}"
         CCACHE_DIR: "${{ inputs.ccache-dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}"
-      working-directory: "${{ inputs.image-working-directory || env.IMAGE_WORKING_DIR }}"
+      working-directory: "${{ inputs.image-working-directory || env.IMAGE_WORKING_DIR || format('{0}/../arch-run-cmd', github.action_path) }}"
       run: |
         set -euo pipefail
         
