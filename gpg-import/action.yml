@@ -8,50 +8,62 @@ branding:
 
 
 inputs:
-  gpg_key:
+  key:
     required: true
     description: "GPG key (inline for 'secret', or file path for 'file', or fingerprint/identifier for 'keyserver')"
-  gpg_pass:
+  gpg-pass:
     required: false
     default: ''
     description: "Passphrase/password for decryption (GPG or SSL)"
-  ssl_pass:
+  ssl-pass:
     required: false
     default: ''
     description: "Passphrase for SSL decryption (if gpg_pass is not used for SSL-encrypted input)"
-  keyserver_url:
+  keyserver-url:
     required: false
     default: 'hkps://keys.openpgp.org'
     description: "Keyserver URL to use for 'keyserver' method"
-  delete_after_import:
+  delete-after-import:
     required: false
     default: 'true'
     description: "For 'file' method: securely delete private key file after import"
-  method:
+  import-method:
     required: false
     default: 'auto'
     description: "Import method to use (secret, file, keyserver)"
-  gpg_home:
+  gpg-home:
     required: false
     default: ''
     description: "Path to GPG Home Directory (optional, can also be set via GNUPGHOME env variable)"
-  gpg_type:
+  gpg-type:
     required: false
     default: 'auto'
     description: "Type of GPG key to import (auto, private, public) - auto-detects based on content or input method"
-  configure_git:
+  configure-git:
     required: false
     default: 'true'
     description: "Whether to configure Git client to use imported GPG key for signing (only applies if a private key is imported)"
-  setup_home:
+  initialize-home:
     required: false
     default: 'true'
     description: "Whether to set up a temporary GPG home directory for the import process (recommended for better security and isolation)"
-  preset_pass:
+  preset-passphrase-cache:
     required: false
     default: 'true'
     description: "Uses passphrase caching with gpg-agent for the import if set (provide a non-empty value to enable, e.g., 'true')"
-  github_token:
+  owner-trust-level:
+    required: false
+    default: '6'
+    description: "Owner trust level to set for imported private keys (1-5 or 6 for ultimate, only applies if a private key is imported)"
+  gpg-name:
+    required: false
+    default: ''
+    description: "Name to set in Git config for GPG signing (optional, only needed if configure_git is true)"
+  gpg-mail:
+    required: false
+    default: ''
+    description: "Email to set in Git config for GPG signing (optional, only needed if configure_git is true)"
+  gh-token:
     required: false
     default: ''
     description: "GitHub token for configuring Git client with GPG signing (optional, only needed if configure_git is true and authentication is required)"
@@ -137,22 +149,21 @@ runs:
       id: file_import
       if: steps.validate.outputs.is_file == 'true'
       uses: DCx7C5/actions/gpg-import/gpg-import-file@v1
-      env:
-        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
+        gpg_type: 'auto'
         gpg_key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
         pass: ${{ inputs.gpg_pass }}
         delete_after_import: ${{ inputs.delete_after_import }}
+        gpg_home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
 
     - name: Import from keyserver
       id: keyserver_import
       if: steps.validate.outputs.is_fingerprint == 'true'
       uses: DCx7C5/actions/gpg-import/gpg-import-keyserver@v1
-      env:
-        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
         key_id: ${{ steps.validate.outputs.gpg_key }}
         keyserver_url: ${{ inputs.keyserver_url }}
+        gpg_home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
 
     - name: Aggregate outputs
       id: dispatch
@@ -178,24 +189,26 @@ runs:
     - name: Set Owner Trust (if private key imported)
       if: inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true'
       uses: DCx7C5/actions/gpg-set-ownertrust@v1
-      env:
-        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
+        trust_level: ${{ inputs.owner_trust_level }}
         fingerprint: ${{ steps.dispatch.outputs.fingerprint }}
+        gpg_home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
 
     - name: Configure Git client to sign with GPG
       id: git_config
       if: inputs.configure_git == 'true'
       uses: DCx7C5/actions/git-configure-gnupg@v1
-      env:
-        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
-        GH_TOKEN: "${{ inputs.github_token || env.GH_TOKEN || env.GITHUB_TOKEN }}"
+      with:
+        gpg-home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
+        key-id: ${{ steps.dispatch.outputs.fingerprint }}
+        gpg-name: ${{ inputs.gpg-name }}
+        gpg-mail: ${{ inputs.gpg-mail }}
+        gh-token: ${{ inputs.gh-token || env.GH_TOKEN || env.GITHUB_TOKEN }}
 
     - name: Preset passphrase with gpg-agent
       if: inputs.preset_pass == 'true' && (steps.validate.outputs.is_secretkey == 'true' || steps.validate.outputs.is_ssl_enc_key == 'true')
       uses: DCx7C5/actions/gpg-preset-pass@v1
-      env:
-        GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
-        pass: ${{ inputs.gpg_pass }}
+        pass: ${{ inputs.gpg-pass }}
         forget: 'false'
+        gpg_home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
