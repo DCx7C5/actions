@@ -7,8 +7,8 @@
 gpg_count_keys() {
   local KEY_COUNT_PUB KEY_COUNT_SEC KEY_COUNT_TOTAL
 
-  KEY_COUNT_PUB=$(gpg --list-keys --with-colons 2>/dev/null | grep -c "^pub:" || echo "0")
-  KEY_COUNT_SEC=$(gpg --list-secret-keys --with-colons 2>/dev/null | grep -c "^sec:" || echo "0")
+  KEY_COUNT_PUB=$(gpg --list-keys --with-colons 2>/dev/null | grep -c "^pub:" || true)
+  KEY_COUNT_SEC=$(gpg --list-secret-keys --with-colons 2>/dev/null | grep -c "^sec:" || true)
   KEY_COUNT_TOTAL=$((KEY_COUNT_PUB + KEY_COUNT_SEC))
 
   echo "$KEY_COUNT_TOTAL $KEY_COUNT_PUB $KEY_COUNT_SEC"
