@@ -4,18 +4,18 @@ author: "DCx7C5"
 
 
 inputs:
-  key_id:
+  key-id:
     required: false
     default: ''
     description: "Key ID or fingerprint of the GPG key to preset passphrase for (if not set, passphrase will be preset for all keys in GNUPGHOME)"
   pass:
     required: true
     description: "Passphrase for the GPG key to cache in gpg-agent (will be masked in logs)"
-  grp:
+  grip:
     required: false
     default: ''
     description: "Keygrip of the GPG key to preset passphrase for (if not set, passphrase will be preset for all keys in GNUPGHOME)"
-  gpg_home:
+  gpg-home:
     required: false
     default: ''
     description: "Path to GPG Home Directory (optional, can also be set via GNUPGHOME env variable)"
@@ -28,36 +28,34 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Mask sensitive inputs
-      id: mask_inputs
-      shell: bash
-      run: |
-        # Mask the GPG passphrase and key identifiers if provided
-        if [ -n '${{ inputs.gpg_pass }}' ]; then
-          echo '::add-mask::${{ inputs.gpg_pass }}'
-        fi
-            
-        if [ -n '${{ inputs.gpg_grp }}' ]; then
-          echo "::add-mask::${{ inputs.gpg_grp }}"
-        fi
-
     - name: Pre-cache GPG passphrase in gpg-agent
       id: precache_passphrase
       if: inputs.forget != 'true'
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+        GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
       run: |
         # Pre-cache GPG passphrase in gpg-agent
         set -euo pipefail
-          
-        if [[ -z "${{ inputs.gpg_grp }}" && -z "${{ inputs.key_id }}" ]]; then
+        
+        if [[ -n "${{ inputs.grip }}" ]]; then
+          echo "::add-mask::${{ inputs.grip }}"  # Mask the keygrip if provided
+        fi
+        
+        if [[ -z "${{ inputs.grip }}" && -z "${{ inputs.key-id }}" ]]; then
           KEYGRIPS=$(gpg --with-colons --list-secret-keys | awk -F: '/^grp:/ {print $10}')
-        elif [[ -z "${{ inputs.gpg_grp }}" && -n "${{ inputs.key_id }}" ]]; then
-          KEYGRIPS=$(gpg --with-colons --list-secret-keys "${{ inputs.key_id }}" | awk -F: '/^grp:/ {print $10}')
-        elif [[ -n "${{ inputs.gpg_grp }}" ]]; then
-          KEYGRIPS="${{ inputs.gpg_grp }}"
+        elif [[ -z "${{ inputs.grip }}" && -n "${{ inputs.key-id }}" ]]; then
+          KEYGRIPS=$(gpg --with-colons --list-secret-keys "${{ inputs.key-id }}" | awk -F: '/^grp:/ {print $10}')
+        elif [[ -n "${{ inputs.grip }}" ]]; then
+          KEYGRIPS="${{ inputs.grip }}"
         fi  
+        
+        if [[ -n "$KEYGRIPS" ]]; then
+          echo "::notice::Pre-caching GPG passphrase for keygrips: $KEYGRIPS"
+        else
+          echo "::warning::No keygrips found to pre-cache passphrase for" >&2
+          exit 0
+        fi
         
         while IFS= read -r KEYGRIP; do
           echo "${{ inputs.pass }}" | /usr/lib/gnupg/gpg-preset-passphrase --preset "${KEYGRIP}" || true
