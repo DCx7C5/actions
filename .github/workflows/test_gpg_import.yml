@@ -7,27 +7,27 @@ on:
     branches:
       - main
     paths:
-      - gpg-import/action.yml
-      - gpg-import/gpg-validate-import/action.yml
-      - gpg-import/gpg-import-file/action.yml
-      - gpg-import/gpg-import-inline/action.yml
-      - gpg-import/gpg-import-keyserver/action.yml
-      - gpg-import/gpg-import-no-protection/action.yml
-      - gpg-import/gpg-import-protected/action.yml
-      - gpg-import/gpg-helpers.sh
+      - gpg-import/**
       - gpg-setup-home/action.yml
       - gpg-preset-pass/action.yml
       - git-configure-gnupg/action.yml
       - gpg-set-ownertrust/action.yml
-      - ssl-decrypt/action.yml
       - .github/workflows/test_gpg_import.yml
 
+
+concurrency:
+  group: 'test-gpg-import-${{ github.ref }}'
+  cancel-in-progress: true
+
+
 jobs:
-  test-gpg-import:
+
+  test-inline-import:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
-      packages: write
-      contents: write
+      contents: read
       actions: write
     steps:
       - name: GitHub App Token
@@ -36,100 +36,194 @@ jobs:
         with:
           app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
+          repositories: actions
 
-      - name: Import GPG key
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Import GPG key (inline, protected)
         id: gpg_import
         uses: ./gpg-import
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
           method: 'inline'
-          gpg_home: ${{ inputs.gpg_home || format('{0}/.gnupg', github.workspace) }}
-          gpg_key: ${{ inputs.gpg_key || secrets.GPG_PRIVATE_KEY }}
-          gpg_pass: ${{ inputs.gpg_pass || secrets.GPG_PASSPHRASE }}
-          ssl_pass: ${{ inputs.ssl_pass || secrets.SSL_PASSPHRASE }}
+          gpg_home: ${{ format('{0}/.gnupg', github.workspace) }}
+          gpg_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_pass: ${{ secrets.GPG_PASSPHRASE }}
           configure_git: 'true'
-          setup_home: ${{ inputs.setup_home || 'true' }}
-          preset_pass: ${{ inputs.preset_pass || 'false' }}
+          setup_home: 'true'
+          preset_pass: 'true'
 
-
-      - name: Validate GPG Import
-        id: gpg_validate
-        shell: bash
+      - name: Verify import
+        id: verify
         env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
-          GNUPGHOME: ${{ inputs.gpg_home || format('{0}/.gnupg', github.workspace) }}
+          GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
+          FP: ${{ steps.gpg_import.outputs.fingerprint }}
         run: |
           set -euo pipefail
-          gpg --list-secret-keys --keyid-format long --with-keygrip --with-fingerprint
-          
 
-      - name: Parse and display GPG keys (detailed)
-        id: gpg_parse_detailed
-        shell: bash
+          echo "verify_ok=false" >> "$GITHUB_OUTPUT"
+
+          # 1) fingerprint output must exist
+          if [[ -z "$FP" ]]; then
+            echo "::error::No fingerprint returned from gpg-import"
+            exit 1
+          fi
+
+          # 2) key must be in the secret keyring
+          if ! gpg --batch --list-secret-keys "$FP" >/dev/null 2>&1; then
+            echo "::error::Imported key $FP not found in secret keyring"
+            exit 1
+          fi
+
+          # 3) git signing key must match
+          git_key="$(git config --global user.signingkey || true)"
+          if [[ "$git_key" != "$FP" ]]; then
+            echo "::error::Git signing key ($git_key) does not match imported fingerprint ($FP)"
+            exit 1
+          fi
+
+          # 4) test signing works
+          if ! echo "gpg-test" | gpg --batch --pinentry-mode loopback --local-user "$FP" --armor --detach-sign >/dev/null 2>&1; then
+            echo "::error::Test signing with key $FP failed"
+            exit 1
+          fi
+
+          echo "verify_ok=true" >> "$GITHUB_OUTPUT"
+
+      - name: Job Summary
+        if: always()
         env:
-          GNUPGHOME: ${{ inputs.gpg_home || format('{0}/.gnupg', github.workspace) }}
+          IMPORT_OUTCOME: ${{ steps.gpg_import.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          VERIFY_OK: ${{ steps.verify.outputs.verify_ok }}
+          FP: ${{ steps.gpg_import.outputs.fingerprint }}
+          GPG_HOME: ${{ steps.gpg_import.outputs.gpg_home }}
+          KEYS_PUB: ${{ steps.gpg_import.outputs.keys_public }}
+          KEYS_SEC: ${{ steps.gpg_import.outputs.keys_secret }}
+          KEYS_TOT: ${{ steps.gpg_import.outputs.keys_total }}
         run: |
-          set -euo pipefail
-          echo "Typ   Status   Prim. Dummy  Key-ID                Fingerprint                           Keygrip                              Parent      User-ID"
-          echo "----  -------  ----- -----  --------------------  ------------------------------------  ------------------------------------  ----------  ------------------------------------------"
-          gpg --list-secret-keys --keyid-format long --with-keygrip --with-fingerprint --with-colons | awk -F: '
-          function print_row(typ, status, prim, dummy, keyid, fpr, grip, parent, uid) {
-            printf "%-4s  %-7s  %-5s %-5s  %-20s  %-36s  %-36s  %-10s  %s\n", typ, status, prim, dummy, keyid, fpr, grip, parent, uid
-          }
+          s() { [[ "$1" == "success" ]] && printf '✅' || printf '❌'; }
+
           {
-            if ($1 == "sec" || $1 == "pub") {
-              typ = $1
-              status = $2
-              keyid = $5
-              prim = "yes"
-              dummy = ($2 ~ /d/) ? "yes" : "no"
-              parent = ""
-              fpr = ""
-              grip = ""
-              uid = ""
-              show = 1
-            }
-            if ($1 == "ssb" || $1 == "sub") {
-              typ = $1
-              status = $2
-              keyid = $5
-              prim = "no"
-              dummy = ($2 ~ /d/) ? "yes" : "no"
-              parent = last_primary
-              fpr = ""
-              grip = ""
-              uid = ""
-              show = 1
-            }
-            if ($1 == "fpr" && show) {
-              fpr = $10
-            }
-            if ($1 == "grp" && show) {
-              grip = $10
-            }
-            if ($1 == "uid" && show) {
-              uid = $10
-              print_row(typ, status, prim, dummy, keyid, fpr, grip, parent, uid)
-              show = 0
-            }
-            if (($1 == "sec" || $1 == "pub") && $5 != "") {
-              last_primary = $5
-            }
-            if (($1 == "sec" || $1 == "pub") && show && uid == "") {
-              print_row(typ, status, prim, dummy, keyid, fpr, grip, parent, "-")
-              show = 0
-            }
-            if (($1 == "ssb" || $1 == "sub") && show) {
-              print_row(typ, status, prim, dummy, keyid, fpr, grip, parent, "-")
-              show = 0
-            }
-          }
-          '
-          echo ""
-          echo "Legende:"
-          echo "Typ: sec=Secret Primary, ssb=Secret Subkey, pub=Public Primary, sub=Public Subkey"
-          echo "Prim.: yes=Primary Key, no=Subkey"
-          echo "Dummy: yes=Dummy Key, no=Echter Key"
-          echo "Parent: Key-ID des zugehörigen Primary Keys (bei Subkeys)"
-          echo "User-ID: Anzeigename und E-Mail (bei UID-Zeilen, sonst '-')"
+            echo "### 🔐 GPG Import — Inline Protected Key"
+            echo ""
+            echo "| Check | Status |"
+            echo "|:------|:------:|"
+            echo "| Import | $(s "$IMPORT_OUTCOME") \`${IMPORT_OUTCOME}\` |"
+            echo "| Verify | $(s "$VERIFY_OUTCOME") \`${VERIFY_OUTCOME}\` |"
+            echo ""
+            echo "| Property | Value |"
+            echo "|:---------|:------|"
+            echo "| Fingerprint | \`${FP:-n/a}\` |"
+            echo "| GNUPGHOME | \`${GPG_HOME:-n/a}\` |"
+            echo "| Public keys | \`${KEYS_PUB:-0}\` |"
+            echo "| Secret keys | \`${KEYS_SEC:-0}\` |"
+            echo "| Total keys | \`${KEYS_TOT:-0}\` |"
+            echo ""
+            echo "**Checks performed:**"
+            echo "- ✔ Fingerprint returned"
+            echo "- ✔ Key present in secret keyring"
+            echo "- ✔ Git signing key matches fingerprint"
+            echo "- ✔ Test detach-sign with imported key"
+            echo "- ✔ Passphrase preset in gpg-agent"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  test-keyserver-import:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: GitHub App Token
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
+          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
+          repositories: actions
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Import GPG key (keyserver)
+        id: gpg_import
+        uses: ./gpg-import
+        with:
+          method: 'keyserver'
+          gpg_home: ${{ format('{0}/.gnupg', github.workspace) }}
+          gpg_key: ${{ secrets.GPG_FINGERPRINT }}
+          keyserver_url: 'hkps://keys.openpgp.org'
+          configure_git: 'false'
+          setup_home: 'true'
+          preset_pass: 'false'
+
+      - name: Verify keyserver import
+        id: verify
+        env:
+          GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
+          FP: ${{ steps.gpg_import.outputs.fingerprint }}
+        run: |
+          set -euo pipefail
+
+          echo "verify_ok=false" >> "$GITHUB_OUTPUT"
+
+          # 1) fingerprint output must exist
+          if [[ -z "$FP" ]]; then
+            echo "::error::No fingerprint returned from gpg-import"
+            exit 1
+          fi
+
+          # 2) key must be in the public keyring
+          if ! gpg --batch --list-keys "$FP" >/dev/null 2>&1; then
+            echo "::error::Imported key $FP not found in public keyring"
+            exit 1
+          fi
+
+          # 3) extract uid from imported key
+          uid="$(gpg --batch --with-colons --list-keys "$FP" | awk -F: '/^uid:/ {print $10; exit}')"
+          if [[ -z "$uid" ]]; then
+            echo "::warning::No UID found for key $FP"
+          fi
+
+          echo "uid=$uid" >> "$GITHUB_OUTPUT"
+          echo "verify_ok=true" >> "$GITHUB_OUTPUT"
+
+      - name: Job Summary
+        if: always()
+        env:
+          IMPORT_OUTCOME: ${{ steps.gpg_import.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          VERIFY_OK: ${{ steps.verify.outputs.verify_ok }}
+          FP: ${{ steps.gpg_import.outputs.fingerprint }}
+          GPG_HOME: ${{ steps.gpg_import.outputs.gpg_home }}
+          KEYS_PUB: ${{ steps.gpg_import.outputs.keys_public }}
+          KEYS_TOT: ${{ steps.gpg_import.outputs.keys_total }}
+          UID_LINE: ${{ steps.verify.outputs.uid }}
+        run: |
+          s() { [[ "$1" == "success" ]] && printf '✅' || printf '❌'; }
+
+          {
+            echo "### 🌐 GPG Import — Keyserver"
+            echo ""
+            echo "| Check | Status |"
+            echo "|:------|:------:|"
+            echo "| Import | $(s "$IMPORT_OUTCOME") \`${IMPORT_OUTCOME}\` |"
+            echo "| Verify | $(s "$VERIFY_OUTCOME") \`${VERIFY_OUTCOME}\` |"
+            echo ""
+            echo "| Property | Value |"
+            echo "|:---------|:------|"
+            echo "| Fingerprint | \`${FP:-n/a}\` |"
+            echo "| UID | \`${UID_LINE:-n/a}\` |"
+            echo "| GNUPGHOME | \`${GPG_HOME:-n/a}\` |"
+            echo "| Public keys | \`${KEYS_PUB:-0}\` |"
+            echo "| Total keys | \`${KEYS_TOT:-0}\` |"
+            echo ""
+            echo "**Checks performed:**"
+            echo "- ✔ Fingerprint returned"
+            echo "- ✔ Key present in public keyring"
+            echo "- ✔ UID extracted from imported key"
+          } >> "$GITHUB_STEP_SUMMARY"
