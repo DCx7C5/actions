@@ -1,4 +1,4 @@
-name: "Test Docker Build/Push Action"
+name: "Test Docker Build/Push"
 on:
   workflow_dispatch:
     inputs:
