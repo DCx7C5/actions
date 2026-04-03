@@ -32,6 +32,7 @@ runs:
       id: mask_inputs
       shell: bash
       run: |
+        # Mask the GPG passphrase and key identifiers if provided
         if [ -n '${{ inputs.gpg_pass }}' ]; then
           echo '::add-mask::${{ inputs.gpg_pass }}'
         fi
@@ -47,6 +48,7 @@ runs:
       env:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
+        # Pre-cache GPG passphrase in gpg-agent
         set -euo pipefail
           
         if [[ -z "${{ inputs.gpg_grp }}" && -z "${{ inputs.key_id }}" ]]; then
@@ -68,6 +70,7 @@ runs:
       if: inputs.forget == 'true'
       shell: bash
       run: |
+        # Forget the pre-cached GPG passphrase from gpg-agent cache
         set -euo pipefail
         
         KEYGRIPS=$(gpg --with-colons --list-secret-keys | awk -F: '/^grp:/ {print $10}')

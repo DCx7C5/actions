@@ -54,6 +54,7 @@ runs:
       id: mask_and_validate
       shell: bash
       run: |
+        # Validate the gpg_key input and classify its type for downstream processing
         set -euo pipefail
 
         input_key="${{ inputs.gpg_key }}"

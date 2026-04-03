@@ -47,6 +47,7 @@ runs:
       env:
         GPG_KEY: "${{ inputs.gpg_key }}"
       run: |
+        # Validate the gpg_key input and determine if it's a file path or inline content
         set -euo pipefail
         if [[ -n "$GPG_KEY" && -f "$GPG_KEY" ]]; then
           echo "type=file" >> "$GITHUB_OUTPUT"
@@ -61,6 +62,7 @@ runs:
         GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
         GPG_KEY_PATH: "${{ inputs.gpg_key }}"
       run: |
+        # Validate GPG key file and import with passphrase
         set -euo pipefail
         
         # Decode passphrase from base64 to protect from shell expansion
@@ -103,6 +105,7 @@ runs:
         GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME }}"
         GPG_KEY_PATH: "${{ inputs.gpg_key }}"
       run: |
+        # Validate GPG key content and import with passphrase
         set -euo pipefail
         
         printf '%s' '${{ inputs.pass }}' | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --import <(printf '%s' "$GPG_KEY_PATH")

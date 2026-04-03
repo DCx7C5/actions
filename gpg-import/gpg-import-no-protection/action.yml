@@ -47,6 +47,7 @@ runs:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
         GPG_KEY: "${{ inputs.gpg_key }}"
       run: |
+        # Validate or set GNUPGHOME - either from input or environment or default
         set -euo pipefail
         
         if [[ -n "${{ inputs.gpg_key }}" ]]; then

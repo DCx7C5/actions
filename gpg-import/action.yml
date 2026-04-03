@@ -83,6 +83,7 @@ runs:
     - name: Mask sensitive inputs
       shell: bash
       run: |
+        # Mask the GPG key input if it's provided (either inline or as a file path)
         if [ -n "${{ inputs.gpg_key }}" ]; then
           echo "::add-mask::${{ inputs.gpg_key }}"
         fi

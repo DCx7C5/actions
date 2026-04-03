@@ -51,6 +51,7 @@ runs:
       id: mask_and_validate
       shell: bash
       run: |
+        # Mask the GPG key and passphrase if provided
         if [[ -n '${{ inputs.pass }}' && -n "${{ inputs.gpg_key }}" ]]; then
           echo "::add-mask::${{ inputs.gpg_key }}"
           echo "::add-mask::${{ inputs.pass }}"
@@ -66,6 +67,7 @@ runs:
       env:
         GPG_KEY: "${{ inputs.gpg_key }}"
       run: |
+        # Auto-detect key type based on the first line of the key content
         set -euo pipefail
         header=$(echo "$GPG_KEY" | head -n 1)
         if [[ "$header" == *"BEGIN PGP PRIVATE KEY BLOCK"* || "$header" == *"BEGIN PGP SECRET KEY BLOCK"* ]]; then

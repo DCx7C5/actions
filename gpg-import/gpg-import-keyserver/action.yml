@@ -44,6 +44,7 @@ runs:
       env:
         GPG_HOME: "${{ inputs.gpg_home }}"
       run: |
+        # Validate inputs and environment
         set -euo pipefail
         
         # Validate or set GNUPGHOME - either from input or environment or default
@@ -73,6 +74,7 @@ runs:
         KEYSERVER_URL: '${{ inputs.keyserver_url }}'
         GNUPGHOME: '${{ inputs.gpg_home || env.GNUPGHOME }}'
       run: |
+        # Import GPG key from keyserver
         set -euo pipefail
         
         # Source helper library

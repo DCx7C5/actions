@@ -50,6 +50,7 @@ runs:
         PASSPHRASE: ${{ inputs.gpg_passphrase }}
         PASS_PRECACHED: ${{ inputs.gpg_pass_precached }}
       run: |
+        # Create detached signatures for files matching the specified pattern
         set -euo pipefail
         
         if [[ "$FILES_PATTERN" == *" "* ]]; then
@@ -106,6 +107,7 @@ runs:
       if: always() && steps.sign_files.outputs.signed_files != ''
       shell: bash
       run: |
+        # Create a step summary listing the created signature files
         set -euo pipefail
         
         {

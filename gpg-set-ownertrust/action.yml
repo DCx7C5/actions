@@ -27,6 +27,7 @@ runs:
     - name: Validate inputs
       shell: bash
       run: |
+        # Validate required inputs and set defaults
         set -euo pipefail
 
         if [ -z '${{ inputs.fingerprint }}' ]; then
@@ -44,6 +45,7 @@ runs:
       env:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
+        # Validate or set GNUPGHOME - either from input or environment or default
         set -euo pipefail
         export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         if ! echo "trust\n${{ inputs.trust_level }}\ny\n" | gpg --no-tty --batch --command-fd 0 --edit-key "${{ inputs.fingerprint }}"; then

@@ -26,6 +26,7 @@ runs:
       env:
         GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
       run: |
+        # Validate or set GNUPGHOME - either from input or environment or default
         set -euo pipefail
         
         if [[ -z "$GNUPGHOME" ]]; then
@@ -98,6 +99,7 @@ runs:
       env:
         GNUPGHOME: ${{ steps.create_dir.outputs.gpg_home }}
       run: |
+        # Configure gpg-agent for non-interactive signing with loopback pinentry and preset passphrase support
         set -euo pipefail
         
         cat > "$GNUPGHOME/gpg-agent.conf" << 'GPGCONF'

@@ -50,6 +50,7 @@ runs:
       id: mask_and_validate
       shell: bash
       run: |
+        # Mask the passphrase if provided
         if [ -n '${{ inputs.pass }}' ]; then
           echo "::add-mask::${{ inputs.pass }}"
         fi
@@ -66,8 +67,8 @@ runs:
       env:
         GPG_KEY: '${{ inputs.gpg_key }}'
       run: |
+        # Auto-detect key type based on file content
         set -euo pipefail
-        
         if [ ! -f "$GPG_KEY" ]; then
           echo "::error::GPG key file not found: $GPG_KEY" >&2
           exit 1
@@ -104,6 +105,7 @@ runs:
       if: inputs.delete_after_import == 'true'
       shell: bash
       run: |
+        # Securely delete the key file after import if it's a private key and deletion is requested
         set -euo pipefail
         key_file='${{ inputs.gpg_key }}'
         if [ -f "$key_file" ]; then
