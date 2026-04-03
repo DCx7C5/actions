@@ -66,6 +66,7 @@ runs:
       shell: bash
       env:
         GPG_KEY: '${{ inputs.key }}'
+        GNUPGHOME: "${{ inputs.gpg-home }}"
       run: |
         # Auto-detect key type based on file content
         set -euo pipefail
@@ -104,11 +105,13 @@ runs:
     - name: Delete key file after import (if requested)
       if: inputs.delete-after-import == 'true'
       shell: bash
+      env:
+        GNUPGHOME: "${{ inputs.gpg-home }}"
       run: |
         # Securely delete the key file after import if it's a private key and deletion is requested
         set -euo pipefail
         key_file='${{ inputs.key }}'
         if [ -f "$key_file" ]; then
-          shred -vfz -n 3 "$key_file" || rm -f "$key_file"
+          shred -vfz -n 11 "$key_file" || rm -f "$key_file"
           echo "::notice::GPG key file securely deleted: $key_file"
         fi
