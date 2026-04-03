@@ -134,10 +134,6 @@ runs:
         fi
 
         {
-          delim="__GHA_DELIM_$(date +%s%N)__"
-          echo "gpg_key<<$delim"
-          printf '%s\n' "$normalized_key"
-          echo "$delim"
           echo "is_file=$is_file"
           echo "is_secret=$is_secret"
           echo "is_fingerprint=$is_fingerprint"
@@ -147,4 +143,7 @@ runs:
           echo "is_ascii_armored=$is_ascii_armored"
           echo "is_ssl_encrypted=$is_ssl_encrypted"
           echo "is_ssl_encrypted_binary=$is_ssl_encrypted_binary"
+          echo "gpg_key<<EOF"
+          printf '%s\n' "$normalized_key"
+          echo "EOF"
         } >> "$GITHUB_OUTPUT"
