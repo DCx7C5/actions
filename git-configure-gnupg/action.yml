@@ -44,14 +44,6 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Mask sensitive inputs
-      shell: bash
-      if: inputs.key-id != ''
-      run: |
-        # Mask the GPG key identifier input to prevent it from being exposed in logs
-        echo "::add-mask::${{ inputs.key-id }}"
-        echo "::add-mask::$FINGERPRINT"
-        echo "::add-mask::$INPUT_FINGERPRINT"
 
     - name: Parse Key Credentials
       id: parse_gpg
