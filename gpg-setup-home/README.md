@@ -4,7 +4,7 @@ Composite GitHub Action to create and harden a GnuPG home directory for CI usage
 
 ## What this action does
 
-1. Resolves `GNUPGHOME` from `inputs.gpg_home` or existing environment.
+1. Resolves `GNUPGHOME` from `inputs.gpg-home` or existing environment.
 2. Creates a temporary GPG home under the workspace if none is provided.
 3. Applies secure directory permissions.
 4. Writes hardened `gpg.conf` defaults.

@@ -112,6 +112,6 @@ runs:
         set -euo pipefail
         key_file='${{ inputs.key }}'
         if [ -f "$key_file" ]; then
-          shred -vfz -n 11 "$key_file" || rm -f "$key_file"
+          shred -vfzu -n 11 "$key_file" || rm -f "$key_file"
           echo "::notice::GPG key file securely deleted: $key_file"
         fi

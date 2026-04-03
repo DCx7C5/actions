@@ -25,7 +25,7 @@ This action currently does not define outputs.
 
 ## Environment variables
 
-- Uses `GNUPGHOME` from `inputs.gpg_home` or inherited environment.
+- Uses `GNUPGHOME` from `inputs.gpg-home` or inherited environment.
 - Requires access to the `gpg-agent` socket for the selected home.
 
 ## Dependencies

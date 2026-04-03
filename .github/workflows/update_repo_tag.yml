@@ -68,12 +68,12 @@ jobs:
         uses: ./tag-create-and-push
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
-          GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
         with:
           sign: 'true'
           version: "v1"
           commit_msg: "Release v1"
           pass: ${{ secrets.GPG_PASSPHRASE }}
+          gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
 
       - name: Create release on GitHub
         id: release_create
