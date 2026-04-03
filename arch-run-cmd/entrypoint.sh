@@ -15,6 +15,16 @@ trap 'echo "ERROR: Script failed on line $LINENO (command: $BASH_COMMAND)" >&2; 
 
 _WS="${GITHUB_WORKSPACE:-/github/workspace}"
 
+# Fallback if workspace directory doesn't exist (standalone docker run)
+if [[ ! -d "$_WS" ]]; then
+  if [[ -n "${WORKING_DIR:-}" && -d "${WORKING_DIR:-}" ]]; then
+    _WS="$WORKING_DIR"
+  else
+    _WS="/home/${USER:-runner}/work"
+    [[ ! -d "$_WS" ]] && _WS="$(pwd)"
+  fi
+fi
+
 # GH_TOKEN fallback to GITHUB_TOKEN (auto-set by GitHub inside containers)
 export GH_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
 
@@ -32,7 +42,7 @@ shift || true
 # Resolve GNUPGHOME: input path is a host path and won't exist in the
 # container. Auto-discover .gnupg* directory under the mounted workspace.
 if [[ -z "${GNUPGHOME:-}" || ! -d "${GNUPGHOME:-}" ]]; then
-  found=$(find "$_WS" -maxdepth 1 -name '.gnupg*' -type d 2>/dev/null | head -1)
+  found=$(find "$_WS" -maxdepth 1 -name '.gnupg*' -type d 2>/dev/null | head -1 || true)
   if [[ -n "$found" ]]; then
     export GNUPGHOME="$found"
   else
