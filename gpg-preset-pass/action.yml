@@ -38,22 +38,20 @@ runs:
         # Pre-cache GPG passphrase in gpg-agent
         set -euo pipefail
         
-        # Mask passphrase in logs
-        if [[ -n "${{ inputs.pass }}" ]]; then
-          echo "::add-mask::${{ inputs.pass }}"
-        fi
+        # Mask passphrase in logs (single-quoted to prevent shell expansion)
+        echo '::add-mask::${{ inputs.pass }}'
         
-        if [[ -n "${{ inputs.grip }}" ]]; then
-          echo "::add-mask::${{ inputs.grip }}"  # Mask the keygrip if provided
+        if [[ -n '${{ inputs.grip }}' ]]; then
+          echo '::add-mask::${{ inputs.grip }}'
         fi
         
         KEYGRIPS=''
-        if [[ -z "${{ inputs.grip }}" && -z "${{ inputs.key-id }}" ]]; then
+        if [[ -z '${{ inputs.grip }}' && -z '${{ inputs.key-id }}' ]]; then
           KEYGRIPS=$(gpg --with-colons --list-secret-keys | awk -F: '/^grp:/ {print $10}')
-        elif [[ -z "${{ inputs.grip }}" && -n "${{ inputs.key-id }}" ]]; then
-          KEYGRIPS=$(gpg --with-colons --list-secret-keys "${{ inputs.key-id }}" | awk -F: '/^grp:/ {print $10}')
-        elif [[ -n "${{ inputs.grip }}" ]]; then
-          KEYGRIPS="${{ inputs.grip }}"
+        elif [[ -z '${{ inputs.grip }}' && -n '${{ inputs.key-id }}' ]]; then
+          KEYGRIPS=$(gpg --with-colons --list-secret-keys '${{ inputs.key-id }}' | awk -F: '/^grp:/ {print $10}')
+        elif [[ -n '${{ inputs.grip }}' ]]; then
+          KEYGRIPS='${{ inputs.grip }}'
         fi  
         
         if [[ -n "$KEYGRIPS" ]]; then
@@ -63,9 +61,19 @@ runs:
           exit 0
         fi
         
+        failures=0
         while IFS= read -r KEYGRIP; do
-          echo "${{ inputs.pass }}" | /usr/lib/gnupg/gpg-preset-passphrase --preset "${KEYGRIP}" || true
+          [[ -z "$KEYGRIP" ]] && continue
+          if ! printf '%s' '${{ inputs.pass }}' | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEYGRIP"; then
+            echo "::error::Failed to preset passphrase for keygrip $KEYGRIP"
+            failures=$((failures + 1))
+          fi
         done <<< "$KEYGRIPS"
+        
+        if (( failures > 0 )); then
+          echo "::error::Failed to preset passphrase for $failures keygrip(s) — check gpg-agent allow-preset-passphrase and GNUPGHOME"
+          exit 1
+        fi
         
         echo "::notice::GPG passphrase pre-cached successfully in gpg-agent cache"
 
