@@ -39,7 +39,7 @@ runs:
         set -euo pipefail
         
         # Mask passphrase in logs
-        echo "::add-mask::$GPG_PRESET_PASS"
+        echo "::add-mask::${{ inputs.pass }}"
         
         if [[ -n "${{ inputs.grip }}" ]]; then
           echo "::add-mask::${{ inputs.grip }}"  # Mask the keygrip if provided
