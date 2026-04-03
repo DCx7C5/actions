@@ -332,7 +332,7 @@ runs:
           exit 1
         fi
         
-        if jq -c "${args[@]}" "$filter" <<< "$JSON_DICT" | gh variable set "${{ inputs.var-name }}" ${ACCESS_LEVEL} "$LEVEL_NAME"; then
+        if jq -c "${args[@]}" "$filter | .packages |= (to_entries | sort_by(.key) | from_entries)" <<< "$JSON_DICT" | gh variable set "${{ inputs.var-name }}" ${ACCESS_LEVEL} "$LEVEL_NAME"; then
           echo "out=saved" >> "$GITHUB_OUTPUT"
         fi
         
@@ -395,7 +395,7 @@ runs:
           exit 1
         fi
 
-        if jq -c "${args[@]}" "$filter" <<< "$JSON_DICT" | gh variable set "${{ inputs.var-name }}" ${ACCESS_LEVEL} "$LEVEL_NAME"; then
+        if jq -c "${args[@]}" "$filter | .packages |= (to_entries | sort_by(.key) | from_entries)" <<< "$JSON_DICT" | gh variable set "${{ inputs.var-name }}" ${ACCESS_LEVEL} "$LEVEL_NAME"; then
           echo "out=saved" >> "$GITHUB_OUTPUT"
         fi
         
