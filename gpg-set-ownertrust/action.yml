@@ -48,7 +48,7 @@ runs:
         # Validate or set GNUPGHOME - either from input or environment or default
         set -euo pipefail
         export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
-        if ! echo "trust\n${{ inputs.trust_level }}\ny\n" | gpg --no-tty --batch --command-fd 0 --edit-key "${{ inputs.fingerprint }}"; then
+        if ! echo "${{ inputs.fingerprint }}:${{ inputs.trust_level }}:" | gpg --no-tty --batch --import-ownertrust; then
           echo "::error::Failed setting trust level of key: ${{ inputs.fingerprint }}" >&2
           exit 1
         fi
