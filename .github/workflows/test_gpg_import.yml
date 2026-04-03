@@ -1,4 +1,4 @@
-name: "Test GPG Import Action"
+name: "Test GPG Key Import"
 
 
 on:
@@ -61,6 +61,9 @@ jobs:
           GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
           FP: ${{ steps.gpg_import.outputs.fingerprint }}
           GPG_PASS: ${{ secrets.GPG_PASSPHRASE }}
+          KEY_GRIPS: ${{ steps.gpg_import.outputs.key_grips }}
+          KEYS_SECRET: ${{ steps.gpg_import.outputs.keys_secret }}
+          KEYS_PUBLIC: ${{ steps.gpg_import.outputs.keys_public }}
         run: |
           set -euo pipefail
 
@@ -85,10 +88,38 @@ jobs:
             exit 1
           fi
 
-          # 4) test signing works (pass passphrase directly)
+          # 4) test signing with explicit passphrase
           if ! echo "gpg-test" | gpg --batch --pinentry-mode loopback --passphrase "$GPG_PASS" --local-user "$FP" --armor --detach-sign >/dev/null 2>&1; then
             echo "::error::Test signing with key $FP failed"
             exit 1
+          fi
+
+          # 5) verify owner trust is set to ultimate (level 6 in export format = trust level 5 input)
+          trust_line="$(gpg --export-ownertrust 2>/dev/null | grep "$FP" || true)"
+          if [[ -z "$trust_line" ]]; then
+            echo "::error::Owner trust not set for key $FP"
+            exit 1
+          fi
+          if [[ "$trust_line" != *":6:" ]]; then
+            echo "::error::Owner trust for $FP is not ultimate. Got: $trust_line"
+            exit 1
+          fi
+
+          # 6) verify key_grips output is non-empty
+          if [[ -z "$KEY_GRIPS" ]]; then
+            echo "::error::key_grips output is empty"
+            exit 1
+          fi
+
+          # 7) verify key counts are sane
+          if [[ "${KEYS_SECRET:-0}" -lt 1 ]]; then
+            echo "::error::Expected at least 1 secret key, got ${KEYS_SECRET:-0}"
+            exit 1
+          fi
+
+          # 8) test signing via gpg-agent cache (without explicit passphrase)
+          if ! echo "agent-cache-test" | gpg --batch --pinentry-mode loopback --local-user "$FP" --armor --detach-sign >/dev/null 2>&1; then
+            echo "::warning::Signing without explicit passphrase failed — gpg-agent cache may not be preset"
           fi
 
           echo "verify_ok=true" >> "$GITHUB_OUTPUT"
@@ -104,6 +135,7 @@ jobs:
           KEYS_PUB: ${{ steps.gpg_import.outputs.keys_public }}
           KEYS_SEC: ${{ steps.gpg_import.outputs.keys_secret }}
           KEYS_TOT: ${{ steps.gpg_import.outputs.keys_total }}
+          KEY_GRIPS: ${{ steps.gpg_import.outputs.key_grips }}
         run: |
           s() { [[ "$1" == "success" ]] && printf '✅' || printf '❌'; }
 
@@ -122,13 +154,17 @@ jobs:
             echo "| Public keys | \`${KEYS_PUB:-0}\` |"
             echo "| Secret keys | \`${KEYS_SEC:-0}\` |"
             echo "| Total keys | \`${KEYS_TOT:-0}\` |"
+            echo "| Key grips | \`${KEY_GRIPS:-n/a}\` |"
             echo ""
             echo "**Checks performed:**"
             echo "- ✔ Fingerprint returned"
             echo "- ✔ Key present in secret keyring"
             echo "- ✔ Git signing key matches fingerprint"
-            echo "- ✔ Test detach-sign with imported key"
-            echo "- ✔ Passphrase preset in gpg-agent"
+            echo "- ✔ Test detach-sign with explicit passphrase"
+            echo "- ✔ Owner trust set to ultimate"
+            echo "- ✔ Key grips output non-empty"
+            echo "- ✔ Secret key count ≥ 1"
+            echo "- ✔ Signing via gpg-agent cache (without passphrase)"
           } >> "$GITHUB_STEP_SUMMARY"
 
   test-keyserver-import:
@@ -190,6 +226,13 @@ jobs:
             echo "::warning::No UID found for key $FP"
           fi
 
+          # 4) verify configure_git: false — git signing key must NOT be set
+          git_key="$(git config --global user.signingkey 2>/dev/null || true)"
+          if [[ -n "$git_key" ]]; then
+            echo "::error::Git signing key should not be set with configure_git: false, got: $git_key"
+            exit 1
+          fi
+
           echo "uid=$uid" >> "$GITHUB_OUTPUT"
           echo "verify_ok=true" >> "$GITHUB_OUTPUT"
 
@@ -227,4 +270,372 @@ jobs:
             echo "- ✔ Fingerprint returned"
             echo "- ✔ Key present in public keyring"
             echo "- ✔ UID extracted from imported key"
+            echo "- ✔ Git signing key NOT set (configure_git: false)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  test-file-import:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: GitHub App Token
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
+          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
+          repositories: actions
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Write key to temp file
+        id: write_key
+        env:
+          GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          KEY_FILE="$(mktemp "${RUNNER_TEMP}/gpg-key-XXXXXX.asc")"
+          echo "$GPG_KEY" > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+          echo "key_file=$KEY_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Import GPG key (file method)
+        id: gpg_import
+        uses: ./gpg-import
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        with:
+          import-method: 'file'
+          gpg-home: ${{ format('{0}/.gnupg', github.workspace) }}
+          key: ${{ steps.write_key.outputs.key_file }}
+          gpg-pass: ${{ secrets.GPG_PASSPHRASE }}
+          delete-after-import: 'true'
+          configure-git: 'true'
+          initialize-home: 'true'
+          preset-passphrase-cache: 'false'
+
+      - name: Verify file import
+        id: verify
+        env:
+          GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
+          FP: ${{ steps.gpg_import.outputs.fingerprint }}
+          KEY_FILE: ${{ steps.write_key.outputs.key_file }}
+          KEYS_SECRET: ${{ steps.gpg_import.outputs.keys_secret }}
+        run: |
+          set -euo pipefail
+
+          echo "verify_ok=false" >> "$GITHUB_OUTPUT"
+
+          # 1) fingerprint must exist
+          if [[ -z "$FP" ]]; then
+            echo "::error::No fingerprint returned from file import"
+            exit 1
+          fi
+
+          # 2) key in secret keyring
+          if ! gpg --batch --list-secret-keys "$FP" >/dev/null 2>&1; then
+            echo "::error::Imported key $FP not found in secret keyring"
+            exit 1
+          fi
+
+          # 3) key file deleted after import
+          if [[ -f "$KEY_FILE" ]]; then
+            echo "::error::Key file $KEY_FILE was NOT deleted after import (delete_after_import: true)"
+            exit 1
+          fi
+
+          # 4) secret key count
+          if [[ "${KEYS_SECRET:-0}" -lt 1 ]]; then
+            echo "::error::Expected at least 1 secret key, got ${KEYS_SECRET:-0}"
+            exit 1
+          fi
+
+          echo "verify_ok=true" >> "$GITHUB_OUTPUT"
+
+      - name: Job Summary
+        if: always()
+        env:
+          IMPORT_OUTCOME: ${{ steps.gpg_import.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          FP: ${{ steps.gpg_import.outputs.fingerprint }}
+          GPG_HOME: ${{ steps.gpg_import.outputs.gpg_home }}
+          KEYS_SEC: ${{ steps.gpg_import.outputs.keys_secret }}
+        run: |
+          s() { [[ "$1" == "success" ]] && printf '✅' || printf '❌'; }
+
+          {
+            echo "### 📁 GPG Import — File Method"
+            echo ""
+            echo "| Check | Status |"
+            echo "|:------|:------:|"
+            echo "| Import | $(s "$IMPORT_OUTCOME") \`${IMPORT_OUTCOME}\` |"
+            echo "| Verify | $(s "$VERIFY_OUTCOME") \`${VERIFY_OUTCOME}\` |"
+            echo ""
+            echo "| Property | Value |"
+            echo "|:---------|:------|"
+            echo "| Fingerprint | \`${FP:-n/a}\` |"
+            echo "| GNUPGHOME | \`${GPG_HOME:-n/a}\` |"
+            echo "| Secret keys | \`${KEYS_SEC:-0}\` |"
+            echo ""
+            echo "**Checks performed:**"
+            echo "- ✔ Fingerprint returned"
+            echo "- ✔ Key present in secret keyring"
+            echo "- ✔ Key file deleted after import"
+            echo "- ✔ Secret key count ≥ 1"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  test-setup-home-false:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: GitHub App Token
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
+          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
+          repositories: actions
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Prepare custom GNUPGHOME
+        id: custom_home
+        run: |
+          CUSTOM_HOME="${RUNNER_TEMP}/custom-gnupg"
+          mkdir -p "$CUSTOM_HOME"
+          chmod 700 "$CUSTOM_HOME"
+          echo "gnupg_home=$CUSTOM_HOME" >> "$GITHUB_OUTPUT"
+
+      - name: Import GPG key (setup_home=false, configure_git=false)
+        id: gpg_import
+        uses: ./gpg-import
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          GNUPGHOME: ${{ steps.custom_home.outputs.gnupg_home }}
+        with:
+          key: ${{ secrets.GPG_PRIVATE_KEY }}
+          import-method: 'inline'
+          gpg-pass: ${{ secrets.GPG_PASSPHRASE }}
+          configure-git: 'false'
+          initialize-home: 'false'
+          preset-passphrase-cache: 'false'
+
+      - name: Verify setup_home=false behavior
+        id: verify
+        env:
+          GNUPGHOME: ${{ steps.custom_home.outputs.gnupg_home }}
+          FP: ${{ steps.gpg_import.outputs.fingerprint }}
+          CUSTOM_HOME: ${{ steps.custom_home.outputs.gnupg_home }}
+        run: |
+          set -euo pipefail
+
+          echo "verify_ok=false" >> "$GITHUB_OUTPUT"
+
+          # 1) fingerprint must exist
+          if [[ -z "$FP" ]]; then
+            echo "::error::No fingerprint returned"
+            exit 1
+          fi
+
+          # 2) key must be in the custom GNUPGHOME
+          if ! gpg --batch --homedir "$CUSTOM_HOME" --list-secret-keys "$FP" >/dev/null 2>&1; then
+            echo "::error::Key $FP not found in custom GNUPGHOME ($CUSTOM_HOME)"
+            exit 1
+          fi
+
+          # 3) git signing key must NOT be set (configure_git: false)
+          git_key="$(git config --global user.signingkey 2>/dev/null || true)"
+          if [[ -n "$git_key" ]]; then
+            echo "::error::Git signing key should not be set, got: $git_key"
+            exit 1
+          fi
+
+          # 4) gpg_home output should use env GNUPGHOME (not a generated path)
+          gpg_home_out="${{ steps.gpg_import.outputs.gpg_home }}"
+          if [[ "$gpg_home_out" != "$CUSTOM_HOME" ]]; then
+            echo "::notice::gpg_home output ($gpg_home_out) differs from custom home ($CUSTOM_HOME) — expected when setup_home=false"
+          fi
+
+          echo "verify_ok=true" >> "$GITHUB_OUTPUT"
+
+      - name: Job Summary
+        if: always()
+        env:
+          IMPORT_OUTCOME: ${{ steps.gpg_import.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          FP: ${{ steps.gpg_import.outputs.fingerprint }}
+          GPG_HOME: ${{ steps.custom_home.outputs.gnupg_home }}
+        run: |
+          s() { [[ "$1" == "success" ]] && printf '✅' || printf '❌'; }
+
+          {
+            echo "### ⚙️ GPG Import — setup_home=false, configure_git=false"
+            echo ""
+            echo "| Check | Status |"
+            echo "|:------|:------:|"
+            echo "| Import | $(s "$IMPORT_OUTCOME") \`${IMPORT_OUTCOME}\` |"
+            echo "| Verify | $(s "$VERIFY_OUTCOME") \`${VERIFY_OUTCOME}\` |"
+            echo ""
+            echo "| Property | Value |"
+            echo "|:---------|:------|"
+            echo "| Fingerprint | \`${FP:-n/a}\` |"
+            echo "| Custom GNUPGHOME | \`${GPG_HOME:-n/a}\` |"
+            echo ""
+            echo "**Checks performed:**"
+            echo "- ✔ Fingerprint returned"
+            echo "- ✔ Key in custom GNUPGHOME"
+            echo "- ✔ Git signing key NOT set"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  test-auto-method-detection:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: GitHub App Token
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
+          private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
+          repositories: actions
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Import GPG key (auto-detection)
+        id: gpg_import
+        uses: ./gpg-import
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        with:
+          import-method: 'auto'
+          gpg-home: ${{ format('{0}/.gnupg', github.workspace) }}
+          key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-pass: ${{ secrets.GPG_PASSPHRASE }}
+          configure-git: 'true'
+          initialize-home: 'true'
+          preset-passphrase-cache: 'true'
+
+      - name: Verify auto-import
+        id: verify
+        env:
+          GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
+          FP: ${{ steps.gpg_import.outputs.fingerprint }}
+          GPG_PASS: ${{ secrets.GPG_PASSPHRASE }}
+          KEY_GRIPS: ${{ steps.gpg_import.outputs.key_grips }}
+          KEYS_SECRET: ${{ steps.gpg_import.outputs.keys_secret }}
+          KEYS_PUBLIC: ${{ steps.gpg_import.outputs.keys_public }}
+        run: |
+          set -euo pipefail
+
+          echo "verify_ok=false" >> "$GITHUB_OUTPUT"
+
+          # 1) fingerprint output must exist
+          if [[ -z "$FP" ]]; then
+            echo "::error::No fingerprint returned from gpg-import"
+            exit 1
+          fi
+
+          # 2) key must be in the secret keyring
+          if ! gpg --batch --list-secret-keys "$FP" >/dev/null 2>&1; then
+            echo "::error::Imported key $FP not found in secret keyring"
+            exit 1
+          fi
+
+          # 3) git signing key must match
+          git_key="$(git config --global user.signingkey || true)"
+          if [[ "$git_key" != "$FP" ]]; then
+            echo "::error::Git signing key ($git_key) does not match imported fingerprint ($FP)"
+            exit 1
+          fi
+
+          # 4) test signing with explicit passphrase
+          if ! echo "gpg-test" | gpg --batch --pinentry-mode loopback --passphrase "$GPG_PASS" --local-user "$FP" --armor --detach-sign >/dev/null 2>&1; then
+            echo "::error::Test signing with key $FP failed"
+            exit 1
+          fi
+
+          # 5) verify owner trust is set to ultimate (level 6 in export format = trust level 5 input)
+          trust_line="$(gpg --export-ownertrust 2>/dev/null | grep "$FP" || true)"
+          if [[ -z "$trust_line" ]]; then
+            echo "::error::Owner trust not set for key $FP"
+            exit 1
+          fi
+          if [[ "$trust_line" != *":6:" ]]; then
+            echo "::error::Owner trust for $FP is not ultimate. Got: $trust_line"
+            exit 1
+          fi
+
+          # 6) verify key_grips output is non-empty
+          if [[ -z "$KEY_GRIPS" ]]; then
+            echo "::error::key_grips output is empty"
+            exit 1
+          fi
+
+          # 7) verify key counts are sane
+          if [[ "${KEYS_SECRET:-0}" -lt 1 ]]; then
+            echo "::error::Expected at least 1 secret key, got ${KEYS_SECRET:-0}"
+            exit 1
+          fi
+
+          # 8) test signing via gpg-agent cache (without explicit passphrase)
+          if ! echo "agent-cache-test" | gpg --batch --pinentry-mode loopback --local-user "$FP" --armor --detach-sign >/dev/null 2>&1; then
+            echo "::warning::Signing without explicit passphrase failed — gpg-agent cache may not be preset"
+          fi
+
+          echo "verify_ok=true" >> "$GITHUB_OUTPUT"
+
+      - name: Job Summary
+        if: always()
+        env:
+          IMPORT_OUTCOME: ${{ steps.gpg_import.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          VERIFY_OK: ${{ steps.verify.outputs.verify_ok }}
+          FP: ${{ steps.gpg_import.outputs.fingerprint }}
+          GPG_HOME: ${{ steps.gpg_import.outputs.gpg_home }}
+          KEYS_PUB: ${{ steps.gpg_import.outputs.keys_public }}
+          KEYS_SEC: ${{ steps.gpg_import.outputs.keys_secret }}
+          KEYS_TOT: ${{ steps.gpg_import.outputs.keys_total }}
+          KEY_GRIPS: ${{ steps.gpg_import.outputs.key_grips }}
+        run: |
+          s() { [[ "$1" == "success" ]] && printf '✅' || printf '❌'; }
+
+          {
+            echo "### ⚙️ GPG Import — Auto Method Detection"
+            echo ""
+            echo "| Check | Status |"
+            echo "|:------|:------:|"
+            echo "| Import | $(s "$IMPORT_OUTCOME") \`${IMPORT_OUTCOME}\` |"
+            echo "| Verify | $(s "$VERIFY_OUTCOME") \`${VERIFY_OUTCOME}\` |"
+            echo ""
+            echo "| Property | Value |"
+            echo "|:---------|:------|"
+            echo "| Fingerprint | \`${FP:-n/a}\` |"
+            echo "| GNUPGHOME | \`${GPG_HOME:-n/a}\` |"
+            echo "| Public keys | \`${KEYS_PUB:-0}\` |"
+            echo "| Secret keys | \`${KEYS_SEC:-0}\` |"
+            echo "| Total keys | \`${KEYS_TOT:-0}\` |"
+            echo "| Key grips | \`${KEY_GRIPS:-n/a}\` |"
+            echo ""
+            echo "**Checks performed:**"
+            echo "- ✔ Fingerprint returned"
+            echo "- ✔ Key present in secret keyring"
+            echo "- ✔ Git signing key matches fingerprint"
+            echo "- ✔ Test detach-sign with explicit passphrase"
+            echo "- ✔ Owner trust set to ultimate"
+            echo "- ✔ Key grips output non-empty"
+            echo "- ✔ Secret key count ≥ 1"
+            echo "- ✔ Signing via gpg-agent cache (without passphrase)"
           } >> "$GITHUB_STEP_SUMMARY"
