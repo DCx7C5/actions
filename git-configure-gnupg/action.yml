@@ -4,15 +4,23 @@ author: "DCx7C5"
 
 
 inputs:
-  key_id:
+  key-id:
     description: "KeyID or Fingerprint of the GPG key to use for signing (optional, will use default key if not provided)"
     required: false
     default: ''
-  gpg_home:
+  gpg-home:
     description: "Path to GNUPGHOME directory (where keys are stored)"
     required: false
     default: ''
-  token:
+  gpg-name:
+    description: "Name associated with the GPG key (optional, will be auto-detected if not provided)"
+    required: false
+    default: ''
+  gpg-mail:
+    description: "Email associated with the GPG key (optional, will be auto-detected if not provided)"
+    required: false
+    default: ''
+  gh-token:
     description: "GitHub token for gh CLI configuration (optional, will use GH_TOKEN environment variable if not provided)"
     required: false
     default: ''
@@ -38,9 +46,10 @@ runs:
   steps:
     - name: Mask sensitive inputs
       shell: bash
-      if: inputs.key_id != ''
+      if: inputs.key-id != ''
       run: |
-        echo "::add-mask::${{ inputs.key_id }}"
+        # Mask the GPG key identifier input to prevent it from being exposed in logs
+        echo "::add-mask::${{ inputs.key-id }}"
         echo "::add-mask::$FINGERPRINT"
         echo "::add-mask::$INPUT_FINGERPRINT"
 
@@ -48,13 +57,14 @@ runs:
       id: parse_gpg
       shell: bash
       env:
-        INPUT_FINGERPRINT: ${{ inputs.key_id }}
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+        INPUT_FINGERPRINT: ${{ inputs.key-id }}
+        GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
+        GPG_NAME: ${{ inputs.gpg-name || steps.parse_gpg.outputs.gpg_name || 'GitHub Actions' }}
+        GPG_MAIL: ${{ inputs.gpg-mail || steps.parse_gpg.outputs.gpg_mail || 'actions@github.com' }}
       run: |
+        # Parse GPG key information based on provided fingerprint or default key in GNUPGHOME, and set outputs for fingerprint, name, email, and keygrips
         set -euo pipefail
-        
-        GPG_NAME="GitHub Actions"
-        GPG_MAIL="actions@github.com"
+
         GPG_EMPTY=$(gpg --with-colons --list-secret-keys 2>/dev/null | wc -l)
         
         if [[ -n "$INPUT_FINGERPRINT" && "$GPG_EMPTY" -eq 0 ]]; then
@@ -108,11 +118,11 @@ runs:
       if: steps.parse_gpg.outputs.gpg_empty != '0'
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
-        GPG_NAME: ${{ steps.parse_gpg.outputs.gpg_name }}
-        GPG_MAIL: ${{ steps.parse_gpg.outputs.gpg_mail }}
+        GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
+        GPG_NAME: ${{ inputs.gpg-name || steps.parse_gpg.outputs.gpg_name || 'GitHub Actions' }}
+        GPG_MAIL: ${{ inputs.gpg-mail || steps.parse_gpg.outputs.gpg_mail || 'actions@github.com' }}
         FINGERPRINT: ${{ steps.parse_gpg.outputs.fingerprint }}
-        GH_TOKEN: ${{ inputs.token || env.GH_TOKEN }}
+        GH_TOKEN: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
       run: |
         set -euo pipefail
         
