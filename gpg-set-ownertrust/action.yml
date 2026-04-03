@@ -24,10 +24,14 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Validate inputs
+    - name: Set GPG key trust level
+      id: set_trust
       shell: bash
+      env:
+        GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
       run: |
-        # Validate required inputs and set defaults
+        # Validate inputs and environment, then set the trust level for the specified 
+        # GPG key fingerprint using gpg --import-ownertrust, and handle errors appropriately
         set -euo pipefail
 
         if [ -z '${{ inputs.fingerprint }}' ]; then
@@ -38,14 +42,7 @@ runs:
           echo "::error::trust_level input is required" >&2
           exit 1
         fi
-
-    - name: Set GPG key trust level
-      id: set_trust
-      shell: bash
-      env:
-        GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
-      run: |
-        # Validate or set GNUPGHOME - either from input or environment or default
+        
         export GNUPGHOME=${GNUPGHOME:-"${{ github.workspace }}/.gnupg"}
         if ! echo "${{ inputs.fingerprint }}:${{ inputs.trust-level }}:" | gpg --no-tty --batch --import-ownertrust; then
           echo "::error::Failed setting trust level of key: ${{ inputs.fingerprint }}" >&2
