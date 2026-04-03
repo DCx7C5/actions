@@ -3,31 +3,31 @@ description: "Build the Arch Linux Docker image used for AUR builds"
 author: "DCx7C5"
 
 inputs:
-  image_tag:
+  image-tag:
     description: "Docker image tag to build"
     required: true
     default: ''
-  image_version:
+  image-version:
     description: "Docker image version tag (defaults to 'latest')"
     required: true
     default: ''
-  dockerfile_path:
+  dockerfile-path:
     description: "Path to the Dockerfile to use for building the image"
     required: true
     default: '.'
-  image_working_directory:
+  image-working-directory:
     description: "Working directory inside container"
     required: false
     default: ''
-  runtime_working_directory:
+  runtime-working-directory:
     description: "Working directory for the build context (defaults to github.workspace)"
     required: false
     default: ''
-  gpg_home:
+  gpg-home:
     description: "GPG home directory (usually in workspace)"
     required: false
     default: ''
-  ccache_dir:
+  ccache-dir:
     description: "ccache directory for build caching"
     required: false
     default: ''
@@ -47,15 +47,15 @@ inputs:
     description: "Group ID to use inside the container (defaults to current group ID)"
     required: false
     default: ''
-  gpg_key:
+  gpg-key:
     description: "GPG private key to import into the container (if needed, should be provided as a secret and passed via environment variable)"
     required: false
     default: ''
-  gh_token:
+  gh-token:
     description: "GitHub token for API access (defaults to github.token)"
     required: false
     default: ''
-  build_args:
+  build-args:
     description: "New-line separated list of additional build arguments to pass to 'docker build' (optional)"
     required: false
     default: ''
@@ -64,12 +64,12 @@ outputs:
   image:
     description: "The Docker image tag that was built"
     value: "${{ steps.build_image.outputs.image }}"
-  image_tag:
+  image-tag:
     description: "The Docker image tag (without version) that was built"
-    value: ${{ inputs.image_tag }}
-  image_version:
+    value: ${{ inputs.image-tag }}
+  image-version:
     description: "The Docker image version tag that was built"
-    value: ${{ inputs.image_version }}
+    value: ${{ inputs.image-version }}
 
 runs:
   using: composite
@@ -77,18 +77,18 @@ runs:
     - id: build_image
       shell: bash
       env:
-        GH_TOKEN: "${{ inputs.gh_token || env.GH_TOKEN || github.token }}"
+        GH_TOKEN: "${{ inputs.gh-token || env.GH_TOKEN || github.token }}"
         USER: "${{ inputs.user || env.USER || runner.user }}"
         GROUP: "${{ inputs.group || env.GROUP || runner.group }}"
         UID: "${{ inputs.uid || env.UID || '1000' }}"
         GID: "${{ inputs.gid || env.GID || '1000' }}"
-        GNUPGHOME: "${{ inputs.gpg_home || env.GNUPGHOME || format('{0}/.gnupg', github.workspace) }}"
-        IMAGE_WORKING_DIR: "${{ inputs.image_working_directory || env.IMAGE_WORKING_DIR || format('{0}/arch-run-cmd', github.workspace) }}"
-        WORKING_DIR: "${{ inputs.runtime_working_directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
-        RUNTIME_WORKING_DIR: "${{ inputs.runtime_working_directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
-        DOCKERFILE: "${{ inputs.dockerfile_path || format('{0}/Dockerfile', inputs.image_working_directory || env.IMAGE_WORKING_DIR) }}"
-        CCACHE_DIR: "${{ inputs.ccache_dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}"
-      working-directory: "${{ inputs.image_working_directory || env.IMAGE_WORKING_DIR }}"
+        GNUPGHOME: "${{ inputs.gpg-home || env.GNUPGHOME || format('{0}/.gnupg', github.workspace) }}"
+        IMAGE_WORKING_DIR: "${{ inputs.image-working-directory || env.IMAGE_WORKING_DIR || format('{0}/arch-run-cmd', github.workspace) }}"
+        WORKING_DIR: "${{ inputs.runtime-working-directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
+        RUNTIME_WORKING_DIR: "${{ inputs.runtime-working-directory || env.RUNTIME_WORKING_DIR || github.workspace || '.' }}"
+        DOCKERFILE: "${{ inputs.dockerfile-path || format('{0}/Dockerfile', inputs.image-working-directory || env.IMAGE_WORKING_DIR) }}"
+        CCACHE_DIR: "${{ inputs.ccache-dir || env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}"
+      working-directory: "${{ inputs.image-working-directory || env.IMAGE_WORKING_DIR }}"
       run: |
         set -euo pipefail
         
@@ -102,16 +102,16 @@ runs:
         [[ -n "${{ inputs.group }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "GROUP=${{ inputs.group }}")
         [[ -n "${{ inputs.uid }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "UID=${{ inputs.uid }}")
         [[ -n "${{ inputs.gid }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "GID=${{ inputs.gid }}")
-        [[ -n "${{ inputs.gpg_key }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "GPG_KEY=${{ inputs.gpg_key }}")
+        [[ -n "${{ inputs.gpg-key }}" ]] && DOCKER_BUILD_ARGS+=(--build-arg "GPG_KEY=${{ inputs.gpg-key }}")
         
-        if [[ -n "${{ inputs.build_args }}" ]]; then
+        if [[ -n "${{ inputs.build-args }}" ]]; then
           while IFS= read -r arg; do
             if [[ -n "$arg" && "$arg" =~ ^[A-Za-z_][A-Za-z0-9_]*=.+$ ]]; then
               DOCKER_BUILD_ARGS+=(--build-arg "$arg")
             fi
-          done <<< "${{ inputs.build_args }}"
+          done <<< "${{ inputs.build-args }}"
         fi
-        IMAGE_NAME="${{ inputs.image_tag }}:${{ inputs.image_version }}"
+        IMAGE_NAME="${{ inputs.image-tag }}:${{ inputs.image-version }}"
         echo "::notice::Building Arch Linux Docker image for AUR builds..."
         docker build "${DOCKER_BUILD_ARGS[@]}" \
           -f "$DOCKERFILE" \
