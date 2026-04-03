@@ -87,7 +87,7 @@ outputs:
     value: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
   key_grips:
     description: "Keygrips of the imported GPG keys (if available)"
-    value: ${{ steps.dispatch.outputs.key_grips || '' }}
+    value: ${{ steps.dispatch.outputs.key_grips }}
 
 runs:
   using: composite
@@ -96,22 +96,22 @@ runs:
       shell: bash
       run: |
         # Mask the GPG key input if it's provided (either inline or as a file path)
-        if [ -n "${{ inputs.gpg_key }}" ]; then
-          echo "::add-mask::${{ inputs.gpg_key }}"
+        if [ -n "${{ inputs.key }}" ]; then
+          echo "::add-mask::${{ inputs.key }}"
         fi
-        if [ -n '${{ inputs.gpg_pass }}' ]; then
-          echo '::add-mask::${{ inputs.gpg_pass }}'
+        if [ -n '${{ inputs.gpg-pass }}' ]; then
+          echo '::add-mask::${{ inputs.gpg-pass }}'
         fi
-        if [ -n '${{ inputs.ssl_pass }}' ]; then
-          echo '::add-mask::${{ inputs.ssl_pass }}'
+        if [ -n '${{ inputs.ssl-pass }}' ]; then
+          echo '::add-mask::${{ inputs.ssl-pass }}'
         fi
 
     - name: Setup GPG Environment
-      if: inputs.setup_home == 'true'
+      if: inputs.initialize-home == 'true'
       id: gpg_setup
       uses: DCx7C5/actions/gpg-setup-home@v1
       with:
-        gpg_home: ${{ inputs.gpg_home }}
+        gpg_home: ${{ inputs.gpg-home }}
 
     - name: Validate GPG Key input
       id: validate
@@ -119,7 +119,7 @@ runs:
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
-        gpg_key: ${{ inputs.gpg_key }}
+        gpg_key: ${{ inputs.key }}
 
     - name: Decrypt SSL-encrypted key (if applicable)
       id: decrypt_ssl
@@ -128,7 +128,7 @@ runs:
       env:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
-        passphrase: ${{ inputs.ssl_pass || inputs.gpg_pass }}
+        passphrase: ${{ inputs.ssl-pass || inputs.gpg-pass }}
         input_type: ${{ steps.validate.outputs.is_file == 'true' && 'file' || 'inline' }}
         input_encoding: ${{ steps.validate.outputs.is_ssl_enc_binary_key == 'true' && 'binary' || 'text' }}
         cleanup: 'true'
@@ -142,7 +142,7 @@ runs:
         GNUPGHOME: "${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}"
       with:
         gpg_key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
-        pass: ${{ inputs.gpg_pass }}
+        pass: ${{ inputs.gpg-pass }}
         type: 'auto'
 
     - name: Import from file
@@ -152,8 +152,8 @@ runs:
       with:
         gpg_type: 'auto'
         gpg_key: ${{ steps.decrypt_ssl.outputs.out || steps.validate.outputs.gpg_key }}
-        pass: ${{ inputs.gpg_pass }}
-        delete_after_import: ${{ inputs.delete_after_import }}
+        pass: ${{ inputs.gpg-pass }}
+        delete_after_import: ${{ inputs.delete-after-import }}
         gpg_home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
 
     - name: Import from keyserver
@@ -162,7 +162,7 @@ runs:
       uses: DCx7C5/actions/gpg-import/gpg-import-keyserver@v1
       with:
         key_id: ${{ steps.validate.outputs.gpg_key }}
-        keyserver_url: ${{ inputs.keyserver_url }}
+        keyserver_url: ${{ inputs.keyserver-url }}
         gpg_home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
 
     - name: Aggregate outputs
@@ -190,13 +190,13 @@ runs:
       if: inputs.method != 'keyserver' && steps.validate.outputs.is_secretkey == 'true'
       uses: DCx7C5/actions/gpg-set-ownertrust@v1
       with:
-        trust_level: ${{ inputs.owner_trust_level }}
+        trust-level: ${{ inputs.owner-trust-level }}
         fingerprint: ${{ steps.dispatch.outputs.fingerprint }}
-        gpg_home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
+        gpg-home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
 
     - name: Configure Git client to sign with GPG
       id: git_config
-      if: inputs.configure_git == 'true'
+      if: inputs.configure-git == 'true'
       uses: DCx7C5/actions/git-configure-gnupg@v1
       with:
         gpg-home: ${{ steps.gpg_setup.outputs.gpg_home || env.GNUPGHOME }}
