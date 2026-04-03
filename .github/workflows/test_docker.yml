@@ -5,7 +5,7 @@ on:
       image-tag:
         description: "The name of the Docker image to build and push"
         required: false
-        default: 'arch-build'
+        default: 'test-build'
         type: string
       image-version:
         description: "The version tag of the Docker image to build and push"
@@ -57,7 +57,7 @@ jobs:
           uid: '1001'
           gid: '127'
           gh-token: ${{ steps.app_token.outputs.token }}
-          image-tag: ${{ inputs.image-tag || 'arch-build' }}
+          image-tag: ${{ inputs.image-tag || 'test-build' }}
           image-version: ${{ inputs.image-version || 'latest' }}
           dockerfile-path: Dockerfile
 
@@ -68,9 +68,88 @@ jobs:
         with:
           registry: 'ghcr.io'
           user: ${{ github.actor }}
-          image-tag: ${{ inputs.image-tag || 'arch-build' }}
+          image-tag: ${{ inputs.image-tag || 'test-build' }}
           image-version: ${{ inputs.image-version || 'latest' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify pushed image
+        id: verify
+        if: success()
+        env:
+          FULL_IMAGE: ${{ steps.push_image.outputs.full_image }}
+        run: |
+          set -euo pipefail
+
+          echo "verify_ok=false" >> "$GITHUB_OUTPUT"
+
+          # Remove local images so pull is a true remote fetch
+          docker rmi "$FULL_IMAGE" 2>/dev/null || true
+          docker rmi "${{ inputs.image-tag || 'test-build' }}:${{ inputs.image-version || 'latest' }}" 2>/dev/null || true
+
+          echo "::notice::Pulling $FULL_IMAGE to verify..."
+          docker pull "$FULL_IMAGE"
+
+          # Basic sanity: image must exist locally after pull
+          if ! docker image inspect "$FULL_IMAGE" >/dev/null 2>&1; then
+            echo "::error::Pulled image $FULL_IMAGE not found locally"
+            exit 1
+          fi
+
+          echo "verify_ok=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::Image verified successfully"
+
+      - name: Cleanup — remove local images
+        if: always()
+        env:
+          FULL_IMAGE: ${{ steps.push_image.outputs.full_image }}
+          LOCAL_IMAGE: "${{ inputs.image-tag || 'test-build' }}:${{ inputs.image-version || 'latest' }}"
+        run: |
+          docker rmi "$FULL_IMAGE" 2>/dev/null || true
+          docker rmi "$LOCAL_IMAGE" 2>/dev/null || true
+          echo "::notice::Local images cleaned up"
+
+      - name: Cleanup — delete remote package version
+        if: always()
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          IMAGE_TAG: ${{ inputs.image-tag || 'test-build' }}
+          IMAGE_VERSION: ${{ inputs.image-version || 'latest' }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+
+          pkg_name="${IMAGE_TAG,,}"
+
+          # Find the version ID for our tag
+          version_id=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/orgs/${OWNER}/packages/container/${pkg_name}/versions" \
+            --jq ".[] | select(.metadata.container.tags[] == \"${IMAGE_VERSION}\") | .id" \
+          2>/dev/null || true)
+
+          if [[ -z "$version_id" ]]; then
+            # Try user endpoint instead of org
+            version_id=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              "/users/${OWNER}/packages/container/${pkg_name}/versions" \
+              --jq ".[] | select(.metadata.container.tags[] == \"${IMAGE_VERSION}\") | .id" \
+            2>/dev/null || true)
+          fi
+
+          if [[ -n "$version_id" ]]; then
+            echo "::notice::Deleting package version $version_id (${pkg_name}:${IMAGE_VERSION})..."
+            gh api --method DELETE \
+              -H "Accept: application/vnd.github+json" \
+              "/orgs/${OWNER}/packages/container/${pkg_name}/versions/${version_id}" \
+            2>/dev/null || \
+            gh api --method DELETE \
+              -H "Accept: application/vnd.github+json" \
+              "/users/${OWNER}/packages/container/${pkg_name}/versions/${version_id}" \
+            2>/dev/null || true
+            echo "::notice::Remote package version deleted"
+          else
+            echo "::warning::Could not find package version to delete"
+          fi
 
       - name: Job Summary
         if: always()
