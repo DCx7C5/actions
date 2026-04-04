@@ -60,8 +60,8 @@ jobs:
         id: tag_delete
         uses: ./tag-delete
         with:
-          tag_name: "v1"
-          delete_release: 'true'
+          tag-name: "v1"
+          delete-release: 'true'
 
       - name: Create and push new signed Tag
         id: tag_create
@@ -71,9 +71,9 @@ jobs:
         with:
           sign: 'true'
           version: "v1"
-          commit_msg: "Release v1"
+          commit-msg: "Release v1"
           pass: ${{ secrets.GPG_PASSPHRASE }}
-          gpg_home: ${{ steps.gpg_import.outputs.gpg_home }}
+          gpg-home: ${{ steps.gpg_import.outputs.gpg_home }}
 
       - name: Create release on GitHub
         id: release_create
@@ -81,11 +81,11 @@ jobs:
         env:
           GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
         with:
-          github_token: ${{ steps.app_token.outputs.token || env.GH_TOKEN || github.token }}
-          release_tag: ${{ steps.tag_create.outputs.tag_name }}
-          release_name: ${{ steps.tag_create.outputs.tag_name }}
-          generate_notes: 'false'
-          fail_if_exists: 'true'
+          github-token: ${{ steps.app_token.outputs.token || env.GH_TOKEN || github.token }}
+          release-tag: ${{ steps.tag_create.outputs.tag_name }}
+          release-name: ${{ steps.tag_create.outputs.tag_name }}
+          generate-notes: 'false'
+          fail-if-exists: 'true'
           prerelease: 'false'
           draft: 'false'
 
@@ -102,5 +102,5 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           to: ${{ secrets.TELEGRAM_CHANNEL_ID }}
           fingerprint: ${{ steps.gpg_import.outputs.fingerprint }}
-          tag_name: ${{ steps.tag_create.outputs.tag_name }}
-          release_name: ${{ steps.tag_create.outputs.tag_name }}
+          tag-name: ${{ steps.tag_create.outputs.tag_name }}
+          release-name: ${{ steps.tag_create.outputs.tag_name }}
