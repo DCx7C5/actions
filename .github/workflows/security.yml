@@ -92,17 +92,27 @@ jobs:
   npm-audit:
     name: NPM Security Audit
     runs-on: ubuntu-latest
-    if: hashFiles('package.json') != ''
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check for package.json
+        id: check_npm
+        run: |
+          if [ -f package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node.js
+        if: steps.check_npm.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Run npm audit
+        if: steps.check_npm.outputs.exists == 'true'
         run: npm audit --audit-level=moderate || true
         continue-on-error: true
 
@@ -143,14 +153,24 @@ jobs:
   docker-build-check:
     name: Docker Build Security Check
     runs-on: ubuntu-latest
-    if: hashFiles('Dockerfile') != ''
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check for Dockerfile
+        id: check_dockerfile
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build Docker image
+        if: steps.check_dockerfile.outputs.exists == 'true'
         run: docker build -t dystopian:test .
 
       - name: Scan image with Trivy
+        if: steps.check_dockerfile.outputs.exists == 'true'
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'dystopian:test'
