@@ -89,8 +89,6 @@ jobs:
       - name: Import GPG key
         id: gpg_import
         uses: ./gpg-import
-        env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         with:
           import-method: 'inline'
           gpg-home: ${{ format('{0}/.gnupg', github.workspace) }}
@@ -99,6 +97,7 @@ jobs:
           configure-git: 'true'
           initialize-home: 'true'
           preset-passphrase-cache: 'false'
+          gh-token: ${{ steps.app_token.outputs.token }}
 
       - name: Test Arch Run Command Action
         id: test_arch_run_cmd
