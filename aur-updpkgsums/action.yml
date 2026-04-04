@@ -20,10 +20,10 @@ runs:
       uses: DCx7C5/actions/arch-run-cmd@v1
       working-directory: ${{ inputs.working_directory || github.workspace || '.' }}
       with:
-        run_with_sudo: 'false'
-        enable_ccache: 'false'
-        preset_cache: 'false'
-        run: |
+        run-with-sudo: 'false'
+        enable-ccache: 'false'
+        preset-passphrase-cache: 'false'
+        command: |
           set -euo pipefail
           
           cd "${{ inputs.pkg_name }}"
