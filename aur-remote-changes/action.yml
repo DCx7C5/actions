@@ -7,31 +7,31 @@ branding:
   color: blue
 
 inputs:
-  remote_name:
+  remote-name:
     required: false
     description: "Name of the remote to add for the AUR repository (default: upstream)"
     default: "upstream"
-  remote_ref:
+  remote-ref:
     required: false
     description: "Git reference to compare against (default: main)"
     default: "main"
-  include_only:
+  include-only:
     required: false
     description: "New-line separated list of paths to include in comparison (default: all)"
     default: "false"
-  exclude_paths:
+  exclude-paths:
     required: false
     description: "New-line separated list of paths to exclude from all comparisons (default: none)"
     default: ""
-  exclude_paths_delete:
+  exclude-paths-delete:
     required: false
     description: "New-line separated list of paths to exclude from comparison (default: none)"
     default: ""
-  exclude_paths_new:
+  exclude-path-new:
     required: false
     description: "New-line separated list of paths to exclude from new/changed comparison (default: none)"
     default: ""
-  exclude_paths_changed:
+  exclude-paths-changed:
     required: false
     description: "New-line separated list of paths to exclude from changed comparison (default: none)"
     default: ""
@@ -94,28 +94,28 @@ runs:
           p="${p%"${p##*[![:space:]]}"}"
           [[ -z "$p" ]] && continue
           exclude_args+=(":(exclude)$p")
-        done <<< "${{ inputs.exclude_paths }}"
+        done <<< "${{ inputs.exclude-paths }}"
         # Schritt-spezifische Excludes
         while IFS= read -r p || [[ -n "$p" ]]; do
           p="${p#"${p%%[![:space:]]*}"}"
           p="${p%"${p##*[![:space:]]}"}"
           [[ -z "$p" ]] && continue
           exclude_args+=(":(exclude)$p")
-        done <<< "${{ inputs.exclude_paths_delete }}"
+        done <<< "${{ inputs.exclude-paths-delete }}"
 
         include_args=()
-        if [[ "${{ inputs.include_only }}" != "false" && -n "${{ inputs.include_only }}" ]]; then
+        if [[ "${{ inputs.include-only }}" != "false" && -n "${{ inputs.include-only }}" ]]; then
           while IFS= read -r p || [[ -n "$p" ]]; do
             p="${p#"${p%%[![:space:]]*}"}"
             p="${p%"${p##*[![:space:]]}"}"
             [[ -z "$p" ]] && continue
             include_args+=("$p")
-          done <<< "${{ inputs.include_only }}"
+          done <<< "${{ inputs.include-only }}"
         else
           include_args=(.)
         fi
         
-        removed_files=$(git diff --no-renames --name-only --diff-filter=D HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- "${include_args[@]}" "${exclude_args[@]}")
+        removed_files=$(git diff --no-renames --name-only --diff-filter=D HEAD "${{ inputs.remote-name }}/${{ inputs.remote-ref }}" -- "${include_args[@]}" "${exclude_args[@]}")
         removed_dirs=$(printf '%s\n' "$removed_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
         
         {
@@ -142,28 +142,28 @@ runs:
           p="${p%"${p##*[![:space:]]}"}"
           [[ -z "$p" ]] && continue
           exclude_args+=(":(exclude)$p")
-        done <<< "${{ inputs.exclude_paths }}"
+        done <<< "${{ inputs.exclude-paths }}"
         # Schritt-spezifische Excludes
         while IFS= read -r p || [[ -n "$p" ]]; do
           p="${p#"${p%%[![:space:]]*}"}"
           p="${p%"${p##*[![:space:]]}"}"
           [[ -z "$p" ]] && continue
           exclude_args+=(":(exclude)$p")
-        done <<< "${{ inputs.exclude_paths_new }}"
+        done <<< "${{ inputs.exclude-paths-new }}"
 
         include_args=()
-        if [[ "${{ inputs.include_only }}" != "false" && -n "${{ inputs.include_only }}" ]]; then
+        if [[ "${{ inputs.include-only }}" != "false" && -n "${{ inputs.include-only }}" ]]; then
           while IFS= read -r p || [[ -n "$p" ]]; do
             p="${p#"${p%%[![:space:]]*}"}"
             p="${p%"${p##*[![:space:]]}"}"
             [[ -z "$p" ]] && continue
             include_args+=("$p")
-          done <<< "${{ inputs.include_only }}"
+          done <<< "${{ inputs.include-only }}"
         else
           include_args=(.)
         fi
         
-        new_files=$(git diff --no-renames --name-only --diff-filter=A HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- "${include_args[@]}" "${exclude_args[@]}")
+        new_files=$(git diff --no-renames --name-only --diff-filter=A HEAD "${{ inputs.remote-name }}/${{ inputs.remote-ref }}" -- "${include_args[@]}" "${exclude_args[@]}")
         new_dirs=$(printf '%s\n' "$new_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
         
         # Save new directories to output variable
@@ -188,28 +188,28 @@ runs:
           p="${p%"${p##*[![:space:]]}"}"
           [[ -z "$p" ]] && continue
           exclude_args+=(":(exclude)$p")
-        done <<< "${{ inputs.exclude_paths }}"
+        done <<< "${{ inputs.exclude-paths }}"
         # Schritt-spezifische Excludes
         while IFS= read -r p || [[ -n "$p" ]]; do
           p="${p#"${p%%[![:space:]]*}"}"
           p="${p%"${p##*[![:space:]]}"}"
           [[ -z "$p" ]] && continue
           exclude_args+=(":(exclude)$p")
-        done <<< "${{ inputs.exclude_paths_changed }}"
+        done <<< "${{ inputs.exclude-paths-changed }}"
 
         include_args=()
-        if [[ "${{ inputs.include_only }}" != "false" && -n "${{ inputs.include_only }}" ]]; then
+        if [[ "${{ inputs.include-only }}" != "false" && -n "${{ inputs.include-only }}" ]]; then
           while IFS= read -r p || [[ -n "$p" ]]; do
             p="${p#"${p%%[![:space:]]*}"}"
             p="${p%"${p##*[![:space:]]}"}"
             [[ -z "$p" ]] && continue
             include_args+=("$p")
-          done <<< "${{ inputs.include_only }}"
+          done <<< "${{ inputs.include-only }}"
         else
           include_args=(.)
         fi
 
-        changed_pkgbuild_files=$(git diff --no-renames --name-only --diff-filter=M HEAD "${{ inputs.remote_name }}/${{ inputs.remote_ref }}" -- "${include_args[@]}" "${exclude_args[@]}")
+        changed_pkgbuild_files=$(git diff --no-renames --name-only --diff-filter=M HEAD "${{ inputs.remote-name }}/${{ inputs.remote-ref }}" -- "${include_args[@]}" "${exclude_args[@]}")
         changed_dirs=$(printf '%s\n' "$changed_pkgbuild_files" | awk '/PKGBUILD$/ { sub(/\/PKGBUILD$/, "", $0); print }' | sort -u)
 
         if [[ -f "$GITHUB_OUTPUT" ]]; then

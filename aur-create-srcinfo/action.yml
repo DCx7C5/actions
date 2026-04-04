@@ -4,10 +4,10 @@ author: "DCx7C5"
 
 
 inputs:
-  pkg_name:
+  pkg-name:
     required: true
     description: "Name of the package to create .SRCINFO for (should match the directory name containing the PKGBUILD)"
-  working_directory:
+  working-directory:
     required: false
     description: "Working directory to run makepkg in (default: the repository root or current directory if github.workspace is not set)"
     default: ''
@@ -18,15 +18,15 @@ runs:
   steps:
     - id: create_srcinfo
       uses: DCx7C5/actions/arch-run-cmd@v1
-      working-directory: ${{ inputs.working_directory || github.workspace || '.' }}
+      working-directory: ${{ inputs.working-directory || github.workspace || '.' }}
       with:
-        run_with_sudo: 'false'
-        enable_ccache: 'false'
-        preset_cache: 'false'
-        run: |
+        run-with-sudo: 'false'
+        enable-ccache: 'false'
+        preset-passphrase-cache: 'false'
+        command: |
           set -euo pipefail
           
-          cd "${{ inputs.pkg_name }}"
+          cd "${{ inputs.pkg-name }}"
           
           makepkg --printsrcinfo > .SRCINFO
-          echo "::notice::.SRCINFO file created successfully for package '${{ inputs.pkg_name }}'"
+          echo "::notice::.SRCINFO file created successfully for package '${{ inputs.pkg-name }}'"

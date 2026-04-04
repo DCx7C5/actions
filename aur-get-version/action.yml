@@ -8,7 +8,7 @@ branding:
 
 
 inputs:
-  pkg_name:
+  pkg-name:
     description: "Name of the AUR package to get the version for"
     required: true
 
@@ -31,7 +31,7 @@ runs:
       run: |
         set -euo pipefail
         
-        PKG_NAME="${{ inputs.pkg_name }}"
+        PKG_NAME="${{ inputs.pkg-name }}"
         cd "$PKG_NAME"
         pkg_rel="$(sed -nE 's/^pkgrel=([^[:space:]#]+).*/\1/p' PKGBUILD | head -n1)"
         if [[ -n "$pkg_rel" ]]; then

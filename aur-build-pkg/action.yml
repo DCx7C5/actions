@@ -4,22 +4,22 @@ author: "DCx7C5"
 
 
 inputs:
-  pkg_name:
+  pkg-name:
     required: true
     description: "Name of the package to build (should match the directory name containing the PKGBUILD)"
-  gpg_sign:
+  gpg-sign:
     required: false
     default: 'false'
     description: "Whether to sign the package with GPG (default: false)"
-  gpg_key_id:
+  gpg-key-id:
     required: false
     default: ''
     description: "GPG key ID or fingerprint to use for signing (if needed)"
-  gpg_passhphrase:
+  gpg-pass:
     required: false
     default: ''
     description: "Passphrase for GPG key (if needed)"
-  gpg_home:
+  gpg-home:
     required: false
     default: ''
     description: "Path to GPG home directory (optional, defaults to GNUPGHOME environment variable)"
@@ -35,19 +35,19 @@ runs:
     - id: build_pkg
       uses: DCx7C5/actions/arch-run-cmd@v1
       with:
-        gpg_passhphrase: ${{ inputs.gpg_passhphrase }}
-        run_with_sudo: 'true'
-        enable_ccache: 'true'
-        gpg_home: ${{ inputs.gpg_home || env.GNUPGHOME }}
-        gh_token: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
-        gpg_key_id: ${{ inputs.gpg_key_id }}
-        run: |
+        gpg-passphrase: ${{ inputs.gpg-pass }}
+        run-with-sudo: 'true'
+        enable-ccache: 'true'
+        gpg-home: ${{ inputs.gpg-home || env.GNUPGHOME }}
+        gh-token: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
+        gpg-key-id: ${{ inputs.gpg-key-id }}
+        command: |
           set -euo pipefail
 
-          PKG_NAME="${{ inputs.pkg_name }}"
-          GPG_SIGN="${{ inputs.gpg_sign }}"
-          GPG_KEY_ID="${{ inputs.gpg_key_id }}"
-          GPG_PASSPHRASE="${{ inputs.gpg_passhphrase }}"
+          PKG_NAME="${{ inputs.pkg-name }}"
+          GPG_SIGN="${{ inputs.gpg-sign }}"
+          GPG_KEY_ID="${{ inputs.gpg-key-id }}"
+          GPG_PASSPHRASE="${{ inputs.gpg-pass }}"
 
           if [[ ! -d "$PKG_NAME" ]]; then
             echo "::error::Package directory '$PKG_NAME' not found." >&2
@@ -70,4 +70,3 @@ runs:
           
           echo "::notice::Package build completed successfully"
 
-        command: ''

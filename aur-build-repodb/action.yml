@@ -71,11 +71,11 @@ runs:
       uses: DCx7C5/actions/arch-run-cmd@v1
       working-directory: "${{ inputs.working_directory }}"
       with:
-        run_with_sudo: 'false'
-        enable_ccache: 'false'
-        preset_cache: 'false'
+        run-with-sudo: 'false'
+        enable-ccache: 'false'
+        preset-passphrase-cache: 'false'
         gh-token: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
-        run: |
+        command: |
           set -euo pipefail
 
           shopt -s nullglob
@@ -98,13 +98,13 @@ runs:
       uses: DCx7C5/actions/arch-run-cmd@v1
       working-directory: "${{ inputs.working_directory }}"
       with:
-        run_with_sudo: 'false'
-        enable_ccache: 'false'
-        preset_cache: 'true'
+        run-with-sudo: 'false'
+        enable-ccache: 'false'
+        preset-passphrase-cache: 'true'
         gh-token: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
-        gpg_key_id: ${{ inputs.gpg_key_id }}
-        gpg_passhphrase: ${{ inputs.gpg_passphrase }}
-        run: |
+        gpg-key-id: ${{ inputs.gpg_key_id }}
+        gpg-passphrase: ${{ inputs.gpg_passphrase }}
+        command: |
           set -euo pipefail
 
           shopt -s nullglob
