@@ -11,10 +11,15 @@ inputs:
     description: "Files to include in the tar.gz archive (default: all files in the repository)"
     required: false
     default: '*'
-  compress_algorithm:
+  compress-algorithm:
     description: "Compression algorithm to use (default: gz)"
     required: false
     default: 'gz'
+  working-directory:
+    description: "Working directory to create the tar.gz archive from (default: current directory)"
+    required: false
+    default: '.'
+
 
 outputs:
   path:
@@ -27,6 +32,7 @@ runs:
   steps:
     - id: compress
       shell: bash
+      working-directory: ${{ inputs.working-directory }}
       run: |
         set -euo pipefail
         local TAG _file_name _ext
@@ -36,7 +42,7 @@ runs:
         fi
 
         _file_name="$(basename $(pwd))${TAG}"
-        _ext="${{ inputs.compress_algorithm }}"
+        _ext="${{ inputs.compress-algorithm }}"
         
         if [[ -z "${{ inputs.files }}" ]]; then
           find . -name "*.tar.*" | xargs tar -czf "${_file_name}.tar.${_ext}" --
