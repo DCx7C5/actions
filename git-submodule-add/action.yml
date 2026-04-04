@@ -1,0 +1,56 @@
+name: "Git Submodule Add"
+description: "Add a Git submodule to the repository in the current workspace"
+author: "DCx7C5"
+
+
+inputs:
+  repository-url:
+    required: true
+    description: "URL of the repository to add as a submodule"
+  repository-path:
+    required: true
+    description: "Path where the submodule should be added (relative to repository root)"
+  branch:
+    required: false
+    default: "HEAD"
+    description: "Branch, tag, or commit to checkout in the submodule (default: 'HEAD')"
+  gh-token:
+    required: false
+    default: "${{ secrets.GITHUB_TOKEN }}"
+    description: "GitHub token for authentication (if needed for private repos or API calls)"
+  working-directory:
+    required: false
+    default: '.'
+    description: "Working directory to run the git submodule add command (relative to repository root, default: current directory)"
+
+
+
+runs:
+  using: composite
+  steps:
+    - name: Add Git Submodule
+      id: add_submodule
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GH_TOKEN: ${{ inputs.gh-token || env.GITHUB_TOKEN || github.token }}
+      run: | 
+        set -euo pipefail
+        
+        repo_url="${{ inputs.repository-url }}"
+        repo_path="${{ inputs.repository-path }}"
+        repo_branch="${{ inputs.branch }}"
+        
+        if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+          echo "::error::Current workspace is not a Git repository." >&2
+          exit 1
+        fi
+        
+        if [[ -n "$(git status --porcelain)" ]]; then
+          echo "::error::Working tree has uncommitted changes. Commit or stash first." >&2
+          exit 1
+        fi
+        
+        git submodule add --branch "${repo_branch}" "${repo_url}" "${repo_path}"
+        
+        echo "::notice::Submodule added at path '${repo_path}' with URL: ${repo_url} and branch: ${repo_branch}"
