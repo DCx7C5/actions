@@ -166,5 +166,5 @@ runs:
             echo "::error::Timeout reached (${{ inputs.timeout }} s) waiting for: ${{ inputs.condition }}"
             exit 1
           fi
-          sleep "${{ inputs['check-interval'] }}"
+          sleep "${{ inputs.check-interval }}"
         done
