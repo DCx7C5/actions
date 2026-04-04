@@ -1,0 +1,170 @@
+name: "Wait for Condition"
+description: "Wait for a specified condition to be met before proceeding with the workflow"
+author: "DCx7C5"
+
+branding:
+  icon: "clock"
+  color: "blue"
+
+
+inputs:
+  condition:
+    required: false
+    default: 'true'
+    description: "The condition to wait for (e.g., completion of a workflow (completed (exitcode)), presence of a file, specific API response, or custom event)"
+  workflow:
+    required: false
+    default: 'true'
+    description: "Whether to wait for a workflow run to complete (if true, the subject input should specify the workflow run to wait for)"
+  workflow-name:
+    required: false
+    default: ''
+    description: "The name of the workflow to check for the condition (if waiting for a workflow run)"
+  repository:
+    required: false
+    default: ''
+    description: "The repository to check for the condition (defaults to the current repository)"
+  repository-owner:
+    required: false
+    default: ''
+    description: "The owner of the repository to check for the condition (defaults to the current repository owner)"
+  timeout:
+    required: false
+    default: '120'
+    description: "Maximum time to wait for the condition in seconds (default: 300 seconds)"
+  check-interval:
+    required: false
+    default: '1'
+    description: "Interval in seconds between condition checks (default: 10 seconds)"
+  workflow-conclusion:
+    required: false
+    default: 'succeed'
+    description: "Which workflow conclusion to wait for: 'succeed' (default), 'failure', 'any', or 'finished' (alias for 'any')"
+  gh-token:
+    required: false
+    default: ''
+    description: "GitHub token for API access (defaults to github.token)"
+  working-directory:
+    required: false
+    default: ''
+    description: "Working directory for the action (defaults to the root of the repository)"
+
+outputs:
+  condition-met:
+    description: "Whether the condition was met successfully (true/false)"
+    value: ${{ steps.wait_for_workflow.outcome == 'success' || steps.wait_for_condition.outcome == 'success' }}
+
+
+runs:
+  using: composite
+  steps:
+    - id: validate_inputs
+      shell: bash
+      env:
+        TIMEOUT: ${{ inputs.timeout }}
+        CHECK_INTERVAL: ${{ inputs.check-interval }}
+        GH_TOKEN: ${{ inputs.gh-token || env.GITHUB_TOKEN || github.token }}
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        if [[ ! "$TIMEOUT" =~ ^[0-9]+$ ]] || [[ ! "$CHECK_INTERVAL" =~ ^[0-9]+$ ]]; then
+          echo "::error::Timeout and check-interval must be valid integers."
+          exit 1
+        fi
+        if (( CHECK_INTERVAL <= 0 )); then
+          echo "::error::Check interval must be greater than zero."
+          exit 1
+        fi
+
+    - name: Wait for workflow
+      id: wait_for_workflow
+      if: inputs.workflow == 'true'
+      shell: bash
+      env:
+        TIMEOUT: ${{ inputs.timeout }}
+        CHECK_INTERVAL: ${{ inputs.check-interval }}
+        GH_TOKEN: ${{ inputs.gh-token || env.GITHUB_TOKEN || github.token }}
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        echo "::notice::Waiting for workflow: ${{ inputs.workflow-name }}"
+        start_time=$(date +%s)
+        owner="${{ inputs.repository-owner || github.repository_owner }}"
+        repo="${{ inputs.repository || github.repository }}"
+        workflow_name="${{ inputs.workflow-name }}"
+        ref="${GITHUB_REF##*/}"
+        # Ermittle Run-ID des aktuell laufenden Workflows
+        run_id=$(gh api "/repos/$owner/$repo/actions/workflows/$workflow_name/runs?branch=$ref&status=in_progress" --jq '.workflow_runs[0].id // empty')
+        if [[ -z "$run_id" ]]; then
+          echo "::error::No running workflow found for $workflow_name on $ref"
+          exit 1
+        fi
+        wait_for="${{ inputs.workflow-conclusion }}"
+        if [[ "$wait_for" == "finished" ]]; then
+          wait_for="any"
+        fi
+        while true; do
+          status_json=$(gh api "/repos/$owner/$repo/actions/runs/$run_id" --jq '{status: .status, conclusion: .conclusion}' || true)
+          status=$(echo "$status_json" | jq -r .status)
+          conclusion=$(echo "$status_json" | jq -r .conclusion)
+          if [[ "$status" == "completed" ]]; then
+            case "$wait_for" in
+              any)
+                echo "::notice::Workflow $run_id finished with conclusion: $conclusion"
+                exit 0
+                ;;
+              succeed)
+                if [[ "$conclusion" == "success" ]]; then
+                  echo "::notice::Workflow $run_id completed successfully."
+                  exit 0
+                else
+                  echo "::error::Workflow $run_id failed with conclusion: $conclusion"
+                  exit 1
+                fi
+                ;;
+              failure)
+                if [[ "$conclusion" != "success" ]]; then
+                  echo "::notice::Workflow $run_id failed as requested (conclusion: $conclusion)"
+                  exit 0
+                else
+                  echo "::error::Workflow $run_id succeeded, but waiting for failure."
+                  exit 1
+                fi
+                ;;
+              *)
+                echo "::error::Unknown workflow-conclusion: $wait_for"
+                exit 2
+                ;;
+            esac
+          fi
+          now=$(date +%s)
+          elapsed=$((now - start_time))
+          if (( elapsed >= TIMEOUT )); then
+            echo "::error::Timeout reached ($TIMEOUT s) waiting for workflow $run_id"
+            exit 1
+          fi
+          sleep "$CHECK_INTERVAL"
+        done
+
+    - name: Wait for generic condition
+      id: wait_for_condition
+      if: inputs.workflow != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        echo "::notice::Waiting for condition: ${{ inputs.condition }}"
+        start_time=$(date +%s)
+        while true; do
+          if bash -c "${{ inputs.condition }}"; then
+            echo "::notice::Condition met: ${{ inputs.condition }}"
+            exit 0
+          fi
+          now=$(date +%s)
+          elapsed=$((now - start_time))
+          if (( elapsed >= ${{ inputs.timeout }} )); then
+            echo "::error::Timeout reached (${{ inputs.timeout }} s) waiting for: ${{ inputs.condition }}"
+            exit 1
+          fi
+          sleep "${{ inputs['check-interval'] }}"
+        done
