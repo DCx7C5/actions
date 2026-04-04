@@ -47,11 +47,14 @@ inputs:
     description: "Whether to run the command with sudo inside the container"
     required: false
     default: 'false'
-
+  test:
+    description: "Whether to run in test mode (prints environment variables and command without executing)"
+    required: false
+    default: 'arch-run-cmd:latest'
 
 runs:
   using: docker
-  image: arch-run-cmd:latest
+  image: "${{ inputs.test }}"
   env:
     GH_TOKEN: "${{ inputs.gh-token }}"
     GNUPGHOME: "${{ inputs.gpg-home }}"
