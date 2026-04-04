@@ -62,6 +62,7 @@ jobs:
         with:
           tag-name: "v1"
           delete-release: 'true'
+          gh-token: ${{ steps.app_token.outputs.token }}
 
       - name: Create and push new signed Tag
         id: tag_create
@@ -85,7 +86,7 @@ jobs:
           release-tag: ${{ steps.tag_create.outputs.tag_name }}
           release-name: ${{ steps.tag_create.outputs.tag_name }}
           generate-notes: 'false'
-          fail-if-exists: 'true'
+          fail-if-exists: 'false'
           prerelease: 'false'
           draft: 'false'
 
