@@ -81,7 +81,7 @@ jobs:
         env:
           GNUPGHOME: ${{ steps.gpg_import.outputs.gpg_home }}
         with:
-          github-token: ${{ steps.app_token.outputs.token || env.GH_TOKEN || github.token }}
+          gh-token: ${{ steps.app_token.outputs.token || env.GH_TOKEN || github.token }}
           release-tag: ${{ steps.tag_create.outputs.tag_name }}
           release-name: ${{ steps.tag_create.outputs.tag_name }}
           generate-notes: 'false'

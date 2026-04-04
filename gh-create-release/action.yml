@@ -35,7 +35,7 @@ inputs:
     description: "Newline-separated list of files/globs to upload as release assets (example: dist/*.zip\nbuild/myapp.tar.gz)"
     required: false
     default: ''
-  github-token:
+  gh-token:
     description: "GitHub token with repo scope (defaults to GITHUB_TOKEN)"
     required: false
     default: ''
