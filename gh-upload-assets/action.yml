@@ -11,7 +11,7 @@ inputs:
     required: false
     default: ''
     description: "A newline-separated list of file paths to upload as assets to the release (optional)"
-  github-token:
+  gh-token:
     required: false
     default: ''
     description: "GitHub token for API access (defaults to github.token)"
@@ -23,7 +23,7 @@ runs:
     - id: upload_assets
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github-token || env.GITHUB_TOKEN || github.token }}
+        GH_TOKEN: ${{ inputs.gh-token || env.GITHUB_TOKEN || github.token }}
         TAG: ${{ inputs.release-tag }}
         ASSETS: ${{ inputs.assets }}
       run: |

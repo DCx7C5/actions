@@ -48,7 +48,7 @@ inputs:
     required: false
     default: "true"
     description: "Skip commit when there are no staged changes (true/false)"
-  github-token:
+  gh-token:
     required: false
     default: ''
     description: "GitHub token for API access (defaults to github.token)"

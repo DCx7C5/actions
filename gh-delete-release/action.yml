@@ -10,7 +10,7 @@ inputs:
   release-tag:
     required: true
     description: "The release tag/version to delete"
-  github-token:
+  gh-token:
     required: false
     default: ${{ github.token }}
     description: "GitHub token for API access (defaults to github.token)"
@@ -36,7 +36,7 @@ runs:
       shell: bash
       env:
         RELEASE_TAG: ${{ inputs.release-tag }}
-        GH_TOKEN: ${{ inputs.github-token }}
+        GH_TOKEN: ${{ inputs.gh-token }}
       run: |
         set -euo pipefail
         

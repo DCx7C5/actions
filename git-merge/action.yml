@@ -19,7 +19,7 @@ inputs:
     required: false
     default: "false"
     description: "Allow merging unrelated histories"
-  github-token:
+  gh-token:
     required: false
     default: "${{ secrets.GITHUB_TOKEN }}"
     description: "GitHub token for authentication (if needed for private repos or API calls)"

@@ -23,7 +23,7 @@ inputs:
     required: false
     default: ''
     description: "Comma-separated list of GitHub usernames to assign the issue to (optional)"
-  github-token:
+  gh-token:
     required: false
     default: ''
     description: "GitHub token for API access (defaults to github.token)"
@@ -35,7 +35,7 @@ runs:
     - id: create_issue
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github-token || env.GITHUB_TOKEN || github.token }}
+        GH_TOKEN: ${{ inputs.gh-token || env.GITHUB_TOKEN || github.token }}
         ISSUE_TITLE: ${{ inputs.title }}
         ISSUE_BODY: ${{ inputs.body }}
         ISSUE_LABELS: ${{ inputs.labels }}
