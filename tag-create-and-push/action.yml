@@ -11,7 +11,7 @@ inputs:
   version:
     description: "The new version to use (e.g. v1.2.3 or 1.2.3)"
     required: true
-  commit_msg:
+  commit-msg:
     description: "Commit message for the annotated tag"
     required: false
     default: ''
@@ -27,11 +27,11 @@ inputs:
     description: "Whether to sign the tag with GPG (default: true)"
     required: false
     default: 'true'
-  gpg_home:
+  gpg-home:
     description: "Path to GNUPGHOME directory (where keys are stored)"
     required: false
     default: ''
-  gpg_grp:
+  gpg-grp:
     description: "Keygrip of the GPG key to preset passphrase for (if passphrase is provided). If not set, passphrase will be preset for all keys in GNUPGHOME"
     required: false
     default: ''
@@ -72,9 +72,9 @@ runs:
       if: inputs.sign == 'false'
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+        GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
         TAG: '${{ inputs.version }}'
-        COMMIT_MSG: '${{ inputs.commit_msg }}'
+        COMMIT_MSG: '${{ inputs.commit-msg }}'
       run: |
         set -euo pipefail
         
@@ -110,10 +110,10 @@ runs:
       if: inputs.sign == 'true' && inputs.pass == ''
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+        GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
         TAG: '${{ inputs.version }}'
         FINGERPRINT: '${{ inputs.fingerprint }}'
-        COMMIT_MSG: '${{ inputs.commit_msg }}'
+        COMMIT_MSG: '${{ inputs.commit-msg }}'
       run: |
         set -euo pipefail
         
@@ -158,10 +158,10 @@ runs:
       if: inputs.sign == 'true' && inputs.pass != ''
       shell: bash
       env:
-        GNUPGHOME: ${{ inputs.gpg_home || env.GNUPGHOME }}
+        GNUPGHOME: ${{ inputs.gpg-home || env.GNUPGHOME }}
         TAG: '${{ inputs.version }}'
         FINGERPRINT: '${{ inputs.fingerprint }}'
-        COMMIT_MSG: '${{ inputs.commit_msg }}'
+        COMMIT_MSG: '${{ inputs.commit-msg }}'
         PASS: '${{ inputs.pass }}'
       run: |
         set -euo pipefail
@@ -175,7 +175,7 @@ runs:
         echo "::notice::Creating signed tag with passphrase: $TAG"
 
         echo "::debug::Passphrase length: ${#PASS} characters"
-        if [[ -z "${{ inputs.gpg_grp }}" ]]; then
+        if [[ -z "${{ inputs.gpg-grp }}" ]]; then
           echo "::debug::No gpg_grp input provided, using all secret keys in GNUPGHOME"
           KEY_GRIPS=$(gpg --batch --with-colons --list-secret-keys | awk -F: '/^grp:/ {print $10}')
           while read -r KEY_GRIP; do
