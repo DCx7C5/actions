@@ -7,11 +7,11 @@ inputs:
     description: "The repository we search for the latest tag"
     required: false
     default: ${{ github.repository }}
-  exit_if_not_found:
+  exit-if-not-found:
     description: "Whether to fail the action if no tag is found (default: false)"
     required: false
     default: 'false'
-  exit_if_up_to_date:
+  exit-if-up-to-date:
     description: "Whether to fail the action if the latest tag is the same as the current tag (default: false)"
     required: false
     default: 'false'
