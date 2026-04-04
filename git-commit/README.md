@@ -87,7 +87,7 @@ Composite GitHub Action to create (or amend) Git commits with optional GPG signi
   uses: ./git-commit
   with:
     copilot: 'true'
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Common failures

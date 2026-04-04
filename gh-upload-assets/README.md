@@ -48,7 +48,7 @@ This action does not define outputs.
     assets: |
       dist/dystopian-linux-x86_64.tar.gz
       dist/checksums.txt
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Example: upload after release creation

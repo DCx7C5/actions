@@ -66,7 +66,7 @@ Composite GitHub Action to create (or verify) a GitHub Release for a tag and opt
       ## Changes
       - Improve installer defaults
       - Fix update hook behavior
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Example: prerelease with generated notes and assets
@@ -82,7 +82,7 @@ Composite GitHub Action to create (or verify) a GitHub Release for a tag and opt
     assets: |
       dist/dystopian-linux-x86_64.tar.gz
       dist/checksums.txt
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Common failures

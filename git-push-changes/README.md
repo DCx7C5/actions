@@ -51,7 +51,7 @@ This action does not define outputs.
 - name: Push changes
   uses: ./git-push-changes
   with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Example: push explicit refspec
@@ -62,7 +62,7 @@ This action does not define outputs.
   with:
     repository: owner/target-repo
     ref: HEAD:refs/heads/main
-    github_token: ${{ secrets.PAT_PUSH }}
+    gh-token: ${{ secrets.PAT_PUSH }}
 ```
 
 ## Common failures

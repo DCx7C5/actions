@@ -23,7 +23,7 @@ inputs:
     required: false
     default: ''
     description: "Path to GPG home directory (optional, defaults to GNUPGHOME environment variable)"
-  github_token:
+  gh-token:
     required: false
     default: ''
     description: "GitHub token for API access (defaults to github.token)"
@@ -39,7 +39,7 @@ runs:
         run_with_sudo: 'true'
         enable_ccache: 'true'
         gpg_home: ${{ inputs.gpg_home || env.GNUPGHOME }}
-        gh_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
+        gh_token: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
         gpg_key_id: ${{ inputs.gpg_key_id }}
         run: |
           set -euo pipefail

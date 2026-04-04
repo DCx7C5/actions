@@ -22,7 +22,7 @@ inputs:
     required: false
     description: "Passphrase for GPG key"
     default: ''
-  github_token:
+  gh-token:
     required: false
     default: ''
     description: "GitHub token for API access (defaults to github.token)"
@@ -74,7 +74,7 @@ runs:
         run_with_sudo: 'false'
         enable_ccache: 'false'
         preset_cache: 'false'
-        github_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
+        gh-token: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
         run: |
           set -euo pipefail
 
@@ -101,7 +101,7 @@ runs:
         run_with_sudo: 'false'
         enable_ccache: 'false'
         preset_cache: 'true'
-        github_token: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
+        gh-token: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
         gpg_key_id: ${{ inputs.gpg_key_id }}
         gpg_passhphrase: ${{ inputs.gpg_passphrase }}
         run: |

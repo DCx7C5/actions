@@ -85,7 +85,7 @@ The action then:
 
 ## Known caveats
 
-- `inputs.github_token` is referenced in the release deletion step, but no such input is declared in `action.yml`.
+- `inputs.gh-token` is referenced in the release deletion step, but no such input is declared in `action.yml`.
 - Release deletion depends on `gh` being installed and authenticated.
 - Remote deletion is best-effort: the action can still succeed even if remote deletion fails.
 - The action always targets the `origin` remote.

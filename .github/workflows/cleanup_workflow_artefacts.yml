@@ -31,7 +31,7 @@ jobs:
         with:
           action: 'delete'
           workflow_status: 'cancelled'
-          github_token: ${{ steps.app_token.outputs.token }}
+          gh-token: ${{ steps.app_token.outputs.token }}
 
       - name: Cleanup Failed Workflow Artifacts
         uses: DCx7C5/actions/gh-workflow-run@v1
@@ -39,7 +39,7 @@ jobs:
           keep: '10'
           action: 'delete'
           workflow_status: 'failure'
-          github_token: ${{ steps.app_token.outputs.token }}
+          gh-token: ${{ steps.app_token.outputs.token }}
 
       #- name: Cleanup Successful Workflow Artifacts
       #  uses: DCx7C5/actions/gh-workflow-run@v1
@@ -47,4 +47,4 @@ jobs:
       #    action: 'delete'
       #    workflow_status: 'success'
       #    keep: '25'
-      #    github_token: ${{ steps.app_token.outputs.token }}
+      #    gh-token: ${{ steps.app_token.outputs.token }}

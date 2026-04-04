@@ -62,7 +62,7 @@ This action does not define outputs.
     gpg_sign: 'true'
     gpg_key_id: ${{ vars.GPG_KEY_ID }}
     gpg_passphrase: ${{ secrets.GPG_PASSPHRASE }}
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
     working_directory: ${{ github.workspace }}/repo/x86_64
 ```
 

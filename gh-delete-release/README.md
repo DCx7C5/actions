@@ -49,7 +49,7 @@ Composite GitHub Action to delete a GitHub release by tag, with optional Git tag
   uses: ./gh-delete-release
   with:
     release_tag: v1.2.3
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Example: delete release and tag
@@ -61,7 +61,7 @@ Composite GitHub Action to delete a GitHub release by tag, with optional Git tag
   with:
     release_tag: v1.2.3
     delete_tag: 'true'
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Common failures

@@ -51,7 +51,7 @@ This action does not define outputs.
   with:
     pkg_name: my-package
     gpg_sign: 'false'
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Example: attempt signed package build
@@ -65,7 +65,7 @@ This action does not define outputs.
     gpg_key_id: ${{ vars.GPG_KEY_ID }}
     gpg_passhphrase: ${{ secrets.GPG_PASSPHRASE }}
     gpg_home: ${{ github.workspace }}/.gnupg
-    github_token: ${{ secrets.GITHUB_TOKEN }}
+    gh-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Common failures
