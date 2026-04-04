@@ -143,7 +143,7 @@ runs:
         if [[ -n "${{ inputs.org }}" && -n "$INPUTS_REPOS" ]]; then
           echo "::debug::Setting secret for organisation '${{ inputs.org }}' and repositories: ${INPUTS_REPOS}"
           TYPE_OPT="--repos $(echo "$INPUTS_REPOS" | tr "\n" "," | sed "s/,$//")"
-        elif [[ -n "${{ inputs.org }}" && "${{ inputs.no_repos_select }}" == 'true' ]]; then
+        elif [[ -n "${{ inputs.org }}" && "${{ inputs.no-repos-select }}" == 'true' ]]; then
           echo "::debug::Setting secret for organisation '${{ inputs.org }}' without selecting any repositories"
           TYPE_OPT="--no-repos-select"
         elif [[ -n "${{ inputs.org }}" ]]; then

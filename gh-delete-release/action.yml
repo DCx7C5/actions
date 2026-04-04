@@ -7,14 +7,14 @@ branding:
   color: "red"
 
 inputs:
-  release_tag:
+  release-tag:
     required: true
     description: "The release tag/version to delete"
-  github_token:
+  github-token:
     required: false
     default: ${{ github.token }}
     description: "GitHub token for API access (defaults to github.token)"
-  delete_tag:
+  delete-tag:
     required: false
     default: 'false'
     description: "Whether to also delete the Git tag associated with the release (if true, will attempt to delete the tag as well)"
@@ -35,8 +35,8 @@ runs:
       id: rel_delete
       shell: bash
       env:
-        RELEASE_TAG: ${{ inputs.release_tag }}
-        GH_TOKEN: ${{ inputs.github_token }}
+        RELEASE_TAG: ${{ inputs.release-tag }}
+        GH_TOKEN: ${{ inputs.github-token }}
       run: |
         set -euo pipefail
         
@@ -67,11 +67,11 @@ runs:
         fi
 
     - name: Delete tag
-      if: inputs.delete_tag == 'true'
+      if: inputs.delete-tag == 'true'
       id: tag_delete
       shell: bash
       env:
-        TAG_NAME: ${{ inputs.release_tag }}
+        TAG_NAME: ${{ inputs.release-tag }}
       run: |
         set -euo pipefail
 

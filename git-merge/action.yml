@@ -15,11 +15,11 @@ inputs:
     required: false
     default: ""
     description: "Custom merge commit message (for non-ff merges)"
-  allow_unrelated:
+  allow-unrelated:
     required: false
     default: "false"
     description: "Allow merging unrelated histories"
-  github_token:
+  github-token:
     required: false
     default: "${{ secrets.GITHUB_TOKEN }}"
     description: "GitHub token for authentication (if needed for private repos or API calls)"
@@ -42,7 +42,7 @@ runs:
         source="${{ inputs.source }}"
         strategy="${{ inputs.strategy }}"
         message="${{ inputs.message }}"
-        allow_unrelated="${{ inputs.allow_unrelated }}"
+        allow_unrelated="${{ inputs.allow-unrelated }}"
 
         if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
           echo "::error::Current workspace is not a Git repository." >&2

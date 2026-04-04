@@ -11,7 +11,7 @@ inputs:
   repository:
     required: true
     description: "Repository to delete (format: 'owner/repo' or just 'repo' for current owner)"
-  github_token:
+  github-token:
     required: false
     default: ''
     description: "GitHub token with repo deletion permissions (requires 'delete_repo' scope)"
@@ -83,7 +83,7 @@ runs:
       id: delete_repo
       shell: bash
       env:
-        GH_TOKEN: "${{ inputs.github_token || env.GITHUB_TOKEN || github.token }}"
+        GH_TOKEN: "${{ inputs.github-token || env.GITHUB_TOKEN || github.token }}"
         REPO_OWNER: "${{ steps.validate.outputs.repo_owner }}"
         REPO_NAME: "${{ steps.validate.outputs.repo_name }}"
         REPO_FULL_NAME: "${{ steps.validate.outputs.repo_full_name }}"

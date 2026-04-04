@@ -8,18 +8,18 @@ branding:
 
 
 inputs:
-  release_tag:
+  release-tag:
     description: "The git tag to create the release for (e.g. v1.2.3)"
     required: true
-  release_name:
+  release-name:
     description: "Title of the release (defaults to the tag name if not provided)"
     required: false
     default: ""
-  release_body:
+  release-body:
     description: "Custom release notes / description body (markdown supported)"
     required: false
     default: ""
-  generate_notes:
+  generate-notes:
     description: "Automatically generate release notes from merged PRs (GitHub default template)"
     required: false
     default: "false"
@@ -35,11 +35,11 @@ inputs:
     description: "Newline-separated list of files/globs to upload as release assets (example: dist/*.zip\nbuild/myapp.tar.gz)"
     required: false
     default: ''
-  github_token:
+  github-token:
     description: "GitHub token with repo scope (defaults to GITHUB_TOKEN)"
     required: false
     default: ''
-  fail_if_exists:
+  fail-if-exists:
     description: "Fail the action if a release with this tag already exists"
     required: false
     default: "true"
@@ -69,8 +69,8 @@ runs:
       id: prepare
       shell: bash
       env:
-        TAG: ${{ inputs.release_tag }}
-        NAME: ${{ inputs.release_name }}
+        TAG: ${{ inputs.release-tag }}
+        NAME: ${{ inputs.release-name }}
       run: |
         RELEASE_TITLE="${NAME:-$TAG}"
         echo "title=$RELEASE_TITLE" >> "$GITHUB_OUTPUT"
@@ -79,14 +79,14 @@ runs:
       id: create
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github_token || github.token }}
-        TAG: ${{ inputs.release_tag }}
+        GH_TOKEN: ${{ inputs.github-token || github.token }}
+        TAG: ${{ inputs.release-tag }}
         TITLE: ${{ steps.prepare.outputs.title }}
-        BODY: ${{ inputs.release_body }}
-        GEN_NOTES: ${{ inputs.generate_notes }}
+        BODY: ${{ inputs.release-body }}
+        GEN_NOTES: ${{ inputs.generate-notes }}
         DRAFT: ${{ inputs.draft }}
         PRERELEASE: ${{ inputs.prerelease }}
-        FAIL_IF_EXISTS: ${{ inputs.fail_if_exists }}
+        FAIL_IF_EXISTS: ${{ inputs.fail-if-exists }}
       run: |
         set -euo pipefail
 
@@ -139,5 +139,5 @@ runs:
       if: inputs.assets != ''
       uses: DCx7C5/actions/gh-upload-assets@v1
       with:
-        release_tag: ${{ inputs.release_tag }}
+        release-tag: ${{ inputs.release-tag }}
         assets: ${{ inputs.assets }}

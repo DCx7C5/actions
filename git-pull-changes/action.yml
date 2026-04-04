@@ -15,7 +15,7 @@ inputs:
     required: false
     default: ""
     description: "Branch to pull (defaults to current branch)"
-  allow_dirty:
+  allow-dirty:
     required: false
     default: "false"
     description: "Allow pull with local uncommitted changes"
@@ -31,7 +31,7 @@ runs:
         strategy="${{ inputs.strategy }}"
         remote_name="${{ inputs.remote }}"
         branch_input="${{ inputs.branch }}"
-        allow_dirty="${{ inputs.allow_dirty }}"
+        allow_dirty="${{ inputs.allow-dirty }}"
 
         if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
           echo "::error::Current workspace is not a Git repository." >&2

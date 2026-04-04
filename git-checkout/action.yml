@@ -6,7 +6,7 @@ branding:
   color: 'green'
 
 inputs:
-  gh_token:
+  gh-token:
     description: 'GitHub token (PAT or GitHub App token)'
     required: false
     default: ''

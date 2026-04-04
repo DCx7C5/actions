@@ -4,14 +4,14 @@ author: "DCx7C5"
 
 
 inputs:
-  release_tag:
+  release-tag:
     required: true
     description: "The tag name/version of the release to which assets will be uploaded"
   assets:
     required: false
     default: ''
     description: "A newline-separated list of file paths to upload as assets to the release (optional)"
-  github_token:
+  github-token:
     required: false
     default: ''
     description: "GitHub token for API access (defaults to github.token)"
@@ -23,8 +23,8 @@ runs:
     - id: upload_assets
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github_token || env.GITHUB_TOKEN || github.token }}
-        TAG: ${{ inputs.release_tag }}
+        GH_TOKEN: ${{ inputs.github-token || env.GITHUB_TOKEN || github.token }}
+        TAG: ${{ inputs.release-tag }}
         ASSETS: ${{ inputs.assets }}
       run: |
         set -euo pipefail

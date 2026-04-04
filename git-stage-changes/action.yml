@@ -11,7 +11,7 @@ inputs:
     required: false
     default: ""
     description: "New-line separated list of file/directory paths to stage (empty = whole workspace)"
-  include_untracked:
+  include-untracked:
     required: false
     default: "true"
     description: "Stage untracked files too (true/false)"
@@ -31,7 +31,7 @@ runs:
       shell: bash
       env:
         INPUT_PATHS: ${{ inputs.paths }}
-        INCLUDE_UNTRACKED: ${{ inputs.include_untracked }}
+        INCLUDE_UNTRACKED: ${{ inputs.include-untracked }}
       run: |
         set -euo pipefail
 

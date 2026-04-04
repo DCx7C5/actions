@@ -8,7 +8,7 @@ branding:
 
 
 inputs:
-  workspace_path:
+  workspace-path:
     required: false
     default: '.'
     description: "Path to the Git workspace to clean (default: current directory)"
@@ -22,7 +22,7 @@ runs:
       run: |
         set -euo pipefail
         
-        cd "${{ inputs.workspace_path }}"
+        cd "${{ inputs.workspace-path }}"
         
         echo "::warning::Cleaning workspace (uncommitted changes will be lost!)"
         git clean -fdx

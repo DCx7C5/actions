@@ -4,10 +4,10 @@ author: "DCx7C5"
 
 
 inputs:
-  remote_url:
+  remote-url:
     required: true
     description: "URL of the repository to add as a remote"
-  remote_name:
+  remote-name:
     required: false
     default: 'upstream'
     description: "Name of the remote to add (default: 'upstream')"
@@ -21,8 +21,8 @@ runs:
       run: |
         set -euo pipefail
         
-        remote_name="${{ inputs.remote_name }}"
-        remote_url="${{ inputs.remote_url }}"
+        remote_name="${{ inputs.remote-name }}"
+        remote_url="${{ inputs.remote-url }}"
             
         # Check if the remote already exists
         if git remote | grep -q "^${remote_name}$"; then

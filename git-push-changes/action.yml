@@ -16,7 +16,7 @@ inputs:
     required: false
     default: 'HEAD'
     description: "Git reference to push (defaults to HEAD)"
-  github_token:
+  github-token:
     required: false
     default: ''
     description: "GitHub token for authentication (defaults to github.token)"
@@ -29,7 +29,7 @@ runs:
     - id: push_changes
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github_token || env.GH_TOKEN || github.token }}
+        GH_TOKEN: ${{ inputs.github-token || env.GH_TOKEN || github.token }}
         REPO: ${{ inputs.repository }}
         REF: ${{ inputs.ref }}
       run: |

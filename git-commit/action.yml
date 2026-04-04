@@ -20,35 +20,35 @@ inputs:
     required: false
     default: "false"
     description: "Add a Signed-off-by line to the commit message (true/false)"
-  allow_empty:
+  allow-empty:
     required: false
     default: "false"
     description: "Allow creating an empty commit when no staged changes exist (true/false)"
-  no_verify:
+  no-verify:
     required: false
     default: "false"
     description: "Bypass pre-commit and commit-msg hooks (true/false)"
-  gpg_sign:
+  gpg-sign:
     required: false
     default: "false"
     description: "GPG sign the commit (true/false)"
-  gpg_key_id:
+  gpg-key-id:
     required: false
     default: ""
     description: "GPG key ID to use for signing the commit (if gpg_sign is true)"
-  gpg_passphrase:
+  gpg-passphrase:
     required: false
     default: ""
     description: "Passphrase for the GPG key (if gpg_sign is true and key is passphrase-protected)"
-  pre_cached_pass:
+  pre-cached-pass:
     required: false
     default: "false"
     description: "Whether the GPG passphrase is already cached in the GPG agent (true/false)"
-  skip_if_no_changes:
+  skip-if-no-changes:
     required: false
     default: "true"
     description: "Skip commit when there are no staged changes (true/false)"
-  github_token:
+  github-token:
     required: false
     default: ''
     description: "GitHub token for API access (defaults to github.token)"
@@ -94,12 +94,12 @@ runs:
       shell: bash
       env:
         AMEND: ${{ inputs.amend }}
-        ALLOW_EMPTY: ${{ inputs.allow_empty }}
-        NO_VERIFY: ${{ inputs.no_verify }}
+        ALLOW_EMPTY: ${{ inputs.allow-empty }}
+        NO_VERIFY: ${{ inputs.no-verify }}
         SIGNOFF: ${{ inputs.signoff }}
-        GPG_SIGN: ${{ inputs.gpg_sign }}
-        GPG_KEYID: ${{ inputs.gpg_key_id }}
-        SKIP_NO_CHANGES: ${{ inputs.skip_if_no_changes }}
+        GPG_SIGN: ${{ inputs.gpg-sign }}
+        GPG_KEYID: ${{ inputs.gpg-key-id }}
+        SKIP_NO_CHANGES: ${{ inputs.skip-if-no-changes }}
       run: |
         commit_args=()
         
@@ -122,8 +122,8 @@ runs:
             commit_args+=("--gpg-sign")
           fi
         
-          if [[ -n "${{ inputs.gpg_passphrase }}" ]]; then
-            echo "${{ inputs.gpg_passphrase }}" | \
+          if [[ -n "${{ inputs.gpg-passphrase }}" ]]; then
+            echo "${{ inputs.gpg-passphrase }}" | \
               gpg --batch --pinentry-mode=loopback --passphrase-fd 0 \
                   --sign --local-user "${GPG_KEYID:-default}" \
                   --output /dev/null --yes || {
@@ -142,7 +142,7 @@ runs:
 
     - name: Check for staged changes
       id: check_changes
-      if: inputs.skip_if_no_changes == 'true'
+      if: inputs.skip-if-no-changes == 'true'
       shell: bash
       run: |
         if git diff --cached --quiet; then
@@ -162,7 +162,7 @@ runs:
         COMMIT_ARGS: ${{ steps.prepare.outputs.commit_args }}
         COMMIT_MSG: ${{ inputs.message }}
         COPILOT_MSG: ${{ steps.copilot_msg.outputs.message }}
-        GPG_PASSPHRASE: ${{ inputs.gpg_passphrase }}
+        GPG_PASSPHRASE: ${{ inputs.gpg-passphrase }}
       run: |
         set -euo pipefail
         
@@ -187,7 +187,7 @@ runs:
         } >> "$GITHUB_OUTPUT"
         
         if [[ -n "${GPG_PASSPHRASE}" ]]; then
-          if [[ "${{ inputs.pre_cached_pass }}" == "true" ]]; then
+          if [[ "${{ inputs.pre-cached-pass }}" == "true" ]]; then
             git commit ${COMMIT_ARGS} -m "${FINAL_MSG}" 2>&1 | tee commit.log || {
               echo "::error::Commit failed (check GPG passphrase or key)" >&2
               cat commit.log

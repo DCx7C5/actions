@@ -57,7 +57,7 @@ inputs:
     required: false
     description: "Whether the action should fail if the variable cannot be retrieved or set (true/false, defaults to 'true')"
     default: 'true'
-  json_encode:
+  json-encode:
     required: false
     description: "Whether to JSON-encode the value before storing it (true/false, defaults to 'false')"
     default: 'false'
