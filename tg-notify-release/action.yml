@@ -45,30 +45,36 @@ runs:
     - id: notify_release
       uses: DCx7C5/actions/tg-notify@v1
       with:
-        to: '${{ inputs.chat-id }}'
-        token: '${{ inputs.tg-token }}'
-        parse_mode: 'HTML'
-        step-summary: |
-          <b>New Signed Release Published!</b>
-          <a href="https://github.com/${{ inputs.repository }}/releases/tag/v1">View Release</a> | <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">View Commit</a>
-          step-details: | 1. ${{ inputs.repository }} 2. ${{ inputs.commit }} 3. ${{ inputs.branch }} 4. ${{ inputs.actor }} 5. ${{ inputs.fingerprint }} 6. ${{ inputs.tag-name }} 7. ${{ inputs.release-name }}
-
+        parse-mode: 'HTML'
+        chat-id: ${{ inputs.chat-id }}
+        tg-token: ${{ inputs.tg-token }}
         message: |
-          <b>New Signed Release Published!</b>
-          
+          <b>🚀 New Signed Release Published!</b>
+
           <b>📦 Release Details:</b>
           - <b>Repository:</b> <code>${{ inputs.repository }}</code>
-          - <b>Version:</b> <code></code>
+          - <b>Tag:</b> <code>${{ inputs.tag-name }}</code>
+          - <b>Release Name:</b> <code>${{ inputs.release-name }}</code>
           - <b>Commit:</b> <code>${{ inputs.commit }}</code>
           - <b>Branch:</b> <code>${{ inputs.branch }}</code>
           - <b>Actor:</b> <code>${{ inputs.actor }}</code>
-          
+
           <b>🔐 Signing:</b>
           - <b>GPG Fingerprint:</b> <code>${{ inputs.fingerprint }}</code>
-          
-          <b>🏷️ Tag & Release:</b>
-          - <b>Tag Created:</b> <code>${{ inputs.tag-name }}</code>
-          - <b>Release Name:</b> <code>$</code>
-          
+
           <b>🔗 Links:</b>
-          <a href="https://github.com/${{ inputs.repository }}/releases/tag/v1">View Release</a> | <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">View Commit</a>
+          <a href="https://github.com/${{ inputs.repository }}/releases/tag/${{ inputs.tag-name }}">View Release</a> | <a href="https://github.com/${{ inputs.repository }}/commit/${{ inputs.commit }}">View Commit</a>
+        step-summary: |
+          ## 🚀 New Signed Release Published!
+
+          | Field | Value |
+          |---|---|
+          | **Repository** | `${{ inputs.repository }}` |
+          | **Tag** | `${{ inputs.tag-name }}` |
+          | **Release Name** | `${{ inputs.release-name }}` |
+          | **Branch** | `${{ inputs.branch }}` |
+          | **Commit** | `${{ inputs.commit }}` |
+          | **Actor** | `${{ inputs.actor }}` |
+          | **GPG Fingerprint** | `${{ inputs.fingerprint }}` |
+
+          🔗 [View Release](https://github.com/${{ inputs.repository }}/releases/tag/${{ inputs.tag-name }}) | [View Commit](https://github.com/${{ inputs.repository }}/commit/${{ inputs.commit }})
