@@ -48,8 +48,6 @@ jobs:
         id: build_image
         uses: ./docker-build-image
         with:
-          image-working-directory: ${{ github.workspace }}/arch-run-cmd
-          runtime-working-directory: ${{ github.workspace }}
           gpg-home: ${{ format('{0}/.gnupg', github.workspace) }}
           ccache-dir: ${{ format('{0}/.ccache', github.workspace) }}
           user: runner
