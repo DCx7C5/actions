@@ -37,10 +37,6 @@ inputs:
     description: "GitHub release name (optional, can be auto-detected)"
     required: true
     default: ''
-  step-summary:
-    description: "If set, adds this text as additional step summary"
-    default: ''
-    required: false
 
 
 runs:
@@ -52,7 +48,11 @@ runs:
         to: '${{ inputs.chat-id }}'
         token: '${{ inputs.tg-token }}'
         parse_mode: 'HTML'
-        step-summary: ${{ inputs.step-summary }}
+        step-summary: |
+          <b>New Signed Release Published!</b>
+          <a href="https://github.com/${{ inputs.repository }}/releases/tag/v1">View Release</a> | <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">View Commit</a>
+          step-details: | 1. ${{ inputs.repository }} 2. ${{ inputs.commit }} 3. ${{ inputs.branch }} 4. ${{ inputs.actor }} 5. ${{ inputs.fingerprint }} 6. ${{ inputs.tag-name }} 7. ${{ inputs.release-name }}
+
         message: |
           <b>New Signed Release Published!</b>
           

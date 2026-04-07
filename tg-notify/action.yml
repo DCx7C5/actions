@@ -68,8 +68,10 @@ runs:
       run: |
         ${{ github.action_path }}/entrypoint.sh
 
-    - name: Add step summary
+    - name: Add Release step summary
       if: inputs.step-summary != ''
       shell: bash
       run: |
-        echo "${{ inputs.step-summary }}" >> "$GITHUB_STEP_SUMMARY"
+        {
+          printf '%s\n' "${{ inputs.step-summary }}"
+        } >> "$GITHUB_STEP_SUMMARY"
