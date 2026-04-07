@@ -3,16 +3,16 @@ description: "Send Telegram messages from GitHub Actions with security hardening
 author: "DCx7C5"
 
 inputs:
-  token:
+  tg-token:
     description: "Telegram Bot Token"
     required: true
-  to:
+  chat-id:
     description: "Chat ID (user, group or channel)"
     required: true
   message:
     description: "Message text (MarkdownV2 supported)"
     required: true
-  parse_mode:
+  parse-mode:
     description: "Parse mode: MarkdownV2 (default), Markdown, or HTML"
     required: false
     default: "HTML"
@@ -20,6 +20,11 @@ inputs:
     description: "Disable notification sound (true/false)"
     required: false
     default: "false"
+  step-summary:
+    description: "If set, adds this text as additional step summary"
+    default: ''
+    required: false
+
 
 runs:
   using: "composite"
@@ -30,7 +35,7 @@ runs:
         set -euo pipefail
 
         # Validate token format (number:alphanumeric-underscore)
-        if ! [[ "${{ inputs.token }}" =~ ^[0-9]+:[A-Za-z0-9_-]+$ ]]; then
+        if ! [[ "${{ inputs.tg-token }}" =~ ^[0-9]+:[A-Za-z0-9_-]+$ ]]; then
           echo "::error::Invalid Telegram bot token format" >&2
           exit 1
         fi
@@ -42,10 +47,10 @@ runs:
         fi
 
         # Validate parse mode
-        case "${{ inputs.parse_mode }}" in
+        case "${{ inputs.parse-mode }}" in
           MarkdownV2|Markdown|HTML) ;;
           *)
-            echo "::error::Invalid parse mode: ${{ inputs.parse_mode }}" >&2
+            echo "::error::Invalid parse mode: ${{ inputs.parse-mode }}" >&2
             exit 1
             ;;
         esac
@@ -55,10 +60,16 @@ runs:
     - name: Send Telegram Message
       shell: bash
       env:
-        TELEGRAM_BOT_TOKEN: ${{ inputs.token }}
-        TELEGRAM_TO: ${{ inputs.to }}
+        TELEGRAM_BOT_TOKEN: ${{ inputs.tg-token }}
+        TELEGRAM_TO: ${{ inputs.chat-id }}
         TELEGRAM_MESSAGE: ${{ inputs.message }}
-        TELEGRAM_PARSE_MODE: ${{ inputs.parse_mode }}
+        TELEGRAM_PARSE_MODE: ${{ inputs.parse-mode }}
         TELEGRAM_SILENT: ${{ inputs.silent }}
       run: |
         ${{ github.action_path }}/entrypoint.sh
+
+    - name: Add step summary
+      if: inputs.step-summary != ''
+      shell: bash
+      run: |
+        echo "${{ inputs.step-summary }}" >> "$GITHUB_STEP_SUMMARY"

@@ -3,10 +3,10 @@ description: "Send Telegram messages from GitHub Actions with security hardening
 author: "DCx7C5"
 
 inputs:
-  token:
+  tg-token:
     description: "Telegram Bot Token"
     required: true
-  to:
+  chat-id:
     description: "Chat ID (user, group or channel)"
     required: true
   repository:
@@ -29,14 +29,18 @@ inputs:
     description: "GPG fingerprint (optional, can be auto-detected)"
     required: true
     default: ''
-  tag_name:
+  tag-name:
     description: "Git tag name (optional, can be auto-detected)"
     required: true
     default: ''
-  release_name:
+  release-name:
     description: "GitHub release name (optional, can be auto-detected)"
     required: true
     default: ''
+  step-summary:
+    description: "If set, adds this text as additional step summary"
+    default: ''
+    required: false
 
 
 runs:
@@ -45,9 +49,10 @@ runs:
     - id: notify_release
       uses: DCx7C5/actions/tg-notify@v1
       with:
-        to: '${{ inputs.to }}'
-        token: '${{ inputs.token }}'
+        to: '${{ inputs.chat-id }}'
+        token: '${{ inputs.tg-token }}'
         parse_mode: 'HTML'
+        step-summary: ${{ inputs.step-summary }}
         message: |
           <b>New Signed Release Published!</b>
           
@@ -62,7 +67,7 @@ runs:
           - <b>GPG Fingerprint:</b> <code>${{ inputs.fingerprint }}</code>
           
           <b>🏷️ Tag & Release:</b>
-          - <b>Tag Created:</b> <code>${{ inputs.tag_name }}</code>
+          - <b>Tag Created:</b> <code>${{ inputs.tag-name }}</code>
           - <b>Release Name:</b> <code>$</code>
           
           <b>🔗 Links:</b>
