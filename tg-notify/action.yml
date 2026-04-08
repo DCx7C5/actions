@@ -41,7 +41,7 @@ runs:
         fi
 
         # Validate chat ID (must be numeric, can be negative)
-        if ! [[ "${{ inputs.to }}" =~ ^-?[0-9]+$ ]]; then
+        if ! [[ "${{ inputs.chat-id }}" =~ ^-?[0-9]+$ ]]; then
           echo "::error::Invalid Telegram chat ID format" >&2
           exit 1
         fi
