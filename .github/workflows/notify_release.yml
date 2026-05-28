@@ -1,0 +1,115 @@
+name: "Notify GitHub Release to Telegram"
+
+on:
+  repository_dispatch:
+    types:
+      - marketplace-release
+
+jobs:
+  notify-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse release payload
+        id: parse
+        env:
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+        run: |
+          set -euo pipefail
+          
+          VERSION=$(echo "$PAYLOAD" | jq -r '.version // "unknown"')
+          TAG=$(echo "$PAYLOAD" | jq -r '.tag // "unknown"')
+          PRERELEASE=$(echo "$PAYLOAD" | jq -r '.prerelease // false')
+          DRAFT=$(echo "$PAYLOAD" | jq -r '.draft // false')
+          RELEASE_URL=$(echo "$PAYLOAD" | jq -r '.release_url // ""')
+          BODY=$(echo "$PAYLOAD" | jq -r '.body // ""')
+          ASSET_COUNT=$(echo "$PAYLOAD" | jq -r '.assets | length // 0')
+          
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "draft=$DRAFT" >> "$GITHUB_OUTPUT"
+          echo "release_url=$RELEASE_URL" >> "$GITHUB_OUTPUT"
+          echo "body=$BODY" >> "$GITHUB_OUTPUT"
+          echo "asset_count=$ASSET_COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Telegram (Release)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          VERSION: ${{ steps.parse.outputs.version }}
+          TAG: ${{ steps.parse.outputs.tag }}
+          PRERELEASE: ${{ steps.parse.outputs.prerelease }}
+          DRAFT: ${{ steps.parse.outputs.draft }}
+          RELEASE_URL: ${{ steps.parse.outputs.release_url }}
+          BODY: ${{ steps.parse.outputs.body }}
+          ASSET_COUNT: ${{ steps.parse.outputs.asset_count }}
+        run: |
+          set -euo pipefail
+          
+          # Determine release type emoji
+          if [[ "$DRAFT" == "true" ]]; then
+            EMOJI="📝"
+            TYPE="Draft"
+          elif [[ "$PRERELEASE" == "true" ]]; then
+            EMOJI="🚀"
+            TYPE="Pre-release"
+          else
+            EMOJI="✨"
+            TYPE="Release"
+          fi
+          
+          # Build message
+          MSG="${EMOJI} *AI-Marketplace ${TYPE}*%0A%0A"
+          MSG="${MSG}📦 Version: \`${VERSION}\`%0A"
+          MSG="${MSG}🏷️ Tag: \`${TAG}\`%0A"
+          
+          if [[ "$ASSET_COUNT" -gt 0 ]]; then
+            MSG="${MSG}📥 Assets: ${ASSET_COUNT}%0A"
+          fi
+          
+          # Add body summary (first 200 chars)
+          if [[ -n "$BODY" ]]; then
+            SUMMARY=$(echo "$BODY" | head -c 200)
+            if [[ ${#BODY} -gt 200 ]]; then
+              SUMMARY="${SUMMARY}..."
+            fi
+            MSG="${MSG}%0A📝 \`${SUMMARY}\`%0A"
+          fi
+          
+          MSG="${MSG}%0A[View Release](${RELEASE_URL})"
+          
+          RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHANNEL_ID}" \
+            -d "text=${MSG}" \
+            -d "parse_mode=Markdown" \
+            -d "disable_web_page_preview=true")
+          
+          if echo "$RESPONSE" | jq -e '.ok' >/dev/null 2>&1; then
+            echo "✅ Release notification sent to Telegram"
+          else
+            echo "❌ Failed to send notification: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Job Summary
+        if: always()
+        env:
+          VERSION: ${{ steps.parse.outputs.version }}
+          TAG: ${{ steps.parse.outputs.tag }}
+          PRERELEASE: ${{ steps.parse.outputs.prerelease }}
+          DRAFT: ${{ steps.parse.outputs.draft }}
+          ASSET_COUNT: ${{ steps.parse.outputs.asset_count }}
+          RELEASE_URL: ${{ steps.parse.outputs.release_url }}
+        run: |
+          {
+            echo "### 📢 Release Notification"
+            echo ""
+            echo "| Property | Value |"
+            echo "|:---------|:------|"
+            echo "| Version | \`${VERSION}\` |"
+            echo "| Tag | \`${TAG}\` |"
+            echo "| Type | $([ "$DRAFT" = "true" ] && echo "Draft" || ([ "$PRERELEASE" = "true" ] && echo "Pre-release" || echo "Release")) |"
+            echo "| Assets | ${ASSET_COUNT} |"
+            echo "| URL | [View](${RELEASE_URL}) |"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
