@@ -69,12 +69,12 @@ runs:
 
           | Field | Value |
           |---|---|
-          | **Repository** | `${{ inputs.repository }}` |
-          | **Tag** | `${{ inputs.tag-name }}` |
-          | **Release Name** | `${{ inputs.release-name }}` |
-          | **Branch** | `${{ inputs.branch }}` |
-          | **Commit** | `${{ inputs.commit }}` |
-          | **Actor** | `${{ inputs.actor }}` |
-          | **GPG Fingerprint** | `${{ inputs.fingerprint }}` |
+          | **Repository** | ${{ inputs.repository }} |
+          | **Tag** | ${{ inputs.tag-name }} |
+          | **Release Name** | ${{ inputs.release-name }} |
+          | **Branch** | ${{ inputs.branch }} |
+          | **Commit** | ${{ inputs.commit }} |
+          | **Actor** | ${{ inputs.actor }} |
+          | **GPG Fingerprint** | ${{ inputs.fingerprint }} |
 
           🔗 [View Release](https://github.com/${{ inputs.repository }}/releases/tag/${{ inputs.tag-name }}) | [View Commit](https://github.com/${{ inputs.repository }}/commit/${{ inputs.commit }})
