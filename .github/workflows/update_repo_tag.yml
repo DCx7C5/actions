@@ -64,7 +64,15 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
-          target="$(gh release view v1 --json targetCommitish --jq .targetCommitish 2>/dev/null || true)"
+          target="$(git rev-list -n 1 refs/tags/v1 2>/dev/null || true)"
+
+          if [ -z "${target}" ]; then
+            ref="$(gh release view v1 --json targetCommitish --jq .targetCommitish 2>/dev/null || true)"
+            if [ -n "${ref}" ]; then
+              target="$(git rev-parse --verify "${ref}" 2>/dev/null || git rev-parse --verify "origin/${ref}" 2>/dev/null || true)"
+            fi
+          fi
+
           echo "target=${target}" >> "$GITHUB_OUTPUT"
 
       - name: Build release notes from commits since last release
