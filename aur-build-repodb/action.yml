@@ -69,7 +69,6 @@ runs:
       id: aur_build_repo
       if: inputs.gpg_sign != 'true'
       uses: DCx7C5/actions/arch-run-cmd@v1
-      working-directory: "${{ inputs.working_directory }}"
       with:
         run-with-sudo: 'false'
         enable-ccache: 'false'
@@ -77,6 +76,7 @@ runs:
         gh-token: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
         command: |
           set -euo pipefail
+          cd "${{ inputs.working_directory }}"
 
           shopt -s nullglob
           pkgs=(*.pkg.tar.zst)
@@ -96,7 +96,6 @@ runs:
       if: inputs.gpg_sign == 'true' && inputs.gpg_key_id != ''
       id: aur_build_repo_signed
       uses: DCx7C5/actions/arch-run-cmd@v1
-      working-directory: "${{ inputs.working_directory }}"
       with:
         run-with-sudo: 'false'
         enable-ccache: 'false'
@@ -106,6 +105,7 @@ runs:
         gpg-passphrase: ${{ inputs.gpg_passphrase }}
         command: |
           set -euo pipefail
+          cd "${{ inputs.working_directory }}"
 
           shopt -s nullglob
           pkgs=(*.pkg.tar.zst)
