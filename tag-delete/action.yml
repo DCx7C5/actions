@@ -39,10 +39,10 @@ runs:
 
     - name: Delete release
       id: rel_delete
-      if: inputs.delete_release == 'true'
+      if: inputs.delete-release == 'true'
       shell: bash
       env:
-        RELEASE_TAG: ${{ inputs.tag_name }}
+        RELEASE_TAG: ${{ inputs.tag-name }}
         GH_TOKEN: ${{ inputs.gh-token || env.GITHUB_TOKEN || github.token }}
       run: |
         set -euo pipefail
