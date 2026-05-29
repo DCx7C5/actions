@@ -76,7 +76,6 @@ runs:
         gh-token: ${{ inputs.gh-token || env.GH_TOKEN || github.token }}
         command: |
           set -euo pipefail
-          cd "${{ inputs.working_directory }}"
 
           shopt -s nullglob
           pkgs=(*.pkg.tar.zst)
@@ -105,7 +104,6 @@ runs:
         gpg-passphrase: ${{ inputs.gpg_passphrase }}
         command: |
           set -euo pipefail
-          cd "${{ inputs.working_directory }}"
 
           shopt -s nullglob
           pkgs=(*.pkg.tar.zst)
