@@ -58,6 +58,43 @@ jobs:
           preset-passphrase-cache: 'true'
           gh-token: ${{ steps.app_token.outputs.token }}
 
+      - name: Resolve previous release target
+        id: previous_release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          target="$(gh release view v1 --json targetCommitish --jq .targetCommitish 2>/dev/null || true)"
+          echo "target=${target}" >> "$GITHUB_OUTPUT"
+
+      - name: Build release notes from commits since last release
+        id: release_notes
+        shell: bash
+        env:
+          PREV_TARGET: ${{ steps.previous_release.outputs.target }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${PREV_TARGET}" ] && git rev-parse --verify "${PREV_TARGET}" >/dev/null 2>&1; then
+            header="## Commits since last release (${PREV_TARGET:0:8})"
+            notes="$(git log --no-merges --pretty=format:'- %h %s (%an)' "${PREV_TARGET}..HEAD" || true)"
+          else
+            header="## Commits in current release"
+            notes="$(git log --no-merges --pretty=format:'- %h %s (%an)' -n 30 HEAD || true)"
+          fi
+
+          if [ -z "${notes}" ]; then
+            notes="- No new commits."
+          fi
+
+          {
+            echo "body<<EOF"
+            echo "${header}"
+            echo
+            echo "${notes}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Delete old tag & release (if exists)
         id: tag_delete
         uses: ./tag-delete
@@ -87,6 +124,7 @@ jobs:
           gh-token: ${{ steps.app_token.outputs.token || env.GH_TOKEN || github.token }}
           release-tag: ${{ steps.tag_create.outputs.tag_name }}
           release-name: ${{ steps.tag_create.outputs.tag_name }}
+          release-body: ${{ steps.release_notes.outputs.body }}
           generate-notes: 'false'
           fail-if-exists: 'false'
           prerelease: 'false'
