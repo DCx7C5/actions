@@ -48,7 +48,7 @@ jobs:
         id: app_token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
+          client-id: ${{ secrets.DYSTOPIANBOT_APP_ID }}
           private-key: ${{ secrets.DYSTOPIANBOT_KEY }}
           repositories: actions
 
@@ -145,4 +145,3 @@ jobs:
             echo "| ccache | \`${CCACHE}\` |"
             [[ -n "$GPG_FP" ]] && echo "| GPG Key | \`${GPG_FP:(-16)}\` |"
           } >> "$GITHUB_STEP_SUMMARY"
-
