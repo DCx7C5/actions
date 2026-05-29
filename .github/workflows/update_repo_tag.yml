@@ -104,6 +104,10 @@ jobs:
         with:
           tg-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           chat-id: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          repository: ${{ github.repository }}
+          commit: ${{ github.sha }}
+          branch: ${{ github.ref_name }}
+          actor: ${{ github.actor }}
           fingerprint: ${{ steps.gpg_import.outputs.fingerprint }}
           tag-name: ${{ steps.tag_create.outputs.tag_name }}
           release-name: ${{ steps.tag_create.outputs.tag_name }}
