@@ -71,7 +71,9 @@ runs:
     - name: Add Release step summary
       if: inputs.step-summary != ''
       shell: bash
+      env:
+        STEP_SUMMARY_TEXT: ${{ inputs.step-summary }}
       run: |
         {
-          printf '%s\n' "${{ inputs.step-summary }}"
+          printf '%s\n' "$STEP_SUMMARY_TEXT"
         } >> "$GITHUB_STEP_SUMMARY"
