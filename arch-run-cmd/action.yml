@@ -50,7 +50,7 @@ inputs:
 
 runs:
   using: docker
-  image: docker://ghcr.io/dcx7c5/arch-run-cmd:latest
+  image: docker://ghcr.io/dystopianos/arch-run-cmd:latest
   env:
     GH_TOKEN: "${{ inputs.gh-token }}"
     GNUPGHOME: "${{ inputs.gpg-home }}"
